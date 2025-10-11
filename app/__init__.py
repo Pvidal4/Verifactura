@@ -1,15 +1,14 @@
-"""Flask application factory."""
+"""FastAPI application factory."""
 from __future__ import annotations
 
-from flask import Flask
+from fastapi import FastAPI
 
 from app.config import Config
-from app.routes.extract import extract_bp
+from app.routes.extract import router as extract_router
 
 
-def create_app(config: Config | None = None) -> Flask:
-    app = Flask(__name__)
-    config = config or Config()
-    app.config["APP_CONFIG"] = config
-    app.register_blueprint(extract_bp, url_prefix="/api/v1")
+def create_app(config: Config | None = None) -> FastAPI:
+    app = FastAPI(title="Verifactura Extraction API")
+    app.state.config = config or Config()
+    app.include_router(extract_router, prefix="/api/v1")
     return app

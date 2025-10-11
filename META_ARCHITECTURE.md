@@ -1,12 +1,12 @@
 # Verifactura Extraction API Architecture
 
-This project exposes the existing PDF/text extraction workflow as a production-ready Flask API.
+This project exposes the existing PDF/text extraction workflow as a production-ready FastAPI service.
 
 ## Layers
 
-1. **Presentation (Flask Blueprints)**
+1. **Presentation (FastAPI Routers)**
    - `app/routes/extract.py` defines the `/api/v1/extract` endpoint.
-   - Accepts either JSON (`{"text": "..."}`) or `multipart/form-data` uploads with `file` and optional `text` fields.
+   - Accepts JSON (`{"text": "..."}`), plain text, or `multipart/form-data` uploads with `file` and optional `text` fields.
    - Normalises responses, returning schema-compliant JSON or explicit error messages.
 
 2. **Application Services**
@@ -24,9 +24,9 @@ This project exposes the existing PDF/text extraction workflow as a production-r
 ## Request Flow
 
 ```
-Client Request ─▶ Flask Blueprint ─▶ ExtractionService ─┬─▶ PDFTextExtractor
-                                                          ├─▶ AzureOCRService
-                                                          └─▶ OpenAILLMService ─▶ Structured JSON
+Client Request ─▶ FastAPI Router ─▶ ExtractionService ─┬─▶ PDFTextExtractor
+                                                        ├─▶ AzureOCRService
+                                                        └─▶ OpenAILLMService ─▶ Structured JSON
 ```
 
 ## Environment Variables
@@ -39,8 +39,7 @@ Client Request ─▶ Flask Blueprint ─▶ ExtractionService ─┬─▶ PDFT
 ## Running
 
 ```
-export FLASK_APP=pdf_invoice_extractor:create_app
-flask run --host=0.0.0.0 --port=8000
+uvicorn pdf_invoice_extractor:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 Send a POST request:

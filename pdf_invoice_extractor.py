@@ -1,9 +1,10 @@
-"""Flask entrypoint for the Verifactura extraction API."""
+"""FastAPI entrypoint for the Verifactura extraction API."""
 from __future__ import annotations
 
 import logging
 
-from flask import Flask
+from fastapi import FastAPI
+import uvicorn
 
 from app import create_app
 from app.config import Config
@@ -12,10 +13,10 @@ from app.config import Config
 logging.basicConfig(level=logging.INFO)
 
 
-def _initialise_app() -> Flask:
+def _initialise_app() -> FastAPI:
     config = Config()
     app = create_app(config)
-    logging.info("Flask application initialised with model %s", config.OPENAI_MODEL)
+    logging.info("FastAPI application initialised with model %s", config.OPENAI_MODEL)
     if config.azure_configured:
         logging.info("Azure OCR endpoint configured: %s", config.AZURE_ENDPOINT)
     else:
@@ -27,4 +28,4 @@ app = _initialise_app()
 
 
 if __name__ == "__main__":  # pragma: no cover - manual execution
-    app.run(host="0.0.0.0", port=8000, debug=False)
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
