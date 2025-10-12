@@ -9,8 +9,8 @@ from app.services.llm_service import OpenAILLMService
 from app.services.ocr_service import AzureOCRConfig, AzureOCRService
 from app.services.pdf_service import PDFTextExtractor
 
-IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".gif"}
-TEXT_EXTENSIONS = {".txt", ".json", ".csv"}
+IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
+TEXT_EXTENSIONS = {".txt", ".json"}
 XML_EXTENSIONS = {".xml"}
 PDF_EXTENSIONS = {".pdf"}
 

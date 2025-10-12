@@ -64,7 +64,7 @@ async def extract_from_text_endpoint(
     "/extract/file",
     summary="Subir un archivo (PDF, XML o texto) para su extracción",
     description=(
-        "Adjunta un archivo soportado (PDF, XML, TXT, CSV) para procesarlo. "
+        "Adjunta un archivo soportado (PDF, XML, TXT) para procesarlo. "
         "Las imágenes deben enviarse mediante el endpoint dedicado a OCR."
     ),
     response_description="Resultado JSON con los campos extraídos.",
@@ -88,7 +88,7 @@ async def extract_from_file_endpoint(
     "/extract/image",
     summary="Extraer texto a partir de una imagen",
     description=(
-        "Acepta imágenes (PNG, JPG, TIFF, BMP, GIF) y aplica OCR de Azure antes de "
+        "Acepta imágenes (PNG, JPG, TIFF) y aplica OCR de Azure antes de "
         "enviar el contenido al modelo de lenguaje."
     ),
     response_description="Resultado JSON con los campos extraídos tras el OCR.",

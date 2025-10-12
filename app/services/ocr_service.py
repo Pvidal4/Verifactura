@@ -26,7 +26,7 @@ class AzureOCRService:
         poller = self._client.begin_analyze_document(
             model_id="prebuilt-read",
             document=data,
-            content_type=content_type,
+            #content_type=content_type,
         )
         result = poller.result()
         lines = []
