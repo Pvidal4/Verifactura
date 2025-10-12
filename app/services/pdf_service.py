@@ -1,23 +1,17 @@
-"""Utilities for extracting text from PDF sources."""
 from __future__ import annotations
 
 import io
 from typing import List
 
-try:
-    from pypdf import PdfReader  # type: ignore
-except Exception:  # pragma: no cover - fallback import for alternative dependency
-    from PyPDF2 import PdfReader  # type: ignore
-
+from PyPDF2 import PdfReader
 
 class PDFTextExtractor:
-    """Read textual content from PDF documents."""
 
     def __init__(self, max_chars_per_chunk: int = 50_000) -> None:
         self.max_chars_per_chunk = max_chars_per_chunk
 
     def read_text(self, file_bytes: bytes) -> str:
-        """Extract all text from the provided PDF bytes."""
+
         reader = PdfReader(io.BytesIO(file_bytes))
         parts: List[str] = []
         for page in reader.pages:

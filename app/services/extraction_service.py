@@ -1,4 +1,3 @@
-"""High-level orchestration for document ingestion and extraction."""
 from __future__ import annotations
 
 import mimetypes
@@ -51,7 +50,7 @@ class ExtractionService:
             return data.decode("utf-8", errors="replace")
         if self._ocr is None:
             raise RuntimeError(
-                "Azure OCR is not configured but is required for this file type."
+                "Azure OCR no está configurado pero es requirido para este tipo de archivo"
             )
         if content_type is None:
             content_type = mimetypes.guess_type(filename)[0]
@@ -59,6 +58,28 @@ class ExtractionService:
 
     def extract_from_text(self, text: str) -> Dict[str, object]:
         return self._llm.extract(text)
+
+    def extract_from_image(
+        self,
+        filename: str,
+        data: bytes,
+        content_type: Optional[str] = None,
+    ) -> Dict[str, object]:
+        if self._ocr is None:
+            raise RuntimeError(
+                "Azure OCR no está configurado pero es requirido para la extracción de imagen"
+            )
+        suffix = Path(filename).suffix.lower()
+        if not content_type:
+            content_type = mimetypes.guess_type(filename)[0]
+        if suffix and suffix not in IMAGE_EXTENSIONS and not (
+            (content_type or "").startswith("image/")
+        ):
+            raise RuntimeError("Formato de imagen no admitido")
+        text = self._ocr.extract_text(data, content_type=content_type)
+        if not text:
+            raise RuntimeError("No se pudo extraer texto de la imagen ingresada")
+        return self.extract_from_text(text)
 
     def extract_from_file(
         self,
@@ -68,6 +89,8 @@ class ExtractionService:
     ) -> Dict[str, object]:
         text = ""
         suffix = Path(filename).suffix.lower()
+        if suffix in IMAGE_EXTENSIONS:
+            return self.extract_from_image(filename, data, content_type)
         if suffix in PDF_EXTENSIONS:
             text = self._pdf.read_text(data)
         if self._needs_ocr(suffix, text):

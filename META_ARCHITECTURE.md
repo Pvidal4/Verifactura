@@ -39,7 +39,7 @@ Client Request ─▶ FastAPI Router ─▶ ExtractionService ─┬─▶ PDFTe
 ## Running
 
 ```
-uvicorn pdf_invoice_extractor:app --host 0.0.0.0 --port 8000 --reload
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 Send a POST request:

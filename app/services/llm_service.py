@@ -1,16 +1,9 @@
-"""Interface with OpenAI for structured invoice extraction."""
 from __future__ import annotations
 
 import json
 from typing import Any, Dict
 
-try:  # pragma: no cover - dependency guard
-    from openai import OpenAI
-except Exception as exc:  # pragma: no cover - allow runtime error later
-    OpenAI = None  # type: ignore
-    _OPENAI_IMPORT_ERROR = exc
-else:
-    _OPENAI_IMPORT_ERROR = None
+from openai import OpenAI
 
 from app.config import Config
 
@@ -52,29 +45,28 @@ INVOICE_SCHEMA: Dict[str, Any] = {
     "required": list(),
 }
 
+INVOICE_SCHEMA["required"] = list(INVOICE_SCHEMA["properties"].keys())
+
+
 SYSTEM_PROMPT = (
     "Eres un asistente que extrae datos estructurados de documentos vehiculares. "
     "Responde únicamente con JSON válido que coincida con el esquema dado. "
     "Utiliza null cuando la información no esté presente."
 )
 
-
 class OpenAILLMService:
     def __init__(self, config: Config) -> None:
-        if _OPENAI_IMPORT_ERROR is not None or OpenAI is None:
-            raise RuntimeError(
-                "The 'openai' package is required. Install it with 'pip install openai'."
-            ) from _OPENAI_IMPORT_ERROR
+
         if not config.openai_configured:
-            raise RuntimeError("OPENAI_API_KEY must be configured to use the LLM service.")
+            raise RuntimeError("No existe: OPENAI_API_KEY")
         self._client = OpenAI(api_key=config.OPENAI_API_KEY)
         self._model = config.OPENAI_MODEL
         self._schema_name = config.JSON_MODE_SCHEMA_NAME
 
     def extract(self, text: str) -> Dict[str, Any]:
-        response = self._client.responses.create(
+        response = self._client.chat.completions.create(
             model=self._model,
-            input=[
+            messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": text},
             ],
@@ -86,8 +78,9 @@ class OpenAILLMService:
                     "strict": True,
                 },
             },
-            temperature=0,
+            temperature=1,
+            reasoning_effort="minimal"
         )
-        content = response.output[0].content[0].text
+        content = response.choices[0].message.content
         data = json.loads(content)
         return data

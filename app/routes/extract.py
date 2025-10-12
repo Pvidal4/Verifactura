@@ -1,14 +1,20 @@
-"""HTTP endpoint definitions for the extraction API."""
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+from pydantic import BaseModel, Field
 
 from app.config import Config
-from app.services.extraction_service import ExtractionService
+from app.services.extraction_service import IMAGE_EXTENSIONS, ExtractionService
 
-router = APIRouter()
+router = APIRouter(tags=["Extracción"])
+
+class TextExtractionRequest(BaseModel):
+    text: str = Field(
+        ..., description="Texto completo del comprobante o documento a procesar."
+    )
 
 
 def _get_service(request: Request) -> ExtractionService:
@@ -22,67 +28,89 @@ def _get_service(request: Request) -> ExtractionService:
     return service
 
 
-def _normalise_content_type(raw: str | None) -> str:
-    if not raw:
-        return ""
-    return raw.split(";", 1)[0].strip().lower()
+def _validate_not_image(upload: UploadFile) -> None:
+    filename = (upload.filename or "").lower()
+    suffix = Path(filename).suffix.lower()
+    if suffix in IMAGE_EXTENSIONS or (upload.content_type or "").startswith("image/"):
+        raise HTTPException(
+            status_code=400,
+            detail="Utiliza el endpoint de imágenes para procesar archivos gráficos.",
+        )
 
 
-async def _handle_file_upload(
-    service: ExtractionService, uploaded: UploadFile
+@router.post(
+    "/extract/text",
+    summary="Extraer información estructurada desde texto plano",
+    description=(
+        "Envía un texto plano con el contenido completo del comprobante para obtener "
+        "la extracción estructurada generada por el modelo de lenguaje."
+    ),
+    response_description="Resultado JSON con los campos extraídos.",
+)
+async def extract_from_text_endpoint(
+    payload: TextExtractionRequest, service: ExtractionService = Depends(_get_service)
 ) -> Dict[str, Any]:
-    filename = uploaded.filename or "uploaded"
-    data = await uploaded.read()
+    
+    text = payload.text.strip()
+    if not text:
+        raise HTTPException(
+            status_code=400,
+            detail="El texto proporcionado está vacío.",
+        )
+    return service.extract_from_text(text)
+
+
+@router.post(
+    "/extract/file",
+    summary="Subir un archivo (PDF, XML o texto) para su extracción",
+    description=(
+        "Adjunta un archivo soportado (PDF, XML, TXT, CSV) para procesarlo. "
+        "Las imágenes deben enviarse mediante el endpoint dedicado a OCR."
+    ),
+    response_description="Resultado JSON con los campos extraídos.",
+)
+async def extract_from_file_endpoint(
+    file: UploadFile = File(...),
+    service: ExtractionService = Depends(_get_service),
+) -> Dict[str, Any]:
+
+    _validate_not_image(file)
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="El archivo subido está vacío.")
     try:
-        return service.extract_from_file(filename, data, uploaded.content_type)
-    except RuntimeError as exc:  # pragma: no cover - defensive branch
+        return service.extract_from_file(file.filename or "archivo", data, file.content_type)
+    except RuntimeError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-@router.post("/extract")
-async def extract_endpoint(
-    request: Request, service: ExtractionService = Depends(_get_service)
+@router.post(
+    "/extract/image",
+    summary="Extraer texto a partir de una imagen",
+    description=(
+        "Acepta imágenes (PNG, JPG, TIFF, BMP, GIF) y aplica OCR de Azure antes de "
+        "enviar el contenido al modelo de lenguaje."
+    ),
+    response_description="Resultado JSON con los campos extraídos tras el OCR.",
+)
+async def extract_from_image_endpoint(
+    image: UploadFile = File(...),
+    service: ExtractionService = Depends(_get_service),
 ) -> Dict[str, Any]:
-    content_type = _normalise_content_type(request.headers.get("content-type"))
 
-    if content_type == "application/json":
-        try:
-            payload = await request.json()
-        except ValueError as exc:  # pragma: no cover - FastAPI validates JSON
-            raise HTTPException(status_code=400, detail="Invalid JSON body") from exc
-        text = (payload or {}).get("text") if isinstance(payload, dict) else None
-        if not text:
-            raise HTTPException(status_code=400, detail="Missing 'text' in request body")
-        return service.extract_from_text(str(text))
-
-    if content_type in {"multipart/form-data", "application/x-www-form-urlencoded"}:
-        form = await request.form()
-        uploaded = form.get("file")
-        if isinstance(uploaded, list):
-            uploaded = uploaded[0]
-        if isinstance(uploaded, UploadFile):
-            return await _handle_file_upload(service, uploaded)
-
-        text = form.get("text")
-        if not text:
+    if not (image.content_type or "").startswith("image/"):
+        suffix = Path((image.filename or "").lower()).suffix
+        if suffix not in IMAGE_EXTENSIONS:
             raise HTTPException(
                 status_code=400,
-                detail="Provide a 'text' field or upload a file via multipart/form-data.",
+                detail="El archivo proporcionado no es una imagen soportada.",
             )
-        if isinstance(text, UploadFile):
-            return await _handle_file_upload(service, text)
-        text_value = str(text).strip()
-        if not text_value:
-            raise HTTPException(status_code=400, detail="Empty 'text' value.")
-        return service.extract_from_text(text_value)
-
-    if content_type == "text/plain":
-        text = (await request.body()).decode("utf-8", errors="replace").strip()
-        if not text:
-            raise HTTPException(status_code=400, detail="Empty 'text' value.")
-        return service.extract_from_text(text)
-
-    raise HTTPException(
-        status_code=400,
-        detail="Provide JSON with 'text', form data with 'text', or upload a file.",
-    )
+    data = await image.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="La imagen subida está vacía.")
+    try:
+        return service.extract_from_image(
+            image.filename or "imagen", data, image.content_type
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
