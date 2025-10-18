@@ -38,9 +38,11 @@ class ExtractionService:
         filename: str,
         data: bytes,
         content_type: Optional[str] = None,
+        *,
+        force_ocr: bool = False,
     ) -> str:
         suffix = Path(filename).suffix.lower()
-        if suffix in PDF_EXTENSIONS:
+        if suffix in PDF_EXTENSIONS and not force_ocr:
             text = self._pdf.read_text(data)
             if text:
                 return text
@@ -86,15 +88,23 @@ class ExtractionService:
         filename: str,
         data: bytes,
         content_type: Optional[str] = None,
+        *,
+        force_ocr: bool = False,
     ) -> Dict[str, object]:
-        text = ""
         suffix = Path(filename).suffix.lower()
         if suffix in IMAGE_EXTENSIONS:
             return self.extract_from_image(filename, data, content_type)
-        if suffix in PDF_EXTENSIONS:
-            text = self._pdf.read_text(data)
-        if self._needs_ocr(suffix, text):
-            text = self._extract_text_from_file(filename, data, content_type)
-        elif not text:
-            text = self._extract_text_from_file(filename, data, content_type)
+        text = ""
+        if not force_ocr:
+            if suffix in PDF_EXTENSIONS:
+                text = self._pdf.read_text(data)
+            elif suffix in TEXT_EXTENSIONS or suffix in XML_EXTENSIONS:
+                text = data.decode("utf-8", errors="replace")
+        if force_ocr or self._needs_ocr(suffix, text) or not text:
+            text = self._extract_text_from_file(
+                filename,
+                data,
+                content_type,
+                force_ocr=force_ocr,
+            )
         return self.extract_from_text(text)

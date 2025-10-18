@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
 from pydantic import BaseModel, Field
 
 from app.config import Config
@@ -71,6 +71,12 @@ async def extract_from_text_endpoint(
 )
 async def extract_from_file_endpoint(
     file: UploadFile = File(...),
+    force_ocr: bool = Query(
+        False,
+        description=(
+            "Forzar el uso de OCR incluso si se puede leer texto directamente (PDF)."
+        ),
+    ),
     service: ExtractionService = Depends(_get_service),
 ) -> Dict[str, Any]:
 
@@ -79,7 +85,9 @@ async def extract_from_file_endpoint(
     if not data:
         raise HTTPException(status_code=400, detail="El archivo subido está vacío.")
     try:
-        return service.extract_from_file(file.filename or "archivo", data, file.content_type)
+        return service.extract_from_file(
+            file.filename or "archivo", data, file.content_type, force_ocr=force_ocr
+        )
     except RuntimeError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

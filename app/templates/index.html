@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Verifactura Extraction Console</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+        --accent: #2563eb;
+        --accent-soft: rgba(37, 99, 235, 0.08);
+        --border: #e5e7eb;
+        --text: #111827;
+        --muted: #6b7280;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: #ffffff;
+        color: var(--text);
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      .app-shell {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        padding: 3rem clamp(1.5rem, 4vw, 4rem);
+        gap: 2.5rem;
+      }
+
+      header {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      header h1 {
+        font-size: clamp(1.75rem, 2.6vw, 2.4rem);
+        font-weight: 600;
+      }
+
+      header p {
+        color: var(--muted);
+        max-width: 52ch;
+        line-height: 1.5;
+      }
+
+      .workspace {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 2rem;
+        align-items: start;
+      }
+
+      .panel {
+        background: #ffffff;
+        border: 1px solid var(--border);
+        border-radius: 1.25rem;
+        padding: 1.75rem;
+        box-shadow: 0px 20px 45px -40px rgba(15, 23, 42, 0.5);
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+
+      .panel h2 {
+        font-size: 1.1rem;
+        font-weight: 600;
+      }
+
+      .control-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+      }
+
+      label {
+        font-weight: 500;
+        font-size: 0.95rem;
+      }
+
+      select,
+      textarea,
+      button {
+        font: inherit;
+      }
+
+      select,
+      textarea {
+        border-radius: 0.85rem;
+        border: 1px solid var(--border);
+        padding: 0.75rem 1rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        background: #fff;
+      }
+
+      select:focus,
+      textarea:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+
+      textarea {
+        resize: vertical;
+        min-height: 180px;
+        line-height: 1.5;
+      }
+
+      .drop-zone {
+        position: relative;
+        border: 1px dashed var(--border);
+        border-radius: 1rem;
+        padding: 2.5rem 1.5rem;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: center;
+        justify-content: center;
+        transition: border-color 0.2s ease, background 0.2s ease;
+        background: #fff;
+      }
+
+      .drop-zone.dragging {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+      }
+
+      .drop-zone strong {
+        font-weight: 600;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.35rem 0.75rem;
+        background: rgba(17, 24, 39, 0.04);
+        border-radius: 999px;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      .file-name {
+        font-size: 0.95rem;
+        color: var(--text);
+      }
+
+      .drop-zone button {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 0.4rem 1.25rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .drop-zone button:hover {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+
+      .toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+
+      .toggle input[type="checkbox"] {
+        width: 42px;
+        height: 22px;
+        border-radius: 999px;
+        appearance: none;
+        background: var(--border);
+        position: relative;
+        cursor: pointer;
+        transition: background 0.25s ease;
+      }
+
+      .toggle input[type="checkbox"]::after {
+        content: "";
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
+        transition: transform 0.25s ease;
+      }
+
+      .toggle input[type="checkbox"]:checked {
+        background: var(--accent);
+      }
+
+      .toggle input[type="checkbox"]:checked::after {
+        transform: translateX(20px);
+      }
+
+      .submit-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      #submitButton {
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        border-radius: 0.9rem;
+        padding: 0.85rem 1.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.2s ease;
+      }
+
+      #submitButton:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 24px -18px rgba(37, 99, 235, 0.8);
+      }
+
+      #submitButton:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+        box-shadow: none;
+      }
+
+      #statusMessage {
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+
+      .json-output {
+        flex: 1;
+        background: rgba(248, 250, 252, 0.9);
+        border-radius: 1rem;
+        border: 1px solid var(--border);
+        padding: 1.25rem;
+        overflow: auto;
+        font-family: "IBM Plex Mono", "Fira Code", monospace;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        max-height: 70vh;
+      }
+
+      .json-output.empty {
+        color: var(--muted);
+      }
+
+      @media (max-width: 720px) {
+        .app-shell {
+          padding: 2rem 1.25rem 3rem;
+        }
+
+        .panel {
+          padding: 1.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header>
+        <h1>Verifactura Extraction Console</h1>
+        <p>
+          Carga un documento en formato XML, PDF, imagen o pega el contenido en texto
+          plano. Selecciona si deseas usar OCR para tus PDFs y obtén la respuesta del
+          modelo en JSON formateado.
+        </p>
+      </header>
+
+      <div class="workspace">
+        <section class="panel" aria-labelledby="inputTitle">
+          <h2 id="inputTitle">Entrada del documento</h2>
+
+          <div class="control-group">
+            <label for="documentType">Tipo de documento</label>
+            <select id="documentType" aria-label="Seleccionar tipo de documento">
+              <option value="plain-text">Texto plano</option>
+              <option value="xml">Archivo XML</option>
+              <option value="text-file">Archivo de texto (.txt / .json)</option>
+              <option value="pdf">Archivo PDF</option>
+              <option value="image">Imagen</option>
+            </select>
+          </div>
+
+          <div class="control-group" id="textInputWrapper">
+            <label for="plainText">Contenido en texto</label>
+            <textarea
+              id="plainText"
+              placeholder="Pega aquí el contenido de tu comprobante..."
+              aria-label="Contenido del documento en texto"
+            ></textarea>
+          </div>
+
+          <div class="control-group" id="fileInputWrapper" hidden>
+            <label>Archivo</label>
+            <div class="drop-zone" id="dropZone" tabindex="0">
+              <div>
+                <div class="pill">Arrastra y suelta aquí</div>
+              </div>
+              <strong id="dropPrompt">o haz clic para buscar un archivo</strong>
+              <span class="file-name" id="fileName">Ningún archivo seleccionado</span>
+              <button type="button" id="browseButton">Buscar archivo</button>
+            </div>
+            <input type="file" id="fileInput" hidden />
+            <div class="toggle" id="pdfToggleRow" hidden>
+              <input type="checkbox" id="pdfOcrToggle" />
+              <label for="pdfOcrToggle">Usar OCR para procesar el PDF como imagen</label>
+            </div>
+          </div>
+
+          <div class="submit-row">
+            <button id="submitButton">Enviar</button>
+            <span id="statusMessage" role="status"></span>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="outputTitle">
+          <h2 id="outputTitle">Respuesta JSON</h2>
+          <pre class="json-output empty" id="jsonOutput">Esperando un documento...</pre>
+        </section>
+      </div>
+    </div>
+
+    <script>
+      const documentTypeSelect = document.getElementById("documentType");
+      const textInputWrapper = document.getElementById("textInputWrapper");
+      const fileInputWrapper = document.getElementById("fileInputWrapper");
+      const dropZone = document.getElementById("dropZone");
+      const fileInput = document.getElementById("fileInput");
+      const fileName = document.getElementById("fileName");
+      const browseButton = document.getElementById("browseButton");
+      const submitButton = document.getElementById("submitButton");
+      const statusMessage = document.getElementById("statusMessage");
+      const jsonOutput = document.getElementById("jsonOutput");
+      const pdfToggleRow = document.getElementById("pdfToggleRow");
+      const pdfOcrToggle = document.getElementById("pdfOcrToggle");
+      const dropPrompt = document.getElementById("dropPrompt");
+
+      const ACCEPT_MAP = {
+        xml: ".xml",
+        "text-file": ".txt,.json",
+        pdf: ".pdf",
+        image: "image/*",
+      };
+
+      function resetFileInput() {
+        fileInput.value = "";
+        fileName.textContent = "Ningún archivo seleccionado";
+      }
+
+      function setJsonOutput(content, isError = false) {
+        jsonOutput.textContent = content;
+        if (isError) {
+          jsonOutput.classList.remove("empty");
+          jsonOutput.style.color = "#b91c1c";
+        } else {
+          jsonOutput.style.color = "inherit";
+          jsonOutput.classList.remove("empty");
+        }
+      }
+
+      function updateInputMode() {
+        const mode = documentTypeSelect.value;
+        const isPlainText = mode === "plain-text";
+        textInputWrapper.hidden = !isPlainText;
+        fileInputWrapper.hidden = isPlainText;
+        pdfToggleRow.hidden = mode !== "pdf";
+        dropPrompt.textContent =
+          mode === "image"
+            ? "o suelta una imagen compatible"
+            : "o haz clic para buscar un archivo";
+        if (!isPlainText) {
+          fileInput.accept = ACCEPT_MAP[mode] || "";
+          resetFileInput();
+        }
+      }
+
+      documentTypeSelect.addEventListener("change", updateInputMode);
+      updateInputMode();
+
+      browseButton.addEventListener("click", () => fileInput.click());
+
+      dropZone.addEventListener("click", () => {
+        if (fileInputWrapper.hidden) return;
+        fileInput.click();
+      });
+
+      dropZone.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        if (!fileInputWrapper.hidden) {
+          dropZone.classList.add("dragging");
+        }
+      });
+
+      ["dragleave", "dragend", "drop"].forEach((type) => {
+        dropZone.addEventListener(type, () => dropZone.classList.remove("dragging"));
+      });
+
+      dropZone.addEventListener("drop", (event) => {
+        event.preventDefault();
+        if (fileInputWrapper.hidden) return;
+        if (event.dataTransfer.files && event.dataTransfer.files[0]) {
+          fileInput.files = event.dataTransfer.files;
+          fileName.textContent = event.dataTransfer.files[0].name;
+        }
+      });
+
+      fileInput.addEventListener("change", () => {
+        if (fileInput.files && fileInput.files[0]) {
+          fileName.textContent = fileInput.files[0].name;
+        } else {
+          fileName.textContent = "Ningún archivo seleccionado";
+        }
+      });
+
+      async function sendPlainText(text) {
+        const response = await fetch("/api/v1/extract/text", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+        });
+        if (!response.ok) {
+          throw new Error((await response.json()).detail || "Error procesando el texto");
+        }
+        return response.json();
+      }
+
+      async function sendFile(file, mode, useOcr) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const url =
+          mode === "image"
+            ? "/api/v1/extract/image"
+            : mode === "pdf" && useOcr
+            ? "/api/v1/extract/file?force_ocr=true"
+            : "/api/v1/extract/file";
+        const response = await fetch(url, {
+          method: "POST",
+          body: formData,
+        });
+        if (!response.ok) {
+          const detail = await response.json().catch(() => ({}));
+          throw new Error(detail.detail || "Error procesando el archivo");
+        }
+        return response.json();
+      }
+
+      function validateBeforeSend() {
+        const mode = documentTypeSelect.value;
+        if (mode === "plain-text") {
+          const value = document.getElementById("plainText").value.trim();
+          if (!value) {
+            throw new Error("Proporciona contenido en texto para continuar.");
+          }
+          return { mode, payload: value };
+        }
+        const currentFile = fileInput.files ? fileInput.files[0] : null;
+        if (!currentFile) {
+          throw new Error("Selecciona un archivo antes de enviarlo.");
+        }
+        if (mode === "xml" && !currentFile.name.toLowerCase().endsWith(".xml")) {
+          throw new Error("Selecciona un archivo con extensión .xml");
+        }
+        if (mode === "pdf" && !currentFile.name.toLowerCase().endsWith(".pdf")) {
+          throw new Error("Selecciona un archivo con extensión .pdf");
+        }
+        if (
+          mode === "text-file" &&
+          !/(\.txt|\.json)$/i.test(currentFile.name)
+        ) {
+          throw new Error("Selecciona un archivo de texto (.txt o .json)");
+        }
+        return { mode, payload: currentFile };
+      }
+
+      async function handleSubmit() {
+        try {
+          statusMessage.textContent = "Procesando...";
+          submitButton.disabled = true;
+          const { mode, payload } = validateBeforeSend();
+          let result;
+          if (mode === "plain-text") {
+            result = await sendPlainText(payload);
+          } else {
+            result = await sendFile(payload, mode, pdfOcrToggle.checked);
+          }
+          setJsonOutput(JSON.stringify(result, null, 2));
+          statusMessage.textContent = "¡Extracción completada!";
+        } catch (error) {
+          console.error(error);
+          statusMessage.textContent = error.message || "No se pudo completar la solicitud.";
+          setJsonOutput(error.message || "No se pudo completar la solicitud.", true);
+        } finally {
+          submitButton.disabled = false;
+        }
+      }
+
+      submitButton.addEventListener("click", () => {
+        statusMessage.textContent = "";
+        handleSubmit();
+      });
+
+      document.getElementById("plainText").addEventListener("keydown", (event) => {
+        if (event.metaKey && event.key === "Enter") {
+          submitButton.click();
+        }
+      });
+    </script>
+  </body>
+</html>
