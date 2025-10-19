@@ -10,7 +10,7 @@ from app.services.ocr_service import AzureOCRConfig, AzureOCRService
 from app.services.pdf_service import PDFTextExtractor
 
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
-TEXT_EXTENSIONS = {".txt", ".json"}
+TEXT_EXTENSIONS = {".json"}
 XML_EXTENSIONS = {".xml"}
 PDF_EXTENSIONS = {".pdf"}
 
@@ -33,6 +33,26 @@ class ExtractionService:
             return True
         return False
 
+    def _extract_text_from_pdf_with_ocr(self, data: bytes) -> str:
+        if self._ocr is None:
+            raise RuntimeError(
+                "Azure OCR no está configurado pero es requirido para este tipo de archivo"
+            )
+        images = self._pdf.render_page_images(data)
+        if not images:
+            raise RuntimeError(
+                "No se pudieron generar imágenes a partir del PDF para aplicar OCR."
+            )
+        fragments = []
+        for image_data, content_type in images:
+            text = self._ocr.extract_text(image_data, content_type=content_type)
+            if text:
+                fragments.append(text)
+        joined = "\n\n".join(fragment.strip() for fragment in fragments if fragment.strip())
+        if not joined:
+            raise RuntimeError("No se pudo extraer texto del PDF mediante OCR.")
+        return joined
+
     def _extract_text_from_file(
         self,
         filename: str,
@@ -42,7 +62,9 @@ class ExtractionService:
         force_ocr: bool = False,
     ) -> str:
         suffix = Path(filename).suffix.lower()
-        if suffix in PDF_EXTENSIONS and not force_ocr:
+        if suffix in PDF_EXTENSIONS:
+            if force_ocr:
+                return self._extract_text_from_pdf_with_ocr(data)
             text = self._pdf.read_text(data)
             if text:
                 return text
@@ -54,6 +76,8 @@ class ExtractionService:
             raise RuntimeError(
                 "Azure OCR no está configurado pero es requirido para este tipo de archivo"
             )
+        if suffix in PDF_EXTENSIONS:
+            return self._extract_text_from_pdf_with_ocr(data)
         if content_type is None:
             content_type = mimetypes.guess_type(filename)[0]
         return self._ocr.extract_text(data, content_type=content_type)

@@ -563,7 +563,7 @@
           <div>
             <h2 id="inputHeading">Entrada del documento</h2>
             <p class="helper-text">
-              Formatos admitidos: PDF, XML, TXT, JSON, PNG, JPG, JPEG, TIF, TIFF.
+              Formatos admitidos: PDF, XML, JSON, PNG, JPG, JPEG, TIF, TIFF.
             </p>
           </div>
 
@@ -604,7 +604,7 @@
               <input
                 type="file"
                 id="fileInput"
-                accept=".pdf,.xml,.txt,.json,.png,.jpg,.jpeg,.tif,.tiff"
+                accept=".pdf,.xml,.json,.png,.jpg,.jpeg,.tif,.tiff"
                 hidden
               />
             </div>
@@ -648,7 +648,7 @@
               <input
                 type="file"
                 id="multiFileInput"
-                accept=".pdf,.xml,.txt,.json,.png,.jpg,.jpeg,.tif,.tiff"
+                accept=".pdf,.xml,.json,.png,.jpg,.jpeg,.tif,.tiff"
                 multiple
                 hidden
               />
@@ -658,6 +658,10 @@
               <div class="multi-summary">
                 <span>Tipo detectado:</span>
                 <strong id="multiTypeLabel">—</strong>
+              </div>
+              <div class="toggle" id="multiPdfToggleRow" hidden>
+                <input type="checkbox" id="multiPdfOcrToggle" />
+                <label for="multiPdfOcrToggle">Usar OCR y tratar los PDF como imagen</label>
               </div>
               <ul class="multi-file-list" id="multiFileList"></ul>
             </div>
@@ -713,9 +717,9 @@
           extensions: ["xml"],
           endpoint: "file",
         },
-        text: {
-          label: "Texto",
-          extensions: ["txt", "json"],
+        json: {
+          label: "JSON",
+          extensions: ["json"],
           endpoint: "file",
         },
         image: {
@@ -736,6 +740,7 @@
         filePreviewUrl: null,
         multiFiles: [],
         multiCategory: null,
+        multiUseOcr: false,
         results: [],
         currentIndex: -1,
       };
@@ -777,6 +782,8 @@
       const multiFileList = document.getElementById("multiFileList");
       const multiTypeLabel = document.getElementById("multiTypeLabel");
       const multiEmptyState = document.getElementById("multiEmptyState");
+      const multiPdfToggleRow = document.getElementById("multiPdfToggleRow");
+      const multiPdfOcrToggle = document.getElementById("multiPdfOcrToggle");
 
       fileInput.setAttribute("accept", ACCEPT_STRING);
       multiFileInput.setAttribute("accept", ACCEPT_STRING);
@@ -801,11 +808,14 @@
       function resetMultiFiles() {
         state.multiFiles = [];
         state.multiCategory = null;
+        state.multiUseOcr = false;
         multiFileInput.value = "";
         multiDetails.hidden = true;
         multiEmptyState.hidden = false;
         multiFileList.innerHTML = "";
         multiTypeLabel.textContent = "—";
+        multiPdfToggleRow.hidden = true;
+        multiPdfOcrToggle.checked = false;
       }
 
       function setStatus(message, isError = false) {
@@ -935,7 +945,17 @@
         }
         multiDetails.hidden = false;
         multiEmptyState.hidden = true;
-        multiTypeLabel.textContent = SUPPORTED_TYPES[state.multiCategory].label;
+        const label = SUPPORTED_TYPES[state.multiCategory].label;
+        if (state.multiCategory === "pdf") {
+          multiTypeLabel.textContent = `${label}${state.multiUseOcr ? " (OCR)" : ""}`;
+          multiPdfToggleRow.hidden = false;
+          multiPdfOcrToggle.checked = state.multiUseOcr;
+        } else {
+          multiTypeLabel.textContent = label;
+          multiPdfToggleRow.hidden = true;
+          state.multiUseOcr = false;
+          multiPdfOcrToggle.checked = false;
+        }
         multiFileList.innerHTML = "";
         state.multiFiles.forEach((entry, index) => {
           const item = document.createElement("li");
@@ -944,7 +964,10 @@
           const name = document.createElement("strong");
           name.textContent = entry.file.name;
           const type = document.createElement("small");
-          type.textContent = SUPPORTED_TYPES[entry.category].label;
+          type.textContent =
+            entry.category === "pdf" && state.multiUseOcr
+              ? `${SUPPORTED_TYPES[entry.category].label} (OCR)`
+              : SUPPORTED_TYPES[entry.category].label;
           info.appendChild(name);
           info.appendChild(type);
           const removeButton = document.createElement("button");
@@ -958,6 +981,8 @@
             state.multiFiles.splice(index, 1);
             if (!state.multiFiles.length) {
               state.multiCategory = null;
+              state.multiUseOcr = false;
+              multiPdfOcrToggle.checked = false;
             }
             renderMultiList();
           });
@@ -981,6 +1006,10 @@
           return;
         }
         state.multiCategory = category;
+        if (category !== "pdf") {
+          state.multiUseOcr = false;
+          multiPdfOcrToggle.checked = false;
+        }
         state.multiFiles.push({ file, category });
         renderMultiList();
         setStatus("");
@@ -1063,6 +1092,11 @@
         }
         const { files } = event.dataTransfer;
         handleMultiFileList(files);
+      });
+
+      multiPdfOcrToggle.addEventListener("change", () => {
+        state.multiUseOcr = multiPdfOcrToggle.checked;
+        renderMultiList();
       });
 
       function flattenData(data, prefix = "") {
@@ -1272,6 +1306,7 @@
             payload: {
               category: state.multiCategory,
               files: state.multiFiles.map((entry) => entry.file),
+              useOcr: state.multiUseOcr,
             },
           };
         }
@@ -1301,8 +1336,8 @@
         let endpoint = "/api/v1/extract/file";
         if (type === "image") {
           endpoint = "/api/v1/extract/image";
-        } else if (type === "pdf") {
-          endpoint = useOcr ? "/api/v1/extract/image" : "/api/v1/extract/file";
+        } else if (type === "pdf" && useOcr) {
+          endpoint = "/api/v1/extract/file?force_ocr=true";
         }
         const response = await fetch(endpoint, {
           method: "POST",
@@ -1324,15 +1359,21 @@
             const result = await sendText(payload);
             addResultEntry(result, "Texto manual");
           } else if (type === "multi") {
-            const { category, files } = payload;
+            const { category, files, useOcr } = payload;
             for (let index = 0; index < files.length; index += 1) {
               setStatus(
                 `Procesando archivo ${index + 1} de ${files.length}...`,
                 false
               );
               const currentFile = files[index];
-              const currentResult = await sendFile(currentFile, category);
-              const description = `${SUPPORTED_TYPES[category].label} · ${currentFile.name}`;
+              const currentResult = await sendFile(currentFile, category, {
+                useOcr: category === "pdf" ? useOcr : false,
+              });
+              const label =
+                category === "pdf"
+                  ? `${SUPPORTED_TYPES[category].label}${useOcr ? " (OCR)" : ""}`
+                  : SUPPORTED_TYPES[category].label;
+              const description = `${label} · ${currentFile.name}`;
               addResultEntry(currentResult, description);
             }
             resetMultiFiles();

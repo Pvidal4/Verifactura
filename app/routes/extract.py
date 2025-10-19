@@ -66,9 +66,9 @@ async def extract_from_text_endpoint(
 
 @router.post(
     "/extract/file",
-    summary="Subir un archivo (PDF, XML o texto) para su extracción",
+    summary="Subir un archivo (PDF, XML o JSON) para su extracción",
     description=(
-        "Adjunta un archivo soportado (PDF, XML, TXT) para procesarlo. "
+        "Adjunta un archivo soportado (PDF, XML, JSON) para procesarlo. "
         "Las imágenes deben enviarse mediante el endpoint dedicado a OCR."
     ),
     response_description="Resultado JSON con los campos extraídos.",
@@ -78,7 +78,8 @@ async def extract_from_file_endpoint(
     force_ocr: bool = Query(
         False,
         description=(
-            "Forzar el uso de OCR incluso si se puede leer texto directamente (PDF)."
+            "Forzar el uso de OCR incluso si se puede leer texto directamente (PDF). "
+            "Convierte cada página del PDF en imagen antes de aplicar Azure OCR."
         ),
     ),
     service: ExtractionService = Depends(_get_service),
