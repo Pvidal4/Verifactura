@@ -114,11 +114,13 @@ class LocalLLMService:
     def _ensure_pipeline(self):
         if self._pipeline is None:
             dtype = torch.float16 if torch.cuda.is_available() else torch.float32
+            model_source = self._resolve_model_source()
             self._pipeline = pipeline(
                 "text-generation",
-                model=self._resolve_model_source(),
+                model=model_source,
                 torch_dtype=dtype,
                 device_map="auto",
+                trust_remote_code=True,
             )
         return self._pipeline
 
