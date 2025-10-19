@@ -7,7 +7,11 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, Upl
 from pydantic import BaseModel, Field
 
 from app.config import Config
-from app.services.extraction_service import IMAGE_EXTENSIONS, ExtractionService
+from app.services.extraction_service import (
+    IMAGE_EXTENSIONS,
+    PDF_EXTENSIONS,
+    ExtractionService,
+)
 
 router = APIRouter(tags=["Extracción"])
 
@@ -106,13 +110,18 @@ async def extract_from_image_endpoint(
     service: ExtractionService = Depends(_get_service),
 ) -> Dict[str, Any]:
 
-    if not (image.content_type or "").startswith("image/"):
-        suffix = Path((image.filename or "").lower()).suffix
-        if suffix not in IMAGE_EXTENSIONS:
-            raise HTTPException(
-                status_code=400,
-                detail="El archivo proporcionado no es una imagen soportada.",
-            )
+    content_type = (image.content_type or "").lower()
+    suffix = Path((image.filename or "").lower()).suffix
+    if not (
+        content_type.startswith("image/")
+        or suffix in IMAGE_EXTENSIONS
+        or suffix in PDF_EXTENSIONS
+        or content_type == "application/pdf"
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="El archivo proporcionado no es una imagen soportada.",
+        )
     data = await image.read()
     if not data:
         raise HTTPException(status_code=400, detail="La imagen subida está vacía.")

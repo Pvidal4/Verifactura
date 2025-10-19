@@ -1,18 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Verifactura Extraction Console</title>
+    <title>Verifactura · Consola de extracción</title>
     <style>
       :root {
         color-scheme: light;
         font-family: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
         --accent: #2563eb;
-        --accent-soft: rgba(37, 99, 235, 0.08);
-        --border: #e5e7eb;
-        --text: #111827;
-        --muted: #6b7280;
+        --accent-dark: #1e40af;
+        --accent-soft: rgba(37, 99, 235, 0.12);
+        --border: #e2e8f0;
+        --border-strong: #cbd5f5;
+        --text: #0f172a;
+        --muted: #64748b;
+        --surface: #ffffff;
+        --surface-subtle: #f8fafc;
+        --danger: #dc2626;
+        --danger-soft: rgba(220, 38, 38, 0.12);
+        background: var(--surface);
+        color: var(--text);
       }
 
       * {
@@ -21,8 +29,7 @@
 
       body {
         margin: 0;
-        background: #ffffff;
-        color: var(--text);
+        background: var(--surface);
       }
 
       h1,
@@ -32,11 +39,16 @@
         margin: 0;
       }
 
+      button {
+        font: inherit;
+        cursor: pointer;
+      }
+
       .app-shell {
+        min-height: 100vh;
+        padding: clamp(2.5rem, 4vw, 4rem) clamp(1.5rem, 6vw, 5rem) 3rem;
         display: flex;
         flex-direction: column;
-        min-height: 100vh;
-        padding: 3rem clamp(1.5rem, 4vw, 4rem);
         gap: 2.5rem;
       }
 
@@ -44,94 +56,82 @@
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
+        max-width: 960px;
       }
 
       header h1 {
-        font-size: clamp(1.75rem, 2.6vw, 2.4rem);
+        font-size: clamp(1.75rem, 3vw, 2.75rem);
         font-weight: 600;
+        letter-spacing: -0.02em;
       }
 
       header p {
         color: var(--muted);
-        max-width: 52ch;
-        line-height: 1.5;
+        font-size: 1rem;
+        line-height: 1.6;
+        max-width: 72ch;
       }
 
       .workspace {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
         gap: 2rem;
-        align-items: start;
+        align-items: flex-start;
       }
 
       .panel {
-        background: #ffffff;
+        background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 1.25rem;
-        padding: 1.75rem;
-        box-shadow: 0px 20px 45px -40px rgba(15, 23, 42, 0.5);
+        border-radius: 1.5rem;
+        padding: clamp(1.75rem, 2vw, 2.25rem);
         display: flex;
         flex-direction: column;
         gap: 1.5rem;
+        box-shadow: 0 28px 60px -40px rgba(15, 23, 42, 0.3);
       }
 
       .panel h2 {
-        font-size: 1.1rem;
+        font-size: 1.2rem;
         font-weight: 600;
       }
 
-      .control-group {
-        display: flex;
-        flex-direction: column;
-        gap: 0.6rem;
-      }
-
-      label {
-        font-weight: 500;
-        font-size: 0.95rem;
-      }
-
-      select,
-      textarea,
-      button {
-        font: inherit;
-      }
-
-      select,
-      textarea {
-        border-radius: 0.85rem;
+      .segmented-control {
+        display: inline-flex;
+        align-self: flex-start;
+        background: var(--surface-subtle);
+        border-radius: 999px;
+        padding: 0.25rem;
         border: 1px solid var(--border);
-        padding: 0.75rem 1rem;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        background: #fff;
+        gap: 0.25rem;
       }
 
-      select:focus,
-      textarea:focus {
-        outline: none;
-        border-color: var(--accent);
-        box-shadow: 0 0 0 3px var(--accent-soft);
+      .segmented-control button {
+        border: none;
+        padding: 0.5rem 1.1rem;
+        border-radius: 999px;
+        color: var(--muted);
+        background: transparent;
+        transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
       }
 
-      textarea {
-        resize: vertical;
-        min-height: 180px;
-        line-height: 1.5;
+      .segmented-control button.active {
+        background: var(--accent);
+        color: #fff;
+        box-shadow: 0 10px 22px -16px rgba(37, 99, 235, 0.8);
       }
 
       .drop-zone {
-        position: relative;
-        border: 1px dashed var(--border);
-        border-radius: 1rem;
-        padding: 2.5rem 1.5rem;
-        text-align: center;
+        border: 1.5px dashed var(--border);
+        border-radius: 1.25rem;
+        padding: clamp(2rem, 4vw, 2.75rem);
         display: flex;
         flex-direction: column;
-        gap: 0.75rem;
         align-items: center;
-        justify-content: center;
+        gap: 1.25rem;
+        text-align: center;
+        background: var(--surface-subtle);
         transition: border-color 0.2s ease, background 0.2s ease;
-        background: #fff;
+        position: relative;
       }
 
       .drop-zone.dragging {
@@ -139,33 +139,32 @@
         background: var(--accent-soft);
       }
 
+      .drop-zone__icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(37, 99, 235, 0));
+        display: grid;
+        place-items: center;
+        color: var(--accent);
+        font-size: 1.75rem;
+      }
+
       .drop-zone strong {
-        font-weight: 600;
+        font-size: 1.05rem;
       }
 
-      .pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.35rem 0.75rem;
-        background: rgba(17, 24, 39, 0.04);
-        border-radius: 999px;
-        font-size: 0.85rem;
+      .drop-zone p {
         color: var(--muted);
-      }
-
-      .file-name {
         font-size: 0.95rem;
-        color: var(--text);
       }
 
       .drop-zone button {
-        background: #fff;
         border: 1px solid var(--border);
+        background: #fff;
         border-radius: 999px;
-        padding: 0.4rem 1.25rem;
+        padding: 0.6rem 1.4rem;
         font-weight: 500;
-        cursor: pointer;
         transition: border-color 0.2s ease, box-shadow 0.2s ease;
       }
 
@@ -174,22 +173,105 @@
         box-shadow: 0 0 0 3px var(--accent-soft);
       }
 
+      .file-meta {
+        display: grid;
+        gap: 0.25rem;
+        font-size: 0.9rem;
+      }
+
+      .file-meta span {
+        color: var(--muted);
+      }
+
+      .file-meta strong {
+        color: var(--text);
+      }
+
+      .preview {
+        background: var(--surface-subtle);
+        border: 1px solid var(--border);
+        border-radius: 1.1rem;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .preview h3 {
+        font-size: 1rem;
+        font-weight: 600;
+      }
+
+      .preview-content {
+        max-height: 320px;
+        overflow: auto;
+        border-radius: 0.75rem;
+        background: #fff;
+        border: 1px solid var(--border);
+      }
+
+      .preview-content iframe,
+      .preview-content embed {
+        width: 100%;
+        height: 320px;
+        border: none;
+        border-radius: inherit;
+      }
+
+      .preview-content img {
+        max-width: 100%;
+        display: block;
+        border-radius: inherit;
+      }
+
+      .preview-content pre {
+        margin: 0;
+        padding: 1rem;
+        font-family: "IBM Plex Mono", "Fira Code", monospace;
+        font-size: 0.85rem;
+        white-space: pre-wrap;
+        line-height: 1.5;
+      }
+
+      textarea {
+        width: 100%;
+        border-radius: 1rem;
+        border: 1px solid var(--border);
+        min-height: 220px;
+        padding: 1rem;
+        font: inherit;
+        line-height: 1.5;
+        background: var(--surface-subtle);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      textarea:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+        background: #fff;
+      }
+
+      .helper-text {
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+
       .toggle {
         display: flex;
         align-items: center;
         gap: 0.75rem;
-        font-size: 0.9rem;
+        font-size: 0.95rem;
         color: var(--muted);
       }
 
       .toggle input[type="checkbox"] {
-        width: 42px;
-        height: 22px;
-        border-radius: 999px;
         appearance: none;
+        width: 44px;
+        height: 24px;
+        border-radius: 999px;
         background: var(--border);
         position: relative;
-        cursor: pointer;
         transition: background 0.25s ease;
       }
 
@@ -198,8 +280,8 @@
         position: absolute;
         top: 3px;
         left: 3px;
-        width: 16px;
-        height: 16px;
+        width: 18px;
+        height: 18px;
         border-radius: 50%;
         background: #fff;
         box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
@@ -216,62 +298,181 @@
 
       .submit-row {
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
-        gap: 1rem;
+        gap: 0.75rem;
       }
 
-      #submitButton {
+      .primary {
         background: var(--accent);
         color: #fff;
         border: none;
-        border-radius: 0.9rem;
+        border-radius: 1rem;
         padding: 0.85rem 1.8rem;
         font-weight: 600;
-        cursor: pointer;
         transition: transform 0.15s ease, box-shadow 0.2s ease;
       }
 
-      #submitButton:hover {
+      .primary:hover {
         transform: translateY(-1px);
-        box-shadow: 0 12px 24px -18px rgba(37, 99, 235, 0.8);
+        box-shadow: 0 14px 28px -20px rgba(37, 99, 235, 0.8);
       }
 
-      #submitButton:disabled {
-        cursor: not-allowed;
-        opacity: 0.6;
-        box-shadow: none;
-      }
-
-      #statusMessage {
-        font-size: 0.9rem;
-        color: var(--muted);
-      }
-
-      .json-output {
-        flex: 1;
-        background: rgba(248, 250, 252, 0.9);
-        border-radius: 1rem;
+      .secondary {
         border: 1px solid var(--border);
-        padding: 1.25rem;
-        overflow: auto;
-        font-family: "IBM Plex Mono", "Fira Code", monospace;
-        font-size: 0.9rem;
-        line-height: 1.6;
-        white-space: pre-wrap;
-        max-height: 70vh;
+        background: #fff;
+        color: var(--muted);
+        border-radius: 1rem;
+        padding: 0.8rem 1.2rem;
+        font-weight: 500;
+        transition: border-color 0.2s ease, color 0.2s ease;
       }
 
-      .json-output.empty {
+      .secondary:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .status {
+        font-size: 0.9rem;
         color: var(--muted);
       }
 
-      @media (max-width: 720px) {
+      .status.error {
+        color: var(--danger);
+      }
+
+      .results-header {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: center;
+      }
+
+      .results-header p {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .download-group {
+        display: inline-flex;
+        gap: 0.5rem;
+      }
+
+      .download-group button {
+        border-radius: 0.9rem;
+        padding: 0.65rem 1.1rem;
+        border: 1px solid var(--border);
+        background: #fff;
+        color: var(--muted);
+        font-weight: 500;
+        transition: border-color 0.2s ease, color 0.2s ease;
+      }
+
+      .download-group button:hover:not(:disabled) {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .download-group button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .results-navigation {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        justify-content: flex-end;
+      }
+
+      .results-navigation button {
+        border: none;
+        background: var(--surface-subtle);
+        color: var(--accent);
+        border-radius: 999px;
+        padding: 0.4rem 0.9rem;
+        font-weight: 500;
+      }
+
+      .result-meta {
+        font-size: 0.9rem;
+        color: var(--muted);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+      }
+
+      .result-meta strong {
+        color: var(--text);
+      }
+
+      .results-grid {
+        display: grid;
+        gap: 1rem;
+        max-height: 60vh;
+        overflow: auto;
+        padding-right: 0.25rem;
+      }
+
+      .results-grid.empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted);
+        font-size: 0.95rem;
+        text-align: center;
+      }
+
+      .result-field {
+        border: 1px solid var(--border);
+        border-radius: 1rem;
+        padding: 0.9rem 1rem;
+        background: var(--surface-subtle);
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+      }
+
+      .result-field label {
+        font-weight: 600;
+        font-size: 0.92rem;
+        color: var(--text);
+      }
+
+      .result-field .value {
+        font-size: 0.9rem;
+        color: var(--text);
+        word-break: break-word;
+      }
+
+      .result-field .value.missing {
+        color: var(--danger);
+        border-radius: 0.75rem;
+        border: 1px dashed var(--danger);
+        background: var(--danger-soft);
+        padding: 0.65rem 0.75rem;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.06);
+        color: var(--muted);
+        font-size: 0.8rem;
+        padding: 0.35rem 0.75rem;
+      }
+
+      @media (max-width: 760px) {
         .app-shell {
           padding: 2rem 1.25rem 3rem;
         }
 
-        .panel {
-          padding: 1.5rem;
+        .results-navigation {
+          justify-content: center;
         }
       }
     </style>
@@ -279,252 +480,623 @@
   <body>
     <div class="app-shell">
       <header>
-        <h1>Verifactura Extraction Console</h1>
+        <h1>Consola inteligente de extracción</h1>
         <p>
-          Carga un documento en formato XML, PDF, imagen o pega el contenido en texto
-          plano. Selecciona si deseas usar OCR para tus PDFs y obtén la respuesta del
-          modelo en JSON formateado.
+          Arrastra y suelta tus facturas o comprobantes en PDF, XML, TXT o imagen. La
+          consola detecta el tipo de documento automáticamente y te permite alternar
+          entre OCR o lectura directa cuando sea necesario. También puedes ingresar
+          texto manualmente como alternativa.
         </p>
       </header>
 
       <div class="workspace">
-        <section class="panel" aria-labelledby="inputTitle">
-          <h2 id="inputTitle">Entrada del documento</h2>
-
-          <div class="control-group">
-            <label for="documentType">Tipo de documento</label>
-            <select id="documentType" aria-label="Seleccionar tipo de documento">
-              <option value="plain-text">Texto plano</option>
-              <option value="xml">Archivo XML</option>
-              <option value="text-file">Archivo de texto (.txt / .json)</option>
-              <option value="pdf">Archivo PDF</option>
-              <option value="image">Imagen</option>
-            </select>
+        <section class="panel" aria-labelledby="inputHeading">
+          <div>
+            <h2 id="inputHeading">Entrada del documento</h2>
+            <p class="helper-text">
+              Formatos admitidos: PDF, XML, TXT, JSON, PNG, JPG, JPEG, TIF, TIFF.
+            </p>
           </div>
 
-          <div class="control-group" id="textInputWrapper">
-            <label for="plainText">Contenido en texto</label>
-            <textarea
-              id="plainText"
-              placeholder="Pega aquí el contenido de tu comprobante..."
-              aria-label="Contenido del documento en texto"
-            ></textarea>
+          <div class="segmented-control" role="tablist">
+            <button
+              type="button"
+              id="fileModeButton"
+              class="active"
+              role="tab"
+              aria-selected="true"
+            >
+              Archivo
+            </button>
+            <button
+              type="button"
+              id="textModeButton"
+              role="tab"
+              aria-selected="false"
+            >
+              Texto manual
+            </button>
           </div>
 
-          <div class="control-group" id="fileInputWrapper" hidden>
-            <label>Archivo</label>
+          <div id="fileMode" role="tabpanel" aria-labelledby="fileModeButton">
             <div class="drop-zone" id="dropZone" tabindex="0">
-              <div>
-                <div class="pill">Arrastra y suelta aquí</div>
-              </div>
-              <strong id="dropPrompt">o haz clic para buscar un archivo</strong>
-              <span class="file-name" id="fileName">Ningún archivo seleccionado</span>
+              <div class="drop-zone__icon">⬆</div>
+              <strong>Arrastra tu archivo aquí</strong>
+              <p id="dropInstruction">o haz clic para seleccionarlo desde tu equipo</p>
               <button type="button" id="browseButton">Buscar archivo</button>
+              <input
+                type="file"
+                id="fileInput"
+                accept=".pdf,.xml,.txt,.json,.png,.jpg,.jpeg,.tif,.tiff"
+                hidden
+              />
             </div>
-            <input type="file" id="fileInput" hidden />
+
+            <div class="file-meta" id="fileMeta" hidden>
+              <div><span>Archivo:</span> <strong id="fileName">—</strong></div>
+              <div><span>Tipo detectado:</span> <strong id="fileType">—</strong></div>
+            </div>
+
             <div class="toggle" id="pdfToggleRow" hidden>
               <input type="checkbox" id="pdfOcrToggle" />
-              <label for="pdfOcrToggle">Usar OCR para procesar el PDF como imagen</label>
+              <label for="pdfOcrToggle">Usar OCR y tratar el PDF como imagen</label>
             </div>
+
+            <div class="preview" id="previewContainer" hidden>
+              <h3>Vista previa</h3>
+              <div class="preview-content" id="previewContent"></div>
+            </div>
+          </div>
+
+          <div id="textMode" role="tabpanel" aria-labelledby="textModeButton" hidden>
+            <label for="plainText">Contenido del documento</label>
+            <textarea
+              id="plainText"
+              placeholder="Pega aquí el contenido completo a procesar..."
+              aria-label="Contenido del documento en texto"
+            ></textarea>
+            <p class="helper-text">
+              El texto se enviará directamente al modelo de extracción.
+            </p>
           </div>
 
           <div class="submit-row">
-            <button id="submitButton">Enviar</button>
-            <span id="statusMessage" role="status"></span>
+            <button id="submitButton" class="primary">Procesar</button>
+            <button id="clearButton" class="secondary" type="button">Limpiar</button>
+            <span id="statusMessage" class="status" role="status"></span>
           </div>
         </section>
 
-        <section class="panel" aria-labelledby="outputTitle">
-          <h2 id="outputTitle">Respuesta JSON</h2>
-          <pre class="json-output empty" id="jsonOutput">Esperando un documento...</pre>
+        <section class="panel" aria-labelledby="outputHeading">
+          <div class="results-header">
+            <div>
+              <h2 id="outputHeading">Resultados</h2>
+              <p id="resultsSummary">Procesa un documento para ver los campos extraídos.</p>
+            </div>
+            <div class="download-group">
+              <button id="downloadJson" disabled>Descargar JSON</button>
+              <button id="downloadCsv" disabled>Descargar CSV</button>
+            </div>
+          </div>
+
+          <div class="results-navigation" id="resultsNavigation" hidden>
+            <button type="button" id="prevResult">Anterior</button>
+            <span id="resultPosition" class="pill"></span>
+            <button type="button" id="nextResult">Siguiente</button>
+          </div>
+
+          <div class="result-meta" id="resultMeta" hidden></div>
+
+          <div class="results-grid empty" id="resultsContainer">
+            Aún no hay resultados. Procesa un documento para comenzar.
+          </div>
         </section>
       </div>
     </div>
 
     <script>
-      const documentTypeSelect = document.getElementById("documentType");
-      const textInputWrapper = document.getElementById("textInputWrapper");
-      const fileInputWrapper = document.getElementById("fileInputWrapper");
-      const dropZone = document.getElementById("dropZone");
-      const fileInput = document.getElementById("fileInput");
-      const fileName = document.getElementById("fileName");
-      const browseButton = document.getElementById("browseButton");
-      const submitButton = document.getElementById("submitButton");
-      const statusMessage = document.getElementById("statusMessage");
-      const jsonOutput = document.getElementById("jsonOutput");
-      const pdfToggleRow = document.getElementById("pdfToggleRow");
-      const pdfOcrToggle = document.getElementById("pdfOcrToggle");
-      const dropPrompt = document.getElementById("dropPrompt");
-
-      const ACCEPT_MAP = {
-        xml: ".xml",
-        "text-file": ".txt,.json",
-        pdf: ".pdf",
-        image: "image/*",
+      const SUPPORTED_TYPES = {
+        pdf: {
+          label: "PDF",
+          extensions: ["pdf"],
+          endpoint: "file",
+        },
+        xml: {
+          label: "XML",
+          extensions: ["xml"],
+          endpoint: "file",
+        },
+        text: {
+          label: "Texto",
+          extensions: ["txt", "json"],
+          endpoint: "file",
+        },
+        image: {
+          label: "Imagen",
+          extensions: ["png", "jpg", "jpeg", "tif", "tiff"],
+          endpoint: "image",
+        },
       };
 
-      function resetFileInput() {
+      const ACCEPT_STRING = Object.values(SUPPORTED_TYPES)
+        .map((type) => type.extensions.map((ext) => `.${ext}`).join(","))
+        .join(",");
+
+      const state = {
+        mode: "file",
+        file: null,
+        fileCategory: null,
+        filePreviewUrl: null,
+        results: [],
+        currentIndex: -1,
+      };
+
+      const dropZone = document.getElementById("dropZone");
+      const fileInput = document.getElementById("fileInput");
+      const browseButton = document.getElementById("browseButton");
+      const fileMeta = document.getElementById("fileMeta");
+      const fileNameElement = document.getElementById("fileName");
+      const fileTypeElement = document.getElementById("fileType");
+      const pdfToggleRow = document.getElementById("pdfToggleRow");
+      const pdfOcrToggle = document.getElementById("pdfOcrToggle");
+      const previewContainer = document.getElementById("previewContainer");
+      const previewContent = document.getElementById("previewContent");
+      const submitButton = document.getElementById("submitButton");
+      const clearButton = document.getElementById("clearButton");
+      const statusMessage = document.getElementById("statusMessage");
+      const plainText = document.getElementById("plainText");
+      const resultsContainer = document.getElementById("resultsContainer");
+      const resultsSummary = document.getElementById("resultsSummary");
+      const resultsNavigation = document.getElementById("resultsNavigation");
+      const resultPosition = document.getElementById("resultPosition");
+      const resultMeta = document.getElementById("resultMeta");
+      const downloadJson = document.getElementById("downloadJson");
+      const downloadCsv = document.getElementById("downloadCsv");
+      const prevResultBtn = document.getElementById("prevResult");
+      const nextResultBtn = document.getElementById("nextResult");
+      const fileMode = document.getElementById("fileMode");
+      const textMode = document.getElementById("textMode");
+      const fileModeButton = document.getElementById("fileModeButton");
+      const textModeButton = document.getElementById("textModeButton");
+
+      fileInput.setAttribute("accept", ACCEPT_STRING);
+
+      function resetFile() {
+        if (state.filePreviewUrl) {
+          URL.revokeObjectURL(state.filePreviewUrl);
+        }
+        state.file = null;
+        state.fileCategory = null;
+        state.filePreviewUrl = null;
         fileInput.value = "";
-        fileName.textContent = "Ningún archivo seleccionado";
+        fileMeta.hidden = true;
+        pdfToggleRow.hidden = true;
+        pdfOcrToggle.checked = false;
+        previewContainer.hidden = true;
+        previewContent.innerHTML = "";
       }
 
-      function setJsonOutput(content, isError = false) {
-        jsonOutput.textContent = content;
-        if (isError) {
-          jsonOutput.classList.remove("empty");
-          jsonOutput.style.color = "#b91c1c";
+      function setStatus(message, isError = false) {
+        statusMessage.textContent = message;
+        statusMessage.classList.toggle("error", Boolean(isError));
+      }
+
+      function switchMode(mode) {
+        if (mode === state.mode) return;
+        state.mode = mode;
+        const isFileMode = mode === "file";
+        fileMode.hidden = !isFileMode;
+        textMode.hidden = isFileMode;
+        fileModeButton.classList.toggle("active", isFileMode);
+        fileModeButton.setAttribute("aria-selected", String(isFileMode));
+        textModeButton.classList.toggle("active", !isFileMode);
+        textModeButton.setAttribute("aria-selected", String(!isFileMode));
+        if (isFileMode) {
+          dropZone.focus();
         } else {
-          jsonOutput.style.color = "inherit";
-          jsonOutput.classList.remove("empty");
+          resetFile();
+          plainText.focus();
+        }
+        setStatus("");
+      }
+
+      fileModeButton.addEventListener("click", () => switchMode("file"));
+      textModeButton.addEventListener("click", () => switchMode("text"));
+
+      function detectCategory(file) {
+        const extension = (file.name.split(".").pop() || "").toLowerCase();
+        const mime = (file.type || "").toLowerCase();
+        if (mime.startsWith("image/")) {
+          return "image";
+        }
+        for (const [key, info] of Object.entries(SUPPORTED_TYPES)) {
+          if (info.extensions.includes(extension)) {
+            return key;
+          }
+        }
+        if (mime === "application/pdf") {
+          return "pdf";
+        }
+        return null;
+      }
+
+      function renderPreview(file, category) {
+        previewContent.innerHTML = "";
+        previewContainer.hidden = false;
+
+        if (state.filePreviewUrl) {
+          URL.revokeObjectURL(state.filePreviewUrl);
+          state.filePreviewUrl = null;
+        }
+
+        if (category === "image") {
+          const url = URL.createObjectURL(file);
+          state.filePreviewUrl = url;
+          const img = document.createElement("img");
+          img.src = url;
+          img.alt = "Vista previa de la imagen subida";
+          previewContent.appendChild(img);
+        } else if (category === "pdf") {
+          const url = URL.createObjectURL(file);
+          state.filePreviewUrl = url;
+          const iframe = document.createElement("iframe");
+          iframe.src = url;
+          iframe.title = "Vista previa del PDF";
+          previewContent.appendChild(iframe);
+        } else {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const text = reader.result || "";
+            const snippet = String(text).slice(0, 4000);
+            const pre = document.createElement("pre");
+            pre.textContent = snippet;
+            previewContent.appendChild(pre);
+          };
+          reader.readAsText(file, "utf-8");
         }
       }
 
-      function updateInputMode() {
-        const mode = documentTypeSelect.value;
-        const isPlainText = mode === "plain-text";
-        textInputWrapper.hidden = !isPlainText;
-        fileInputWrapper.hidden = isPlainText;
-        pdfToggleRow.hidden = mode !== "pdf";
-        dropPrompt.textContent =
-          mode === "image"
-            ? "o suelta una imagen compatible"
-            : "o haz clic para buscar un archivo";
-        if (!isPlainText) {
-          fileInput.accept = ACCEPT_MAP[mode] || "";
-          resetFileInput();
+      function updateFileSelection(file) {
+        const category = detectCategory(file);
+        if (!category) {
+          setStatus("El archivo no es de un formato admitido.", true);
+          resetFile();
+          return;
         }
+        state.file = file;
+        state.fileCategory = category;
+        fileMeta.hidden = false;
+        fileNameElement.textContent = file.name;
+        fileTypeElement.textContent = SUPPORTED_TYPES[category].label;
+        pdfToggleRow.hidden = category !== "pdf";
+        if (category !== "pdf") {
+          pdfOcrToggle.checked = false;
+        }
+        renderPreview(file, category);
+        setStatus("");
       }
 
-      documentTypeSelect.addEventListener("change", updateInputMode);
-      updateInputMode();
+      function handleFileList(fileList) {
+        if (!fileList || !fileList.length) {
+          return;
+        }
+        updateFileSelection(fileList[0]);
+      }
 
       browseButton.addEventListener("click", () => fileInput.click());
+      fileInput.addEventListener("change", (event) => {
+        const files = event.target.files;
+        handleFileList(files);
+      });
 
       dropZone.addEventListener("click", () => {
-        if (fileInputWrapper.hidden) return;
+        if (state.mode !== "file") return;
         fileInput.click();
       });
 
       dropZone.addEventListener("dragover", (event) => {
         event.preventDefault();
-        if (!fileInputWrapper.hidden) {
+        if (state.mode === "file") {
           dropZone.classList.add("dragging");
         }
       });
 
-      ["dragleave", "dragend", "drop"].forEach((type) => {
-        dropZone.addEventListener(type, () => dropZone.classList.remove("dragging"));
+      ["dragleave", "dragend", "drop"].forEach((eventName) => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.remove("dragging"));
       });
 
       dropZone.addEventListener("drop", (event) => {
         event.preventDefault();
-        if (fileInputWrapper.hidden) return;
-        if (event.dataTransfer.files && event.dataTransfer.files[0]) {
-          fileInput.files = event.dataTransfer.files;
-          fileName.textContent = event.dataTransfer.files[0].name;
+        if (state.mode !== "file") {
+          return;
+        }
+        const { files } = event.dataTransfer;
+        handleFileList(files);
+      });
+
+      function flattenData(data, prefix = "") {
+        if (data === null || data === undefined) {
+          return { [prefix.slice(0, -1)]: null };
+        }
+        if (typeof data !== "object") {
+          return { [prefix.slice(0, -1)]: data };
+        }
+        if (Array.isArray(data)) {
+          if (!data.length) {
+            return { [prefix.slice(0, -1)]: [] };
+          }
+          const result = {};
+          data.forEach((value, index) => {
+            Object.entries(flattenData(value, `${prefix}${index}.`)).forEach(
+              ([key, val]) => {
+                result[key] = val;
+              }
+            );
+          });
+          return result;
+        }
+        const entries = Object.entries(data);
+        if (!entries.length) {
+          return { [prefix.slice(0, -1)]: {} };
+        }
+        const result = {};
+        entries.forEach(([key, value]) => {
+          Object.entries(flattenData(value, `${prefix}${key}.`)).forEach(([child, val]) => {
+            result[child] = val;
+          });
+        });
+        return result;
+      }
+
+      function renderResult(index) {
+        if (state.results.length === 0) {
+          resultsContainer.classList.add("empty");
+          resultsContainer.innerHTML =
+            "Aún no hay resultados. Procesa un documento para comenzar.";
+          resultsSummary.textContent = "Procesa un documento para ver los campos extraídos.";
+          resultsNavigation.hidden = true;
+          resultMeta.hidden = true;
+          downloadJson.disabled = true;
+          downloadCsv.disabled = true;
+          return;
+        }
+
+        const entry = state.results[index];
+        resultsContainer.classList.remove("empty");
+        resultsContainer.innerHTML = "";
+        resultsSummary.textContent = `Última actualización: ${new Date(
+          entry.timestamp
+        ).toLocaleString()}`;
+
+        const flat = flattenData(entry.data);
+        Object.keys(flat)
+          .sort((a, b) => a.localeCompare(b))
+          .forEach((key) => {
+            const value = flat[key];
+            const field = document.createElement("div");
+            field.className = "result-field";
+            const label = document.createElement("label");
+            label.textContent = key || "(valor)";
+            const valueElement = document.createElement("div");
+            valueElement.className = "value";
+            if (value === null || value === undefined || value === "" || (Array.isArray(value) && value.length === 0)) {
+              valueElement.classList.add("missing");
+              valueElement.textContent = "Sin valor";
+            } else if (typeof value === "object") {
+              valueElement.textContent = JSON.stringify(value);
+            } else {
+              valueElement.textContent = String(value);
+            }
+            field.appendChild(label);
+            field.appendChild(valueElement);
+            resultsContainer.appendChild(field);
+          });
+
+        resultMeta.hidden = false;
+        resultMeta.innerHTML = `
+          <div><span class="pill">${entry.source}</span></div>
+          <div>Procesado el <strong>${new Date(entry.timestamp).toLocaleString()}</strong></div>
+        `;
+
+        resultsNavigation.hidden = state.results.length <= 1;
+        resultPosition.textContent = `Documento ${index + 1} de ${state.results.length}`;
+        resultPosition.setAttribute("aria-live", "polite");
+        prevResultBtn.disabled = index === 0;
+        nextResultBtn.disabled = index === state.results.length - 1;
+        downloadJson.disabled = false;
+        downloadCsv.disabled = false;
+      }
+
+      function addResultEntry(data, source) {
+        const entry = {
+          id:
+            typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+              ? crypto.randomUUID()
+              : Math.random().toString(36).slice(2),
+          data,
+          source,
+          timestamp: Date.now(),
+        };
+        state.results.push(entry);
+        state.currentIndex = state.results.length - 1;
+        renderResult(state.currentIndex);
+      }
+
+      prevResultBtn.addEventListener("click", () => {
+        if (state.currentIndex > 0) {
+          state.currentIndex -= 1;
+          renderResult(state.currentIndex);
         }
       });
 
-      fileInput.addEventListener("change", () => {
-        if (fileInput.files && fileInput.files[0]) {
-          fileName.textContent = fileInput.files[0].name;
-        } else {
-          fileName.textContent = "Ningún archivo seleccionado";
+      nextResultBtn.addEventListener("click", () => {
+        if (state.currentIndex < state.results.length - 1) {
+          state.currentIndex += 1;
+          renderResult(state.currentIndex);
         }
       });
 
-      async function sendPlainText(text) {
+      function downloadFile(content, filename, type) {
+        const blob = new Blob([content], { type });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        link.click();
+        URL.revokeObjectURL(link.href);
+      }
+
+      function buildDownloadPayloads() {
+        const enriched = state.results.map((entry) => ({
+          id: entry.id,
+          archivo: entry.source,
+          procesado_en: new Date(entry.timestamp).toISOString(),
+          datos: entry.data,
+        }));
+        return enriched;
+      }
+
+      downloadJson.addEventListener("click", () => {
+        if (!state.results.length) return;
+        const payload = buildDownloadPayloads();
+        downloadFile(JSON.stringify(payload, null, 2), "resultados_verifactura.json", "application/json");
+      });
+
+      downloadCsv.addEventListener("click", () => {
+        if (!state.results.length) return;
+        const payload = buildDownloadPayloads();
+        const allKeys = new Set(["id", "archivo", "procesado_en"]);
+        payload.forEach((item) => {
+          Object.keys(flattenData(item.datos)).forEach((key) => {
+            if (!key) {
+              allKeys.add("datos");
+            } else {
+              allKeys.add(`datos.${key}`);
+            }
+          });
+        });
+        const headers = Array.from(allKeys);
+        const rows = payload.map((item) => {
+          const flat = flattenData(item.datos);
+          const values = headers.map((header) => {
+            if (header === "id") return item.id;
+            if (header === "archivo") return item.archivo;
+            if (header === "procesado_en") return item.procesado_en;
+            const key = header === "datos" ? "" : header.replace(/^datos\./, "");
+            const value = Object.prototype.hasOwnProperty.call(flat, key)
+              ? flat[key]
+              : null;
+            if (value === null || value === undefined) {
+              return "";
+            }
+            if (typeof value === "object") {
+              return JSON.stringify(value);
+            }
+            return String(value);
+          });
+          return values
+            .map((value) => {
+              const escaped = String(value).replace(/"/g, '""');
+              return `"${escaped}"`;
+            })
+            .join(",");
+        });
+        const csv = [headers.join(","), ...rows].join("\n");
+        downloadFile(csv, "resultados_verifactura.csv", "text/csv;charset=utf-8");
+      });
+
+      function validateBeforeSend() {
+        if (state.mode === "text") {
+          const value = plainText.value.trim();
+          if (!value) {
+            throw new Error("Ingresa texto para procesar.");
+          }
+          return { type: "text", payload: value };
+        }
+        if (!state.file) {
+          throw new Error("Selecciona un archivo válido antes de procesar.");
+        }
+        return { type: state.fileCategory, payload: state.file };
+      }
+
+      async function sendText(text) {
         const response = await fetch("/api/v1/extract/text", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text }),
         });
         if (!response.ok) {
-          throw new Error((await response.json()).detail || "Error procesando el texto");
+          const detail = await response.json().catch(() => ({}));
+          throw new Error(detail.detail || "No se pudo procesar el texto.");
         }
         return response.json();
       }
 
-      async function sendFile(file, mode, useOcr) {
+      async function sendFile(file, type) {
         const formData = new FormData();
         formData.append("file", file);
-        const url =
-          mode === "image"
-            ? "/api/v1/extract/image"
-            : mode === "pdf" && useOcr
-            ? "/api/v1/extract/file?force_ocr=true"
-            : "/api/v1/extract/file";
-        const response = await fetch(url, {
+        let endpoint = "/api/v1/extract/file";
+        if (type === "image") {
+          endpoint = "/api/v1/extract/image";
+        } else if (type === "pdf" && pdfOcrToggle.checked) {
+          endpoint = "/api/v1/extract/image";
+        } else if (type === "pdf" && !pdfOcrToggle.checked) {
+          endpoint = "/api/v1/extract/file";
+        }
+        const response = await fetch(endpoint, {
           method: "POST",
           body: formData,
         });
         if (!response.ok) {
           const detail = await response.json().catch(() => ({}));
-          throw new Error(detail.detail || "Error procesando el archivo");
+          throw new Error(detail.detail || "No se pudo procesar el archivo.");
         }
         return response.json();
       }
 
-      function validateBeforeSend() {
-        const mode = documentTypeSelect.value;
-        if (mode === "plain-text") {
-          const value = document.getElementById("plainText").value.trim();
-          if (!value) {
-            throw new Error("Proporciona contenido en texto para continuar.");
-          }
-          return { mode, payload: value };
-        }
-        const currentFile = fileInput.files ? fileInput.files[0] : null;
-        if (!currentFile) {
-          throw new Error("Selecciona un archivo antes de enviarlo.");
-        }
-        if (mode === "xml" && !currentFile.name.toLowerCase().endsWith(".xml")) {
-          throw new Error("Selecciona un archivo con extensión .xml");
-        }
-        if (mode === "pdf" && !currentFile.name.toLowerCase().endsWith(".pdf")) {
-          throw new Error("Selecciona un archivo con extensión .pdf");
-        }
-        if (
-          mode === "text-file" &&
-          !/(\.txt|\.json)$/i.test(currentFile.name)
-        ) {
-          throw new Error("Selecciona un archivo de texto (.txt o .json)");
-        }
-        return { mode, payload: currentFile };
-      }
-
       async function handleSubmit() {
         try {
-          statusMessage.textContent = "Procesando...";
+          setStatus("Procesando...", false);
           submitButton.disabled = true;
-          const { mode, payload } = validateBeforeSend();
+          const { type, payload } = validateBeforeSend();
           let result;
-          if (mode === "plain-text") {
-            result = await sendPlainText(payload);
+          if (type === "text") {
+            result = await sendText(payload);
+            addResultEntry(result, "Texto manual");
           } else {
-            result = await sendFile(payload, mode, pdfOcrToggle.checked);
+            result = await sendFile(payload, type);
+            const description =
+              type === "pdf"
+                ? `PDF (${pdfOcrToggle.checked ? "OCR" : "texto"})`
+                : SUPPORTED_TYPES[type].label;
+            addResultEntry(result, `${description} · ${payload.name}`);
           }
-          setJsonOutput(JSON.stringify(result, null, 2));
-          statusMessage.textContent = "¡Extracción completada!";
+          setStatus("¡Extracción completada!", false);
         } catch (error) {
           console.error(error);
-          statusMessage.textContent = error.message || "No se pudo completar la solicitud.";
-          setJsonOutput(error.message || "No se pudo completar la solicitud.", true);
+          setStatus(error.message || "No se pudo completar la solicitud.", true);
         } finally {
           submitButton.disabled = false;
         }
       }
 
       submitButton.addEventListener("click", () => {
-        statusMessage.textContent = "";
+        setStatus("");
         handleSubmit();
       });
 
-      document.getElementById("plainText").addEventListener("keydown", (event) => {
-        if (event.metaKey && event.key === "Enter") {
+      plainText.addEventListener("keydown", (event) => {
+        if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
           submitButton.click();
         }
       });
+
+      clearButton.addEventListener("click", () => {
+        setStatus("");
+        plainText.value = "";
+        resetFile();
+      });
+
+      renderResult(state.currentIndex);
     </script>
   </body>
 </html>

@@ -72,9 +72,14 @@ class ExtractionService:
                 "Azure OCR no está configurado pero es requirido para la extracción de imagen"
             )
         suffix = Path(filename).suffix.lower()
-        if not content_type:
-            content_type = mimetypes.guess_type(filename)[0]
-        if suffix and suffix not in IMAGE_EXTENSIONS and not (
+        if content_type:
+            content_type = content_type.lower()
+        else:
+            guessed = mimetypes.guess_type(filename)[0]
+            content_type = guessed.lower() if guessed else None
+        if suffix in PDF_EXTENSIONS or content_type == "application/pdf":
+            content_type = content_type or "application/pdf"
+        elif suffix and suffix not in IMAGE_EXTENSIONS and not (
             (content_type or "").startswith("image/")
         ):
             raise RuntimeError("Formato de imagen no admitido")
