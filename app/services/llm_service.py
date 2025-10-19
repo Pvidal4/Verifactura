@@ -6,7 +6,12 @@ from typing import Any, Dict, List, Sequence
 
 import torch
 from openai import OpenAI
-from transformers import AutoConfig, pipeline
+from transformers import (
+    AutoConfig,
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    pipeline,
+)
 
 from app.config import Config
 
@@ -115,18 +120,30 @@ class LocalLLMService:
         if self._pipeline is None:
             dtype = torch.float16 if torch.cuda.is_available() else torch.float32
             model_source = self._resolve_model_source()
-            config = AutoConfig.from_pretrained(
+            try:
+                config = AutoConfig.from_pretrained(
+                    model_source,
+                    trust_remote_code=True,
+                )
+            except KeyError:
+                config = None
+            tokenizer = AutoTokenizer.from_pretrained(
                 model_source,
                 trust_remote_code=True,
             )
-            self._pipeline = pipeline(
-                "text-generation",
-                model=model_source,
-                tokenizer=model_source,
+            model = AutoModelForCausalLM.from_pretrained(
+                model_source,
                 config=config,
+                trust_remote_code=True,
                 torch_dtype=dtype,
                 device_map="auto",
-                trust_remote_code=True,
+            )
+            self._pipeline = pipeline(
+                "text-generation",
+                model=model,
+                tokenizer=tokenizer,
+                torch_dtype=dtype,
+                device_map="auto",
             )
         return self._pipeline
 
