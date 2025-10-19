@@ -243,14 +243,16 @@ class LocalLLMService:
                 {"use_fast": True},
                 {"use_fast": False},
             ]
-            local_tokenizer_file = Path(model_source) / "tokenizer.model"
-            if local_tokenizer_file.exists():
-                tokenizer_attempts.append(
-                    {
-                        "use_fast": False,
-                        "tokenizer_file": str(local_tokenizer_file),
-                    }
-                )
+
+            for filename in ("tokenizer.json", "tokenizer.model"):
+                local_tokenizer_file = Path(model_source) / filename
+                if local_tokenizer_file.exists():
+                    tokenizer_attempts.append(
+                        {
+                            "use_fast": filename.endswith(".json"),
+                            "tokenizer_file": str(local_tokenizer_file),
+                        }
+                    )
 
             for attempt in tokenizer_attempts:
                 try:
@@ -292,11 +294,29 @@ class LocalLLMService:
                 )
 
             if tokenizer is None and tokenizer_config:
-                tokenizer_class = tokenizer_config.get("tokenizer_class")
+                tokenizer_file = tokenizer_config.get("tokenizer_file")
+                if isinstance(tokenizer_file, str) and tokenizer_file:
+                    tokenizer_path = Path(tokenizer_file)
+                    if not tokenizer_path.is_absolute():
+                        tokenizer_path = Path(model_source) / tokenizer_path
+                    if tokenizer_path.exists():
+                        try:
+                            tokenizer = AutoTokenizer.from_pretrained(
+                                model_source,
+                                trust_remote_code=True,
+                                tokenizer_file=str(tokenizer_path),
+                            )
+                        except Exception as exc:
+                            tokenizer_errors.append(
+                                f"tokenizer_config tokenizer_file {tokenizer_file}: {exc}"
+                            )
+
+                if tokenizer is None:
+                    tokenizer_class = tokenizer_config.get("tokenizer_class")
                 tokenizer_module: Optional[str] = None
                 dynamic_candidates: List[Tuple[str, str]] = []
                 base_class_name: Optional[str] = None
-                if isinstance(tokenizer_class, str) and tokenizer_class:
+                if tokenizer is None and isinstance(tokenizer_class, str) and tokenizer_class:
                     if "." in tokenizer_class:
                         dynamic_candidates.extend(_parse_dynamic_spec(tokenizer_class))
                     else:
