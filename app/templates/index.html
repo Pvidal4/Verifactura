@@ -65,15 +65,15 @@
         align-items: flex-start;
         justify-content: space-between;
         gap: clamp(1.5rem, 4vw, 3rem);
-        flex-wrap: nowrap;
+        flex-wrap: wrap;
       }
 
       .header-text {
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
-        flex: 1 1 70%;
-        min-width: min(720px, 100%);
+        flex: 1 1 64rem;
+        min-width: 0;
         max-width: 100%;
       }
 
@@ -91,22 +91,31 @@
         gap: 0.75rem;
       }
 
-      header h1 {
+      .hero-title {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.75rem;
         font-size: clamp(1.85rem, 3.2vw, 3rem);
         font-weight: 600;
         letter-spacing: -0.02em;
         color: var(--text);
       }
 
-      header p {
+      .hero-title__text {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+
+      .hero-subtitle {
         color: var(--muted);
         font-size: 1rem;
         line-height: 1.6;
-        max-width: 72ch;
+        max-width: 100%;
       }
 
       .hero-logo {
-        width: clamp(180px, 22vw, 260px);
+        width: clamp(180px, 18vw, 240px);
         height: auto;
         display: block;
       }
@@ -121,6 +130,7 @@
         color: var(--accent);
         font-size: 0.85rem;
         font-weight: 500;
+        flex-shrink: 0;
       }
 
       .developer-badge[hidden] {
@@ -997,6 +1007,12 @@
         padding: 0.35rem 0.75rem;
       }
 
+      @media (min-width: 1400px) {
+        .hero-title__text {
+          white-space: nowrap;
+        }
+      }
+
       @media (max-width: 1024px) {
         .header-bar {
           flex-wrap: wrap;
@@ -1038,12 +1054,18 @@
       <header>
         <div class="header-bar">
           <div class="header-text">
-            <h1>Verifactura · Extracción y validación de facturas vehiculares</h1>
-            <p>
+            <h1 class="hero-title">
+              <span class="hero-title__text"
+                >Verifactura · Extracción y validación de facturas vehiculares</span
+              >
+              <span class="developer-badge" id="developerBadge" hidden
+                >Modo desarrollador</span
+              >
+            </h1>
+            <p class="hero-subtitle">
               Carga tus comprobantes y obtén campos normalizados y validados con reglas
               SRI y VIN.
             </p>
-            <span class="developer-badge" id="developerBadge" hidden>Modo desarrollador</span>
             <button
               type="button"
               id="showInputPanelButton"
