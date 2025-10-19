@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Sequence
 
 import torch
 from openai import OpenAI
-from transformers import pipeline
+from transformers import AutoConfig, pipeline
 
 from app.config import Config
 
@@ -115,9 +115,15 @@ class LocalLLMService:
         if self._pipeline is None:
             dtype = torch.float16 if torch.cuda.is_available() else torch.float32
             model_source = self._resolve_model_source()
+            config = AutoConfig.from_pretrained(
+                model_source,
+                trust_remote_code=True,
+            )
             self._pipeline = pipeline(
                 "text-generation",
                 model=model_source,
+                tokenizer=model_source,
+                config=config,
                 torch_dtype=dtype,
                 device_map="auto",
                 trust_remote_code=True,
