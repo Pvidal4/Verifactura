@@ -94,16 +94,17 @@
       .hero-title {
         display: flex;
         flex-wrap: wrap;
-        align-items: center;
-        gap: 0.75rem;
+        align-items: baseline;
+        gap: 0.5rem;
         font-size: clamp(1.85rem, 3.2vw, 3rem);
         font-weight: 600;
         letter-spacing: -0.02em;
         color: var(--text);
+        max-width: 100%;
       }
 
       .hero-title__text {
-        flex: 1 1 auto;
+        flex: 0 1 auto;
         min-width: 0;
       }
 
@@ -1389,7 +1390,6 @@
 
       let lastFocusedElement = null;
       let lastSettingsTrigger = null;
-      let showInputPanelWasVisibleBeforeModal = null;
 
       function setMultiPdfToggleVisibility(visible) {
         multiPdfToggleRow.hidden = !visible;
@@ -1504,15 +1504,6 @@
         }
         previewModalContent.innerHTML = "";
         document.body.classList.remove("modal-open");
-        if (showInputPanelWasVisibleBeforeModal !== null) {
-          if (
-            showInputPanelWasVisibleBeforeModal &&
-            workspace.classList.contains("workspace--input-hidden")
-          ) {
-            showInputPanelButton.hidden = false;
-          }
-          showInputPanelWasVisibleBeforeModal = null;
-        }
         if (focusTarget && typeof focusTarget.focus === "function") {
           focusTarget.focus();
         }
@@ -1579,8 +1570,6 @@
 
       function openPreviewModal() {
         lastFocusedElement = document.activeElement;
-        showInputPanelWasVisibleBeforeModal = !showInputPanelButton.hidden;
-        showInputPanelButton.hidden = true;
         previewModal.hidden = false;
         previewModal.setAttribute("aria-hidden", "false");
         document.body.classList.add("modal-open");
