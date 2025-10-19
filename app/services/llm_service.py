@@ -6,7 +6,12 @@ from typing import Any, Dict, List, Optional
 
 import torch
 from openai import OpenAI
-from transformers import pipeline
+from transformers import (
+    AutoConfig,
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    pipeline,
+)
 
 from app.config import Config
 
@@ -135,13 +140,29 @@ class LocalLLMService:
         if source not in self._pipelines:
             resolved = Path(source)
             model_source = str(resolved) if resolved.exists() else source
+            load_kwargs: Dict[str, Any] = {"trust_remote_code": True}
+
+            config = AutoConfig.from_pretrained(model_source, **load_kwargs)
+            tokenizer = AutoTokenizer.from_pretrained(model_source, **load_kwargs)
+
+            model_kwargs: Dict[str, Any] = {
+                "config": config,
+                "trust_remote_code": True,
+            }
+            if torch.cuda.is_available():
+                model_kwargs["torch_dtype"] = torch.bfloat16
+
+            model = AutoModelForCausalLM.from_pretrained(
+                model_source,
+                **model_kwargs,
+            )
+
             self._pipelines[source] = pipeline(
                 "text-generation",
-                model=model_source,
-                dtype=torch.bfloat16,
+                model=model,
+                tokenizer=tokenizer,
                 device_map=None,
                 device=self._device,
-                trust_remote_code=True,
             )
         return self._pipelines[source]
 
