@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Sequence
+from typing import Any, Dict, List, Sequence, Tuple
 
 import torch
 from openai import OpenAI
@@ -117,6 +117,30 @@ class LocalLLMService:
                 return str(local_path)
         return self._model_id
 
+    def _load_tokenizer_config(self, model_source: str) -> Tuple[Dict[str, Any], List[str]]:
+        errors: List[str] = []
+        config_data: Dict[str, Any] = {}
+
+        local_config = Path(model_source) / "tokenizer_config.json"
+        if local_config.exists():
+            try:
+                config_data = json.loads(local_config.read_text())
+                return config_data, errors
+            except Exception as exc:  # pragma: no cover - defensive
+                errors.append(f"tokenizer_config.json lectura local: {exc}")
+
+        try:
+            from huggingface_hub import hf_hub_download
+
+            downloaded_path = hf_hub_download(
+                model_source,
+                filename="tokenizer_config.json",
+            )
+            config_data = json.loads(Path(downloaded_path).read_text())
+        except Exception as exc:  # pragma: no cover - defensivo
+            errors.append(f"tokenizer_config.json descarga: {exc}")
+        return config_data, errors
+
     def _ensure_pipeline(self):
         if self._pipeline is None:
             dtype = torch.float16 if torch.cuda.is_available() else torch.float32
@@ -130,6 +154,8 @@ class LocalLLMService:
                 config = None
             tokenizer = None
             tokenizer_errors: List[str] = []
+            tokenizer_config: Dict[str, Any] = {}
+            tokenizer_config_errors: List[str] = []
             tokenizer_attempts = [
                 {"use_fast": True},
                 {"use_fast": False},
@@ -181,7 +207,43 @@ class LocalLLMService:
                         )
 
             if tokenizer is None:
-                error_details = " | ".join(tokenizer_errors)
+                tokenizer_config, tokenizer_config_errors = self._load_tokenizer_config(
+                    model_source
+                )
+
+            if tokenizer is None and tokenizer_config:
+                tokenizer_class = tokenizer_config.get("tokenizer_class")
+                dynamic_candidates: List[str] = []
+                if isinstance(tokenizer_class, str) and tokenizer_class:
+                    if "." in tokenizer_class:
+                        dynamic_candidates.append(tokenizer_class)
+                    elif config is not None and getattr(config, "model_type", None):
+                        model_type = getattr(config, "model_type")
+                        dynamic_candidates.append(
+                            f"tokenization_{model_type}.{tokenizer_class}"
+                        )
+                        dynamic_candidates.append(tokenizer_class)
+
+                for candidate in dynamic_candidates:
+                    try:
+                        tokenizer_cls = get_class_from_dynamic_module(
+                            candidate,
+                            model_source,
+                            trust_remote_code=True,
+                        )
+                        tokenizer = tokenizer_cls.from_pretrained(
+                            model_source,
+                            trust_remote_code=True,
+                        )
+                        break
+                    except Exception as exc:
+                        tokenizer_errors.append(
+                            f"dynamic tokenizer {candidate}: {exc}"
+                        )
+
+            if tokenizer is None:
+                error_sources = tokenizer_errors + tokenizer_config_errors
+                error_details = " | ".join(error_sources)
                 raise RuntimeError(
                     "No se pudo cargar el tokenizador del modelo local. "
                     "Verifica la descarga de los pesos o vuelve a intentarlo con "
