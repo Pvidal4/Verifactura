@@ -123,6 +123,9 @@ class ExtractionService:
         model: Optional[str] = None,
         temperature: Optional[float] = None,
         top_p: Optional[float] = None,
+        reasoning_effort: Optional[str] = None,
+        frequency_penalty: Optional[float] = None,
+        presence_penalty: Optional[float] = None,
     ) -> Dict[str, object]:
         sanitized_model = model.strip() if isinstance(model, str) else None
         llm = self._get_llm(provider)
@@ -131,6 +134,9 @@ class ExtractionService:
             model=sanitized_model,
             temperature=temperature,
             top_p=top_p,
+            reasoning_effort=reasoning_effort,
+            frequency_penalty=frequency_penalty,
+            presence_penalty=presence_penalty,
         )
 
     def extract_from_image(
@@ -143,6 +149,9 @@ class ExtractionService:
         model: Optional[str] = None,
         temperature: Optional[float] = None,
         top_p: Optional[float] = None,
+        reasoning_effort: Optional[str] = None,
+        frequency_penalty: Optional[float] = None,
+        presence_penalty: Optional[float] = None,
     ) -> Dict[str, object]:
         if self._ocr is None:
             raise RuntimeError(
@@ -169,6 +178,9 @@ class ExtractionService:
             model=model,
             temperature=temperature,
             top_p=top_p,
+            reasoning_effort=reasoning_effort,
+            frequency_penalty=frequency_penalty,
+            presence_penalty=presence_penalty,
         )
 
     def extract_from_file(
@@ -182,6 +194,9 @@ class ExtractionService:
         model: Optional[str] = None,
         temperature: Optional[float] = None,
         top_p: Optional[float] = None,
+        reasoning_effort: Optional[str] = None,
+        frequency_penalty: Optional[float] = None,
+        presence_penalty: Optional[float] = None,
     ) -> Dict[str, object]:
         suffix = Path(filename).suffix.lower()
         if suffix in IMAGE_EXTENSIONS:
@@ -193,6 +208,9 @@ class ExtractionService:
                 model=model,
                 temperature=temperature,
                 top_p=top_p,
+                reasoning_effort=reasoning_effort,
+                frequency_penalty=frequency_penalty,
+                presence_penalty=presence_penalty,
             )
         text = ""
         if not force_ocr:
@@ -213,4 +231,7 @@ class ExtractionService:
             model=model,
             temperature=temperature,
             top_p=top_p,
+            reasoning_effort=reasoning_effort,
+            frequency_penalty=frequency_penalty,
+            presence_penalty=presence_penalty,
         )

@@ -1246,7 +1246,7 @@
                 aria-hidden="true"
               >
                 <div class="llm-settings__grid">
-                  <label for="llmApiModel">
+                  <label for="llmApiModel" data-developer-only>
                     Modelo (API)
                     <span>
                       Personaliza el identificador del modelo para el servicio API.
@@ -1285,6 +1285,41 @@
                       max="1"
                       step="0.05"
                       value="1"
+                    />
+                  </label>
+                  <label for="llmApiReasoningEffort">
+                    Razonamiento
+                    <span>Ajusta el esfuerzo de razonamiento solicitado.</span>
+                    <select id="llmApiReasoningEffort">
+                      <option value="minimal">Mínimo</option>
+                      <option value="low">Bajo</option>
+                      <option value="medium">Medio</option>
+                      <option value="high">Alto</option>
+                      <option value="none">Desactivado</option>
+                    </select>
+                  </label>
+                  <label for="llmApiFrequencyPenalty">
+                    Frecuencia
+                    <span>Penaliza repeticiones del modelo (-2 a 2).</span>
+                    <input
+                      id="llmApiFrequencyPenalty"
+                      type="number"
+                      min="-2"
+                      max="2"
+                      step="0.1"
+                      value="0"
+                    />
+                  </label>
+                  <label for="llmApiPresencePenalty">
+                    Presencia
+                    <span>Reduce repeticiones temáticas (-2 a 2).</span>
+                    <input
+                      id="llmApiPresencePenalty"
+                      type="number"
+                      min="-2"
+                      max="2"
+                      step="0.1"
+                      value="0"
                     />
                   </label>
                 </div>
@@ -1546,6 +1581,14 @@
         },
       };
 
+      const REASONING_EFFORT_VALUES = new Set([
+        "minimal",
+        "low",
+        "medium",
+        "high",
+        "none",
+      ]);
+
       const llmDefaultsElement = document.getElementById("llmDefaultsData");
       let llmDefaults = {
         api: { model: "gpt-5-mini", options: ["gpt-5-mini"] },
@@ -1593,11 +1636,17 @@
             model: llmDefaults.api.model,
             temperature: 1,
             top_p: 1,
+            reasoning_effort: "minimal",
+            frequency_penalty: 0,
+            presence_penalty: 0,
           },
           local: {
             model: llmDefaults.local.model,
             temperature: 1,
             top_p: 1,
+            reasoning_effort: "minimal",
+            frequency_penalty: 0,
+            presence_penalty: 0,
           },
         },
         settings: {
@@ -1672,6 +1721,19 @@
         api: document.getElementById("llmApiTopP"),
         local: document.getElementById("llmLocalTopP"),
       };
+      const llmReasoningInputs = {
+        api: document.getElementById("llmApiReasoningEffort"),
+        local: document.getElementById("llmLocalReasoningEffort"),
+      };
+      const llmFrequencyInputs = {
+        api: document.getElementById("llmApiFrequencyPenalty"),
+        local: document.getElementById("llmLocalFrequencyPenalty"),
+      };
+      const llmPresenceInputs = {
+        api: document.getElementById("llmApiPresencePenalty"),
+        local: document.getElementById("llmLocalPresencePenalty"),
+      };
+      const developerOnlyElements = document.querySelectorAll("[data-developer-only]");
 
       let lastFocusedElement = null;
       let lastSettingsTrigger = null;
@@ -1720,6 +1782,9 @@
             model: "",
             temperature: 1,
             top_p: 1,
+            reasoning_effort: "minimal",
+            frequency_penalty: 0,
+            presence_penalty: 0,
           };
         }
         const params = state.llmParameters[targetProvider];
@@ -1737,6 +1802,25 @@
           const value = params.top_p ?? 1;
           topPInput.value = String(value);
         }
+        const reasoningInput = llmReasoningInputs[targetProvider];
+        if (reasoningInput) {
+          const value = params.reasoning_effort ?? "minimal";
+          reasoningInput.value = value;
+        }
+        const frequencyInput = llmFrequencyInputs[targetProvider];
+        if (frequencyInput) {
+          const value = Number.isFinite(params.frequency_penalty)
+            ? params.frequency_penalty
+            : 0;
+          frequencyInput.value = String(value);
+        }
+        const presenceInput = llmPresenceInputs[targetProvider];
+        if (presenceInput) {
+          const value = Number.isFinite(params.presence_penalty)
+            ? params.presence_penalty
+            : 0;
+          presenceInput.value = String(value);
+        }
       }
 
       function bindLlmInputs() {
@@ -1751,6 +1835,9 @@
                 model: value,
                 temperature: 1,
                 top_p: 1,
+                reasoning_effort: "minimal",
+                frequency_penalty: 0,
+                presence_penalty: 0,
               };
             }
             state.llmParameters[provider].model = value;
@@ -1771,6 +1858,9 @@
                   model: "",
                   temperature: 1,
                   top_p: 1,
+                  reasoning_effort: "minimal",
+                  frequency_penalty: 0,
+                  presence_penalty: 0,
                 };
               }
               value = state.llmParameters[provider].temperature ?? 1;
@@ -1801,6 +1891,9 @@
                   model: "",
                   temperature: 1,
                   top_p: 1,
+                  reasoning_effort: "minimal",
+                  frequency_penalty: 0,
+                  presence_penalty: 0,
                 };
               }
               value = state.llmParameters[provider].top_p ?? 1;
@@ -1813,6 +1906,98 @@
               }
             }
             state.llmParameters[provider].top_p = value;
+            input.value = String(value);
+          });
+        });
+
+        Object.entries(llmReasoningInputs).forEach(([provider, input]) => {
+          if (!input) {
+            return;
+          }
+          input.addEventListener("change", () => {
+            if (!state.llmParameters[provider]) {
+              state.llmParameters[provider] = {
+                model: "",
+                temperature: 1,
+                top_p: 1,
+                reasoning_effort: "minimal",
+                frequency_penalty: 0,
+                presence_penalty: 0,
+              };
+            }
+            const value = String(input.value || "").toLowerCase();
+            const normalized = REASONING_EFFORT_VALUES.has(value)
+              ? value
+              : "minimal";
+            if (!REASONING_EFFORT_VALUES.has(value)) {
+              input.value = "minimal";
+            }
+            state.llmParameters[provider].reasoning_effort = normalized;
+          });
+        });
+
+        Object.entries(llmFrequencyInputs).forEach(([provider, input]) => {
+          if (!input) {
+            return;
+          }
+          input.addEventListener("change", () => {
+            const min = parseNumeric(input.min);
+            const max = parseNumeric(input.max);
+            let value = parseNumeric(input.value);
+            if (value === null) {
+              if (!state.llmParameters[provider]) {
+                state.llmParameters[provider] = {
+                  model: "",
+                  temperature: 1,
+                  top_p: 1,
+                  reasoning_effort: "minimal",
+                  frequency_penalty: 0,
+                  presence_penalty: 0,
+                };
+              }
+              value = state.llmParameters[provider].frequency_penalty ?? 0;
+            } else {
+              if (min !== null) {
+                value = Math.max(min, value);
+              }
+              if (max !== null) {
+                value = Math.min(max, value);
+              }
+            }
+            state.llmParameters[provider].frequency_penalty = value;
+            input.value = String(value);
+          });
+        });
+
+        Object.entries(llmPresenceInputs).forEach(([provider, input]) => {
+          if (!input) {
+            return;
+          }
+          input.addEventListener("change", () => {
+            const min = parseNumeric(input.min);
+            const max = parseNumeric(input.max);
+            let value = parseNumeric(input.value);
+            if (value === null) {
+              if (!state.llmParameters[provider]) {
+                state.llmParameters[provider] = {
+                  model: "",
+                  temperature: 1,
+                  top_p: 1,
+                  reasoning_effort: "minimal",
+                  frequency_penalty: 0,
+                  presence_penalty: 0,
+                };
+              }
+              value = state.llmParameters[provider].presence_penalty ?? 0;
+            } else {
+              if (min !== null) {
+                value = Math.max(min, value);
+              }
+              if (max !== null) {
+                value = Math.min(max, value);
+              }
+            }
+            state.llmParameters[provider].presence_penalty = value;
             input.value = String(value);
           });
         });
@@ -1835,12 +2020,17 @@
             refreshLlmSettings(state.llmProvider);
           }
         }
-        if (llmSettingsContainer) {
-          llmSettingsContainer.hidden = !enabled;
-          llmSettingsContainer.setAttribute("aria-hidden", String(!enabled));
-          if (enabled) {
-            refreshLlmSettings(state.llmProvider);
+        developerOnlyElements.forEach((element) => {
+          if (!element) {
+            return;
           }
+          element.hidden = !enabled;
+          element.setAttribute("aria-hidden", String(!enabled));
+        });
+        if (llmSettingsContainer) {
+          llmSettingsContainer.hidden = false;
+          llmSettingsContainer.setAttribute("aria-hidden", "false");
+          refreshLlmSettings(state.llmProvider);
         }
       }
 
@@ -2541,6 +2731,18 @@
         if (Number.isFinite(activeSettings.top_p)) {
           payload.top_p = activeSettings.top_p;
         }
+        if (typeof activeSettings.reasoning_effort === "string") {
+          const value = activeSettings.reasoning_effort.trim();
+          if (value) {
+            payload.reasoning_effort = value;
+          }
+        }
+        if (Number.isFinite(activeSettings.frequency_penalty)) {
+          payload.frequency_penalty = activeSettings.frequency_penalty;
+        }
+        if (Number.isFinite(activeSettings.presence_penalty)) {
+          payload.presence_penalty = activeSettings.presence_penalty;
+        }
         const response = await fetch("/api/v1/extract/text", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -2578,6 +2780,24 @@
         }
         if (Number.isFinite(activeSettings.top_p)) {
           url.searchParams.set("top_p", String(activeSettings.top_p));
+        }
+        if (typeof activeSettings.reasoning_effort === "string") {
+          const value = activeSettings.reasoning_effort.trim();
+          if (value) {
+            url.searchParams.set("reasoning_effort", value);
+          }
+        }
+        if (Number.isFinite(activeSettings.frequency_penalty)) {
+          url.searchParams.set(
+            "frequency_penalty",
+            String(activeSettings.frequency_penalty)
+          );
+        }
+        if (Number.isFinite(activeSettings.presence_penalty)) {
+          url.searchParams.set(
+            "presence_penalty",
+            String(activeSettings.presence_penalty)
+          );
         }
         const response = await fetch(url, {
           method: "POST",

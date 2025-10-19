@@ -82,6 +82,9 @@ class OpenAILLMService:
         self._schema_name = config.JSON_MODE_SCHEMA_NAME
         self._default_temperature = 1.0
         self._default_top_p = 1.0
+        self._default_reasoning_effort = "minimal"
+        self._default_frequency_penalty = 0.0
+        self._default_presence_penalty = 0.0
 
     def extract(
         self,
@@ -90,8 +93,29 @@ class OpenAILLMService:
         model: Optional[str] = None,
         temperature: Optional[float] = None,
         top_p: Optional[float] = None,
+        reasoning_effort: Optional[str] = None,
+        frequency_penalty: Optional[float] = None,
+        presence_penalty: Optional[float] = None,
     ) -> Dict[str, Any]:
         chosen_model = (model or self._model).strip()
+        selected_reasoning_effort = (
+            self._default_reasoning_effort
+            if reasoning_effort is None
+            else reasoning_effort
+        )
+        openai_reasoning_effort = (
+            None if selected_reasoning_effort == "none" else selected_reasoning_effort
+        )
+        selected_frequency_penalty = (
+            self._default_frequency_penalty
+            if frequency_penalty is None
+            else frequency_penalty
+        )
+        selected_presence_penalty = (
+            self._default_presence_penalty
+            if presence_penalty is None
+            else presence_penalty
+        )
         response = self._client.chat.completions.create(
             model=chosen_model,
             messages=[
@@ -108,7 +132,9 @@ class OpenAILLMService:
             },
             temperature=self._default_temperature if temperature is None else temperature,
             top_p=self._default_top_p if top_p is None else top_p,
-            reasoning_effort="minimal",
+            reasoning_effort=openai_reasoning_effort,
+            frequency_penalty=selected_frequency_penalty,
+            presence_penalty=selected_presence_penalty,
         )
         content = response.choices[0].message.content
         return _parse_model_response(content)
@@ -173,6 +199,9 @@ class LocalLLMService:
         model: Optional[str] = None,
         temperature: Optional[float] = None,
         top_p: Optional[float] = None,
+        reasoning_effort: Optional[str] = None,
+        frequency_penalty: Optional[float] = None,
+        presence_penalty: Optional[float] = None,
     ) -> Dict[str, Any]:
         messages: List[Dict[str, str]] = [
             {

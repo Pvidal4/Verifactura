@@ -44,6 +44,35 @@ class TextExtractionRequest(BaseModel):
         le=1,
         description="Top-p (nucleus sampling) del modelo (0-1).",
     )
+    reasoning_effort: Optional[
+        Literal["none", "minimal", "low", "medium", "high"]
+    ] = Field(
+        None,
+        description=(
+            "Nivel de esfuerzo de razonamiento a solicitar al modelo. "
+            "Selecciona 'none' para omitir este parámetro."
+        ),
+    )
+    frequency_penalty: Optional[float] = Field(
+        None,
+        ge=-2,
+        le=2,
+        description="Penalización por frecuencia (-2 a 2).",
+    )
+    presence_penalty: Optional[float] = Field(
+        None,
+        ge=-2,
+        le=2,
+        description="Penalización por presencia (-2 a 2).",
+    )
+
+
+def _normalize_reasoning_effort(
+    value: Optional[Literal["none", "minimal", "low", "medium", "high"]]
+) -> Optional[str]:
+    if value == "none":
+        return None
+    return value
 
 
 def _get_service(request: Request) -> ExtractionService:
@@ -92,6 +121,9 @@ async def extract_from_text_endpoint(
         model=payload.llm_model,
         temperature=payload.temperature,
         top_p=payload.top_p,
+        reasoning_effort=_normalize_reasoning_effort(payload.reasoning_effort),
+        frequency_penalty=payload.frequency_penalty,
+        presence_penalty=payload.presence_penalty,
     )
 
 
@@ -138,6 +170,27 @@ async def extract_from_file_endpoint(
         le=1,
         description="Top-p (nucleus sampling) del modelo (0-1).",
     ),
+    reasoning_effort: Optional[
+        Literal["none", "minimal", "low", "medium", "high"]
+    ] = Query(
+        None,
+        description=(
+            "Nivel de esfuerzo de razonamiento a solicitar al modelo. "
+            "Selecciona 'none' para omitir este parámetro."
+        ),
+    ),
+    frequency_penalty: Optional[float] = Query(
+        None,
+        ge=-2,
+        le=2,
+        description="Penalización por frecuencia (-2 a 2).",
+    ),
+    presence_penalty: Optional[float] = Query(
+        None,
+        ge=-2,
+        le=2,
+        description="Penalización por presencia (-2 a 2).",
+    ),
     service: ExtractionService = Depends(_get_service),
 ) -> Dict[str, Any]:
 
@@ -155,6 +208,9 @@ async def extract_from_file_endpoint(
             model=llm_model,
             temperature=temperature,
             top_p=top_p,
+            reasoning_effort=_normalize_reasoning_effort(reasoning_effort),
+            frequency_penalty=frequency_penalty,
+            presence_penalty=presence_penalty,
         )
     except RuntimeError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -196,6 +252,27 @@ async def extract_from_image_endpoint(
         le=1,
         description="Top-p (nucleus sampling) del modelo (0-1).",
     ),
+    reasoning_effort: Optional[
+        Literal["none", "minimal", "low", "medium", "high"]
+    ] = Query(
+        None,
+        description=(
+            "Nivel de esfuerzo de razonamiento a solicitar al modelo. "
+            "Selecciona 'none' para omitir este parámetro."
+        ),
+    ),
+    frequency_penalty: Optional[float] = Query(
+        None,
+        ge=-2,
+        le=2,
+        description="Penalización por frecuencia (-2 a 2).",
+    ),
+    presence_penalty: Optional[float] = Query(
+        None,
+        ge=-2,
+        le=2,
+        description="Penalización por presencia (-2 a 2).",
+    ),
     service: ExtractionService = Depends(_get_service),
 ) -> Dict[str, Any]:
 
@@ -223,6 +300,9 @@ async def extract_from_image_endpoint(
             model=llm_model,
             temperature=temperature,
             top_p=top_p,
+            reasoning_effort=_normalize_reasoning_effort(reasoning_effort),
+            frequency_penalty=frequency_penalty,
+            presence_penalty=presence_penalty,
         )
     except RuntimeError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
