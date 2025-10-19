@@ -20,6 +20,18 @@ router = APIRouter(include_in_schema=False)
 async def home(request: Request) -> HTMLResponse:
     config: Config = getattr(request.app.state, "config", Config())
     api_model = config.OPENAI_MODEL or "gpt-5-mini"
+    recommended_models = [
+        "gpt-5",
+        "gpt-5-mini",
+        "gpt-4.1",
+        "gpt-4.1-mini",
+        "gpt-4.1-nano",
+        "gpt-4o",
+    ]
+    api_options: list[str] = []
+    for option in recommended_models + [api_model]:
+        if option and option not in api_options:
+            api_options.append(option)
     local_candidates: list[str] = []
     for candidate in (
         config.LOCAL_LLM_MODEL_PATH,
@@ -32,7 +44,7 @@ async def home(request: Request) -> HTMLResponse:
     llm_defaults = {
         "api": {
             "model": api_model,
-            "options": [api_model],
+            "options": api_options,
         },
         "local": {
             "model": local_model,

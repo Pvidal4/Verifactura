@@ -65,6 +65,10 @@ class TextExtractionRequest(BaseModel):
         le=2,
         description="Penalización por presencia (-2 a 2).",
     )
+    openai_api_key: Optional[str] = Field(
+        None,
+        description="Clave de API de OpenAI a utilizar para la solicitud actual.",
+    )
 
 
 def _normalize_reasoning_effort(
@@ -73,6 +77,13 @@ def _normalize_reasoning_effort(
     if value == "none":
         return None
     return value
+
+
+def _normalize_api_key(value: Optional[str]) -> Optional[str]:
+    if not value:
+        return None
+    trimmed = value.strip()
+    return trimmed or None
 
 
 def _get_service(request: Request) -> ExtractionService:
@@ -124,6 +135,7 @@ async def extract_from_text_endpoint(
         reasoning_effort=_normalize_reasoning_effort(payload.reasoning_effort),
         frequency_penalty=payload.frequency_penalty,
         presence_penalty=payload.presence_penalty,
+        openai_api_key=_normalize_api_key(payload.openai_api_key),
     )
 
 
@@ -191,6 +203,10 @@ async def extract_from_file_endpoint(
         le=2,
         description="Penalización por presencia (-2 a 2).",
     ),
+    openai_api_key: Optional[str] = Query(
+        None,
+        description="Clave de API de OpenAI a utilizar para la solicitud actual.",
+    ),
     service: ExtractionService = Depends(_get_service),
 ) -> Dict[str, Any]:
 
@@ -211,6 +227,7 @@ async def extract_from_file_endpoint(
             reasoning_effort=_normalize_reasoning_effort(reasoning_effort),
             frequency_penalty=frequency_penalty,
             presence_penalty=presence_penalty,
+            openai_api_key=_normalize_api_key(openai_api_key),
         )
     except RuntimeError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -273,6 +290,10 @@ async def extract_from_image_endpoint(
         le=2,
         description="Penalización por presencia (-2 a 2).",
     ),
+    openai_api_key: Optional[str] = Query(
+        None,
+        description="Clave de API de OpenAI a utilizar para la solicitud actual.",
+    ),
     service: ExtractionService = Depends(_get_service),
 ) -> Dict[str, Any]:
 
@@ -303,6 +324,7 @@ async def extract_from_image_endpoint(
             reasoning_effort=_normalize_reasoning_effort(reasoning_effort),
             frequency_penalty=frequency_penalty,
             presence_penalty=presence_penalty,
+            openai_api_key=_normalize_api_key(openai_api_key),
         )
     except RuntimeError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

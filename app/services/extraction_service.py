@@ -26,8 +26,7 @@ class ExtractionService:
         self._pdf = PDFTextExtractor(config.MAX_CHARS_PER_CHUNK)
         self._llm_factories: Dict[str, Callable[[], object]] = {}
         self._llm_cache: Dict[str, object] = {}
-        if config.openai_configured:
-            self._llm_factories["api"] = partial(OpenAILLMService, config)
+        self._llm_factories["api"] = partial(OpenAILLMService, config)
         self._llm_factories["local"] = partial(LocalLLMService, config)
         if not self._llm_factories:
             raise RuntimeError("No hay servicios LLM configurados para la extracción.")
@@ -126,6 +125,7 @@ class ExtractionService:
         reasoning_effort: Optional[str] = None,
         frequency_penalty: Optional[float] = None,
         presence_penalty: Optional[float] = None,
+        openai_api_key: Optional[str] = None,
     ) -> Dict[str, object]:
         sanitized_model = model.strip() if isinstance(model, str) else None
         llm = self._get_llm(provider)
@@ -137,6 +137,7 @@ class ExtractionService:
             reasoning_effort=reasoning_effort,
             frequency_penalty=frequency_penalty,
             presence_penalty=presence_penalty,
+            api_key=openai_api_key,
         )
 
     def extract_from_image(
@@ -152,6 +153,7 @@ class ExtractionService:
         reasoning_effort: Optional[str] = None,
         frequency_penalty: Optional[float] = None,
         presence_penalty: Optional[float] = None,
+        openai_api_key: Optional[str] = None,
     ) -> Dict[str, object]:
         if self._ocr is None:
             raise RuntimeError(
@@ -181,6 +183,7 @@ class ExtractionService:
             reasoning_effort=reasoning_effort,
             frequency_penalty=frequency_penalty,
             presence_penalty=presence_penalty,
+            openai_api_key=openai_api_key,
         )
 
     def extract_from_file(
@@ -197,6 +200,7 @@ class ExtractionService:
         reasoning_effort: Optional[str] = None,
         frequency_penalty: Optional[float] = None,
         presence_penalty: Optional[float] = None,
+        openai_api_key: Optional[str] = None,
     ) -> Dict[str, object]:
         suffix = Path(filename).suffix.lower()
         if suffix in IMAGE_EXTENSIONS:
@@ -234,4 +238,5 @@ class ExtractionService:
             reasoning_effort=reasoning_effort,
             frequency_penalty=frequency_penalty,
             presence_penalty=presence_penalty,
+            openai_api_key=openai_api_key,
         )
