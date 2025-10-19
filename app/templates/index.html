@@ -1588,8 +1588,7 @@
                   </span>
                 </label>
                 <select id="ocrProviderSelect">
-                  <option value="">Selecciona un proveedor</option>
-                  <option value="azure-vision">Azure Vision</option>
+                  <option value="azure-vision" selected>Azure Vision</option>
                 </select>
               </div>
               <div
@@ -1919,7 +1918,7 @@
             presence_penalty_enabled: true,
           },
         },
-        ocrProvider: "",
+        ocrProvider: "azure-vision",
         ocrParameters: {
           "azure-vision": {
             endpoint: "",
