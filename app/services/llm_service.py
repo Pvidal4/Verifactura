@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import inspect
 import json
 import importlib
 from pathlib import Path
-from typing import Any, Dict, List, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import torch
 from openai import OpenAI
@@ -105,6 +106,84 @@ class OpenAILLMService:
         return _parse_model_response(content)
 
 
+_DYNAMIC_MODULE_SIGNATURE: Optional[inspect.Signature] = None
+
+
+def _get_dynamic_module_signature() -> inspect.Signature:
+    global _DYNAMIC_MODULE_SIGNATURE
+    if _DYNAMIC_MODULE_SIGNATURE is None:
+        _DYNAMIC_MODULE_SIGNATURE = inspect.signature(get_class_from_dynamic_module)
+    return _DYNAMIC_MODULE_SIGNATURE
+
+
+def _load_dynamic_class(
+    module_name: str,
+    class_name: str,
+    model_source: str,
+) -> type:
+    signature = _get_dynamic_module_signature()
+    params = signature.parameters
+    supports_named = "class_name" in params and "module_file" in params
+    module_candidates = [module_name]
+    if (
+        supports_named
+        and module_name
+        and not module_name.endswith(".py")
+    ):
+        module_candidates.append(f"{module_name}.py")
+    last_error: Optional[Exception] = None
+    for module_candidate in module_candidates:
+        if supports_named:
+            kwargs: Dict[str, Any] = {
+                "class_name": class_name,
+                "module_file": module_candidate,
+            }
+            if "pretrained_model_name_or_path" in params:
+                kwargs["pretrained_model_name_or_path"] = model_source
+            if "model_id" in params:
+                kwargs["model_id"] = model_source
+            if "trust_remote_code" in params:
+                kwargs["trust_remote_code"] = True
+            try:
+                return get_class_from_dynamic_module(**kwargs)
+            except Exception as exc:  # pragma: no cover - defensive
+                last_error = exc
+                continue
+        else:
+            reference = (
+                f"{module_candidate}.{class_name}" if module_candidate else class_name
+            )
+            args: List[Any] = [reference]
+            param_names = list(params)
+            if len(param_names) >= 2 and param_names[1] != "module_file":
+                args.append(model_source)
+            kwargs: Dict[str, Any] = {}
+            if "trust_remote_code" in params:
+                kwargs["trust_remote_code"] = True
+            try:
+                return get_class_from_dynamic_module(*args, **kwargs)
+            except Exception as exc:  # pragma: no cover - defensive
+                last_error = exc
+                continue
+    if last_error is not None:
+        raise last_error
+    raise RuntimeError("Dynamic module resolution failed without error detail")
+
+
+def _parse_dynamic_spec(spec: Any) -> List[Tuple[str, str]]:
+    candidates: List[Tuple[str, str]] = []
+    if isinstance(spec, str) and spec:
+        if "." in spec:
+            module_name, class_name = spec.rsplit(".", 1)
+            candidates.append((module_name, class_name))
+    elif isinstance(spec, (list, tuple)):
+        if len(spec) >= 2:
+            module_name, class_name = spec[0], spec[1]
+            if isinstance(module_name, str) and isinstance(class_name, str):
+                candidates.append((module_name, class_name))
+    return candidates
+
+
 class LocalLLMService:
     def __init__(self, config: Config) -> None:
         self._model_id = config.LOCAL_LLM_MODEL_ID
@@ -186,25 +265,22 @@ class LocalLLMService:
                 mapping = None
                 if isinstance(auto_map, dict):
                     mapping = auto_map.get("AutoTokenizer")
-                if mapping:
-                    dynamic_spec: str
-                    if isinstance(mapping, (list, tuple)) and mapping:
-                        dynamic_spec = mapping[0]
-                    else:
-                        dynamic_spec = str(mapping)
+                dynamic_specs = _parse_dynamic_spec(mapping)
+                for module_name, class_name in dynamic_specs:
                     try:
-                        tokenizer_cls = get_class_from_dynamic_module(
-                            dynamic_spec,
+                        tokenizer_cls = _load_dynamic_class(
+                            module_name,
+                            class_name,
                             model_source,
-                            trust_remote_code=True,
                         )
                         tokenizer = tokenizer_cls.from_pretrained(
                             model_source,
                             trust_remote_code=True,
                         )
+                        break
                     except Exception as exc:
                         tokenizer_errors.append(
-                            f"dynamic AutoTokenizer {dynamic_spec}: {exc}"
+                            f"dynamic AutoTokenizer {module_name}.{class_name}: {exc}"
                         )
 
             if tokenizer is None:
@@ -214,39 +290,38 @@ class LocalLLMService:
 
             if tokenizer is None and tokenizer_config:
                 tokenizer_class = tokenizer_config.get("tokenizer_class")
-                tokenizer_module: str | None = None
-                dynamic_candidates: List[str] = []
+                tokenizer_module: Optional[str] = None
+                dynamic_candidates: List[Tuple[str, str]] = []
+                base_class_name: Optional[str] = None
                 if isinstance(tokenizer_class, str) and tokenizer_class:
                     if "." in tokenizer_class:
-                        dynamic_candidates.append(tokenizer_class)
+                        dynamic_candidates.extend(_parse_dynamic_spec(tokenizer_class))
                     else:
                         base_class_name = tokenizer_class.split(".")[-1]
                         tokenizer_module = tokenizer_config.get("tokenizer_module")
                         if isinstance(tokenizer_module, str) and tokenizer_module:
-                            dynamic_candidates.append(
-                                f"{tokenizer_module}.{base_class_name}"
-                            )
+                            dynamic_candidates.append((tokenizer_module, base_class_name))
                         if config is not None and getattr(config, "model_type", None):
                             model_type = str(getattr(config, "model_type")).replace(
                                 "-",
                                 "_",
                             )
                             dynamic_candidates.append(
-                                f"tokenization_{model_type}.{base_class_name}"
+                                (f"tokenization_{model_type}", base_class_name)
                             )
                         snake_class = base_class_name.replace("Tokenizer", "")
                         if snake_class:
                             snake_class = snake_class.replace("-", "_").lower()
                             dynamic_candidates.append(
-                                f"tokenization_{snake_class}.{base_class_name}"
+                                (f"tokenization_{snake_class}", base_class_name)
                             )
 
-                for candidate in dynamic_candidates:
+                for module_name, class_name in dynamic_candidates:
                     try:
-                        tokenizer_cls = get_class_from_dynamic_module(
-                            candidate,
+                        tokenizer_cls = _load_dynamic_class(
+                            module_name,
+                            class_name,
                             model_source,
-                            trust_remote_code=True,
                         )
                         tokenizer = tokenizer_cls.from_pretrained(
                             model_source,
@@ -255,11 +330,17 @@ class LocalLLMService:
                         break
                     except Exception as exc:
                         tokenizer_errors.append(
-                            f"dynamic tokenizer {candidate}: {exc}"
+                            f"dynamic tokenizer {module_name}.{class_name}: {exc}"
                         )
 
-                if tokenizer is None and isinstance(tokenizer_class, str):
+                if (
+                    tokenizer is None
+                    and isinstance(tokenizer_class, str)
+                    and base_class_name is None
+                ):
                     base_class_name = tokenizer_class.split(".")[-1]
+
+                if tokenizer is None and base_class_name:
                     module_name = "transformers"
                     if isinstance(tokenizer_module, str) and tokenizer_module:
                         module_name = tokenizer_module
