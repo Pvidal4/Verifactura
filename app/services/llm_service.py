@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import importlib
 from pathlib import Path
 from typing import Any, Dict, List, Sequence, Tuple
 
@@ -213,16 +214,32 @@ class LocalLLMService:
 
             if tokenizer is None and tokenizer_config:
                 tokenizer_class = tokenizer_config.get("tokenizer_class")
+                tokenizer_module: str | None = None
                 dynamic_candidates: List[str] = []
                 if isinstance(tokenizer_class, str) and tokenizer_class:
                     if "." in tokenizer_class:
                         dynamic_candidates.append(tokenizer_class)
-                    elif config is not None and getattr(config, "model_type", None):
-                        model_type = getattr(config, "model_type")
-                        dynamic_candidates.append(
-                            f"tokenization_{model_type}.{tokenizer_class}"
-                        )
-                        dynamic_candidates.append(tokenizer_class)
+                    else:
+                        base_class_name = tokenizer_class.split(".")[-1]
+                        tokenizer_module = tokenizer_config.get("tokenizer_module")
+                        if isinstance(tokenizer_module, str) and tokenizer_module:
+                            dynamic_candidates.append(
+                                f"{tokenizer_module}.{base_class_name}"
+                            )
+                        if config is not None and getattr(config, "model_type", None):
+                            model_type = str(getattr(config, "model_type")).replace(
+                                "-",
+                                "_",
+                            )
+                            dynamic_candidates.append(
+                                f"tokenization_{model_type}.{base_class_name}"
+                            )
+                        snake_class = base_class_name.replace("Tokenizer", "")
+                        if snake_class:
+                            snake_class = snake_class.replace("-", "_").lower()
+                            dynamic_candidates.append(
+                                f"tokenization_{snake_class}.{base_class_name}"
+                            )
 
                 for candidate in dynamic_candidates:
                     try:
@@ -239,6 +256,23 @@ class LocalLLMService:
                     except Exception as exc:
                         tokenizer_errors.append(
                             f"dynamic tokenizer {candidate}: {exc}"
+                        )
+
+                if tokenizer is None and isinstance(tokenizer_class, str):
+                    base_class_name = tokenizer_class.split(".")[-1]
+                    module_name = "transformers"
+                    if isinstance(tokenizer_module, str) and tokenizer_module:
+                        module_name = tokenizer_module
+                    try:
+                        module = importlib.import_module(module_name)
+                        tokenizer_cls = getattr(module, base_class_name)
+                        tokenizer = tokenizer_cls.from_pretrained(
+                            model_source,
+                            trust_remote_code=True,
+                        )
+                    except Exception as exc:
+                        tokenizer_errors.append(
+                            f"direct import {module_name}.{base_class_name}: {exc}"
                         )
 
             if tokenizer is None:
