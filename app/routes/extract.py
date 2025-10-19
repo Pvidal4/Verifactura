@@ -19,7 +19,7 @@ class TextExtractionRequest(BaseModel):
     text: str = Field(
         ..., description="Texto completo del comprobante o documento a procesar."
     )
-    llm_provider: Literal["api", "local"] | None = Field(
+    llm_provider: Optional[Literal["api", "local"]] = Field(
         None,
         description=(
             "Proveedor del modelo de lenguaje a utilizar. "
@@ -89,7 +89,7 @@ async def extract_from_file_endpoint(
             "Convierte cada página del PDF en imagen antes de aplicar Azure OCR."
         ),
     ),
-    llm_provider: Literal["api", "local"] | None = Query(
+    llm_provider: Optional[Literal["api", "local"]] = Query(
         None,
         description=(
             "Proveedor del modelo de lenguaje a utilizar. "
@@ -126,7 +126,7 @@ async def extract_from_file_endpoint(
 )
 async def extract_from_image_endpoint(
     image: UploadFile = File(...),
-    llm_provider: Literal["api", "local"] | None = Query(
+    llm_provider: Optional[Literal["api", "local"]] = Query(
         None,
         description=(
             "Proveedor del modelo de lenguaje a utilizar. "
