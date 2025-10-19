@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import mimetypes
 from pathlib import Path
 from typing import Dict, Optional
@@ -13,6 +14,9 @@ IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
 TEXT_EXTENSIONS = {".json"}
 XML_EXTENSIONS = {".xml"}
 PDF_EXTENSIONS = {".pdf"}
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 class ExtractionService:
@@ -40,9 +44,15 @@ class ExtractionService:
             )
         images = self._pdf.render_page_images(data)
         if not images:
-            raise RuntimeError(
-                "No se pudieron generar imágenes a partir del PDF para aplicar OCR."
+            LOGGER.warning(
+                "No fue posible renderizar el PDF a imágenes, se enviará el PDF directo a Azure OCR."
             )
+            text = self._ocr.extract_text(data, content_type="application/pdf")
+            if not text:
+                raise RuntimeError(
+                    "No se pudo extraer texto del PDF mediante OCR."
+                )
+            return text
         fragments = []
         for image_data, content_type in images:
             text = self._ocr.extract_text(image_data, content_type=content_type)

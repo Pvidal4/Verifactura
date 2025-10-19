@@ -551,7 +551,7 @@
       <header>
         <h1>Consola inteligente de extracción</h1>
         <p>
-          Arrastra y suelta tus facturas o comprobantes en PDF, XML, TXT o imagen. La
+          Arrastra y suelta tus facturas o comprobantes en PDF, XML, JSON o imagen. La
           consola detecta el tipo de documento automáticamente y te permite alternar
           entre OCR o lectura directa cuando sea necesario. También puedes ingresar
           texto manualmente como alternativa.
@@ -923,8 +923,9 @@
         fileDetails.hidden = false;
         fileNameElement.textContent = file.name;
         fileTypeElement.textContent = SUPPORTED_TYPES[category].label;
-        pdfToggleRow.hidden = category !== "pdf";
-        if (category !== "pdf") {
+        const shouldShowPdfToggle = category === "pdf";
+        pdfToggleRow.hidden = !shouldShowPdfToggle;
+        if (!shouldShowPdfToggle) {
           pdfOcrToggle.checked = false;
         }
         renderPreview(file, category);
@@ -946,7 +947,8 @@
         multiDetails.hidden = false;
         multiEmptyState.hidden = true;
         const label = SUPPORTED_TYPES[state.multiCategory].label;
-        if (state.multiCategory === "pdf") {
+        const isPdfBatch = state.multiCategory === "pdf" && state.multiFiles.length > 0;
+        if (isPdfBatch) {
           multiTypeLabel.textContent = `${label}${state.multiUseOcr ? " (OCR)" : ""}`;
           multiPdfToggleRow.hidden = false;
           multiPdfOcrToggle.checked = state.multiUseOcr;
