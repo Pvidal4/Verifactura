@@ -209,9 +209,35 @@
         gap: 0.75rem;
       }
 
+      .preview-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+
       .preview h3 {
         font-size: 1rem;
         font-weight: 600;
+      }
+
+      .preview-action {
+        border: 1px solid var(--border);
+        background: #fff;
+        color: var(--accent);
+        font-size: 0.85rem;
+        font-weight: 500;
+        padding: 0.35rem 0.85rem;
+        border-radius: 999px;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+      }
+
+      .preview-action:hover,
+      .preview-action:focus-visible {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+        color: var(--accent-dark);
+        outline: none;
       }
 
       .preview-content {
@@ -243,6 +269,99 @@
         font-size: 0.85rem;
         white-space: pre-wrap;
         line-height: 1.5;
+      }
+
+      .preview-modal {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        background: rgba(15, 23, 42, 0.65);
+        z-index: 1000;
+      }
+
+      .preview-modal[hidden] {
+        display: none;
+      }
+
+      .preview-modal__dialog {
+        width: min(960px, 95vw);
+        max-height: 90vh;
+        background: var(--surface);
+        border-radius: 1.25rem;
+        border: 1px solid var(--border);
+        box-shadow: 0 40px 90px -45px rgba(15, 23, 42, 0.55);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .preview-modal__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .preview-modal__header h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin: 0;
+      }
+
+      .preview-modal__close {
+        border: none;
+        background: transparent;
+        color: var(--muted);
+        font-size: 1.75rem;
+        line-height: 1;
+        padding: 0.25rem;
+        cursor: pointer;
+        border-radius: 0.5rem;
+      }
+
+      .preview-modal__close:hover,
+      .preview-modal__close:focus-visible {
+        color: var(--text);
+        background: var(--surface-subtle);
+        outline: none;
+      }
+
+      .preview-modal__body {
+        flex: 1;
+        overflow: auto;
+        background: #fff;
+        padding: 0;
+      }
+
+      .preview-modal__body iframe,
+      .preview-modal__body embed {
+        width: 100%;
+        min-height: 70vh;
+        border: none;
+      }
+
+      .preview-modal__body img {
+        display: block;
+        margin: 0 auto;
+        max-width: 100%;
+        height: auto;
+      }
+
+      .preview-modal__body pre {
+        margin: 0;
+        padding: 1.25rem;
+        font-family: "IBM Plex Mono", "Fira Code", monospace;
+        font-size: 0.95rem;
+        line-height: 1.6;
+        white-space: pre-wrap;
+      }
+
+      body.modal-open {
+        overflow: hidden;
       }
 
       .multi-details {
@@ -551,7 +670,7 @@
       <header>
         <h1>Consola inteligente de extracción</h1>
         <p>
-          Arrastra y suelta tus facturas o comprobantes en PDF, XML, TXT o imagen. La
+          Arrastra y suelta tus facturas o comprobantes en PDF, XML, JSON o imagen. La
           consola detecta el tipo de documento automáticamente y te permite alternar
           entre OCR o lectura directa cuando sea necesario. También puedes ingresar
           texto manualmente como alternativa.
@@ -563,7 +682,7 @@
           <div>
             <h2 id="inputHeading">Entrada del documento</h2>
             <p class="helper-text">
-              Formatos admitidos: PDF, XML, TXT, JSON, PNG, JPG, JPEG, TIF, TIFF.
+              Formatos admitidos: PDF, XML, JSON, PNG, JPG, JPEG, TIF, TIFF.
             </p>
           </div>
 
@@ -604,7 +723,7 @@
               <input
                 type="file"
                 id="fileInput"
-                accept=".pdf,.xml,.txt,.json,.png,.jpg,.jpeg,.tif,.tiff"
+                accept=".pdf,.xml,.json,.png,.jpg,.jpeg,.tif,.tiff"
                 hidden
               />
             </div>
@@ -621,7 +740,17 @@
               </div>
 
               <div class="preview" id="previewContainer" hidden>
-                <h3>Vista previa</h3>
+                <div class="preview-header">
+                  <h3>Vista previa</h3>
+                  <button
+                    type="button"
+                    id="previewFullscreenButton"
+                    class="preview-action"
+                    hidden
+                  >
+                    Ver en pantalla completa
+                  </button>
+                </div>
                 <div class="preview-content" id="previewContent"></div>
               </div>
             </div>
@@ -648,7 +777,7 @@
               <input
                 type="file"
                 id="multiFileInput"
-                accept=".pdf,.xml,.txt,.json,.png,.jpg,.jpeg,.tif,.tiff"
+                accept=".pdf,.xml,.json,.png,.jpg,.jpeg,.tif,.tiff"
                 multiple
                 hidden
               />
@@ -658,6 +787,10 @@
               <div class="multi-summary">
                 <span>Tipo detectado:</span>
                 <strong id="multiTypeLabel">—</strong>
+              </div>
+              <div class="toggle" id="multiPdfToggleRow" hidden>
+                <input type="checkbox" id="multiPdfOcrToggle" />
+                <label for="multiPdfOcrToggle">Usar OCR y tratar los PDF como imagen</label>
               </div>
               <ul class="multi-file-list" id="multiFileList"></ul>
             </div>
@@ -701,6 +834,28 @@
       </div>
     </div>
 
+    <div id="previewModal" class="preview-modal" hidden aria-hidden="true">
+      <div
+        class="preview-modal__dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="previewModalTitle"
+      >
+        <div class="preview-modal__header">
+          <h3 id="previewModalTitle">Vista previa</h3>
+          <button
+            type="button"
+            class="preview-modal__close"
+            id="previewModalClose"
+            aria-label="Cerrar vista previa"
+          >
+            &times;
+          </button>
+        </div>
+        <div class="preview-modal__body" id="previewModalContent"></div>
+      </div>
+    </div>
+
     <script>
       const SUPPORTED_TYPES = {
         pdf: {
@@ -713,9 +868,9 @@
           extensions: ["xml"],
           endpoint: "file",
         },
-        text: {
-          label: "Texto",
-          extensions: ["txt", "json"],
+        json: {
+          label: "JSON",
+          extensions: ["json"],
           endpoint: "file",
         },
         image: {
@@ -736,6 +891,7 @@
         filePreviewUrl: null,
         multiFiles: [],
         multiCategory: null,
+        multiUseOcr: false,
         results: [],
         currentIndex: -1,
       };
@@ -751,6 +907,10 @@
       const pdfOcrToggle = document.getElementById("pdfOcrToggle");
       const previewContainer = document.getElementById("previewContainer");
       const previewContent = document.getElementById("previewContent");
+      const previewFullscreenButton = document.getElementById("previewFullscreenButton");
+      const previewModal = document.getElementById("previewModal");
+      const previewModalContent = document.getElementById("previewModalContent");
+      const previewModalClose = document.getElementById("previewModalClose");
       const submitButton = document.getElementById("submitButton");
       const clearButton = document.getElementById("clearButton");
       const statusMessage = document.getElementById("statusMessage");
@@ -777,6 +937,130 @@
       const multiFileList = document.getElementById("multiFileList");
       const multiTypeLabel = document.getElementById("multiTypeLabel");
       const multiEmptyState = document.getElementById("multiEmptyState");
+      const multiPdfToggleRow = document.getElementById("multiPdfToggleRow");
+      const multiPdfOcrToggle = document.getElementById("multiPdfOcrToggle");
+
+      let lastFocusedElement = null;
+
+      function setPreviewActionVisibility(visible) {
+        previewFullscreenButton.hidden = !visible;
+        previewFullscreenButton.disabled = !visible;
+      }
+
+      function setPdfToggleVisibility(visible) {
+        pdfToggleRow.hidden = !visible;
+        pdfToggleRow.setAttribute("aria-hidden", String(!visible));
+        if (!visible) {
+          pdfOcrToggle.checked = false;
+        }
+      }
+
+      function setMultiPdfToggleVisibility(visible) {
+        multiPdfToggleRow.hidden = !visible;
+        multiPdfToggleRow.setAttribute("aria-hidden", String(!visible));
+        if (!visible) {
+          state.multiUseOcr = false;
+          multiPdfOcrToggle.checked = false;
+        }
+      }
+
+      function closePreviewModal() {
+        if (previewModal.hidden) {
+          return;
+        }
+        previewModal.hidden = true;
+        previewModal.setAttribute("aria-hidden", "true");
+        previewModalContent.innerHTML = "";
+        document.body.classList.remove("modal-open");
+        if (lastFocusedElement && typeof lastFocusedElement.focus === "function") {
+          lastFocusedElement.focus();
+        }
+        lastFocusedElement = null;
+      }
+
+      function renderModalPreview(file, category) {
+        previewModalContent.innerHTML = "";
+        if (!file || !category) {
+          const message = document.createElement("p");
+          message.style.padding = "1.25rem";
+          message.textContent = "No hay vista previa disponible.";
+          previewModalContent.appendChild(message);
+          return;
+        }
+        if (category === "image") {
+          const url = state.filePreviewUrl || URL.createObjectURL(file);
+          if (!state.filePreviewUrl) {
+            state.filePreviewUrl = url;
+          }
+          const img = document.createElement("img");
+          img.src = url;
+          img.alt = "Vista previa ampliada de la imagen subida";
+          previewModalContent.appendChild(img);
+        } else if (category === "pdf") {
+          const url = state.filePreviewUrl || URL.createObjectURL(file);
+          if (!state.filePreviewUrl) {
+            state.filePreviewUrl = url;
+          }
+          const iframe = document.createElement("iframe");
+          iframe.src = url;
+          iframe.title = "Vista previa ampliada del PDF";
+          previewModalContent.appendChild(iframe);
+        } else {
+          const placeholder = document.createElement("p");
+          placeholder.style.padding = "1.25rem";
+          placeholder.textContent = "Cargando vista previa...";
+          previewModalContent.appendChild(placeholder);
+          const reader = new FileReader();
+          reader.onload = () => {
+            const text = reader.result || "";
+            previewModalContent.innerHTML = "";
+            const pre = document.createElement("pre");
+            pre.textContent = String(text).slice(0, 20000);
+            previewModalContent.appendChild(pre);
+          };
+          reader.readAsText(file, "utf-8");
+        }
+      }
+
+      function openPreviewModal() {
+        if (!state.file || !state.fileCategory) {
+          return;
+        }
+        lastFocusedElement = document.activeElement;
+        previewModal.hidden = false;
+        previewModal.setAttribute("aria-hidden", "false");
+        document.body.classList.add("modal-open");
+        previewModalClose.focus();
+      }
+
+      previewModalClose.addEventListener("click", () => {
+        closePreviewModal();
+      });
+
+      previewModal.addEventListener("click", (event) => {
+        if (event.target === previewModal) {
+          closePreviewModal();
+        }
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !previewModal.hidden) {
+          event.preventDefault();
+          closePreviewModal();
+        }
+      });
+
+      previewFullscreenButton.addEventListener("click", () => {
+        if (!state.file || !state.fileCategory) {
+          return;
+        }
+        renderModalPreview(state.file, state.fileCategory);
+        openPreviewModal();
+      });
+
+      setPreviewActionVisibility(false);
+      setPdfToggleVisibility(false);
+      setMultiPdfToggleVisibility(false);
 
       fileInput.setAttribute("accept", ACCEPT_STRING);
       multiFileInput.setAttribute("accept", ACCEPT_STRING);
@@ -792,20 +1076,23 @@
         fileDetails.hidden = true;
         fileNameElement.textContent = "—";
         fileTypeElement.textContent = "—";
-        pdfToggleRow.hidden = true;
-        pdfOcrToggle.checked = false;
+        setPdfToggleVisibility(false);
         previewContainer.hidden = true;
         previewContent.innerHTML = "";
+        setPreviewActionVisibility(false);
+        closePreviewModal();
       }
 
       function resetMultiFiles() {
         state.multiFiles = [];
         state.multiCategory = null;
+        state.multiUseOcr = false;
         multiFileInput.value = "";
         multiDetails.hidden = true;
         multiEmptyState.hidden = false;
         multiFileList.innerHTML = "";
         multiTypeLabel.textContent = "—";
+        setMultiPdfToggleVisibility(false);
       }
 
       function setStatus(message, isError = false) {
@@ -866,6 +1153,7 @@
       }
 
       function renderPreview(file, category) {
+        closePreviewModal();
         previewContent.innerHTML = "";
         previewContainer.hidden = false;
 
@@ -899,6 +1187,7 @@
           };
           reader.readAsText(file, "utf-8");
         }
+        setPreviewActionVisibility(true);
       }
 
       function updateFileSelection(file) {
@@ -913,10 +1202,7 @@
         fileDetails.hidden = false;
         fileNameElement.textContent = file.name;
         fileTypeElement.textContent = SUPPORTED_TYPES[category].label;
-        pdfToggleRow.hidden = category !== "pdf";
-        if (category !== "pdf") {
-          pdfOcrToggle.checked = false;
-        }
+        setPdfToggleVisibility(category === "pdf");
         renderPreview(file, category);
         setStatus("");
       }
@@ -935,7 +1221,15 @@
         }
         multiDetails.hidden = false;
         multiEmptyState.hidden = true;
-        multiTypeLabel.textContent = SUPPORTED_TYPES[state.multiCategory].label;
+        const label = SUPPORTED_TYPES[state.multiCategory].label;
+        const isPdfBatch = state.multiCategory === "pdf" && state.multiFiles.length > 0;
+        setMultiPdfToggleVisibility(isPdfBatch);
+        if (isPdfBatch) {
+          multiPdfOcrToggle.checked = state.multiUseOcr;
+          multiTypeLabel.textContent = `${label}${state.multiUseOcr ? " (OCR)" : ""}`;
+        } else {
+          multiTypeLabel.textContent = label;
+        }
         multiFileList.innerHTML = "";
         state.multiFiles.forEach((entry, index) => {
           const item = document.createElement("li");
@@ -944,7 +1238,10 @@
           const name = document.createElement("strong");
           name.textContent = entry.file.name;
           const type = document.createElement("small");
-          type.textContent = SUPPORTED_TYPES[entry.category].label;
+          type.textContent =
+            entry.category === "pdf" && state.multiUseOcr
+              ? `${SUPPORTED_TYPES[entry.category].label} (OCR)`
+              : SUPPORTED_TYPES[entry.category].label;
           info.appendChild(name);
           info.appendChild(type);
           const removeButton = document.createElement("button");
@@ -958,6 +1255,8 @@
             state.multiFiles.splice(index, 1);
             if (!state.multiFiles.length) {
               state.multiCategory = null;
+              state.multiUseOcr = false;
+              multiPdfOcrToggle.checked = false;
             }
             renderMultiList();
           });
@@ -981,6 +1280,9 @@
           return;
         }
         state.multiCategory = category;
+        if (category !== "pdf") {
+          setMultiPdfToggleVisibility(false);
+        }
         state.multiFiles.push({ file, category });
         renderMultiList();
         setStatus("");
@@ -1063,6 +1365,11 @@
         }
         const { files } = event.dataTransfer;
         handleMultiFileList(files);
+      });
+
+      multiPdfOcrToggle.addEventListener("change", () => {
+        state.multiUseOcr = multiPdfOcrToggle.checked;
+        renderMultiList();
       });
 
       function flattenData(data, prefix = "") {
@@ -1272,6 +1579,7 @@
             payload: {
               category: state.multiCategory,
               files: state.multiFiles.map((entry) => entry.file),
+              useOcr: state.multiUseOcr,
             },
           };
         }
@@ -1301,8 +1609,8 @@
         let endpoint = "/api/v1/extract/file";
         if (type === "image") {
           endpoint = "/api/v1/extract/image";
-        } else if (type === "pdf") {
-          endpoint = useOcr ? "/api/v1/extract/image" : "/api/v1/extract/file";
+        } else if (type === "pdf" && useOcr) {
+          endpoint = "/api/v1/extract/file?force_ocr=true";
         }
         const response = await fetch(endpoint, {
           method: "POST",
@@ -1324,15 +1632,21 @@
             const result = await sendText(payload);
             addResultEntry(result, "Texto manual");
           } else if (type === "multi") {
-            const { category, files } = payload;
+            const { category, files, useOcr } = payload;
             for (let index = 0; index < files.length; index += 1) {
               setStatus(
                 `Procesando archivo ${index + 1} de ${files.length}...`,
                 false
               );
               const currentFile = files[index];
-              const currentResult = await sendFile(currentFile, category);
-              const description = `${SUPPORTED_TYPES[category].label} · ${currentFile.name}`;
+              const currentResult = await sendFile(currentFile, category, {
+                useOcr: category === "pdf" ? useOcr : false,
+              });
+              const label =
+                category === "pdf"
+                  ? `${SUPPORTED_TYPES[category].label}${useOcr ? " (OCR)" : ""}`
+                  : SUPPORTED_TYPES[category].label;
+              const description = `${label} · ${currentFile.name}`;
               addResultEntry(currentResult, description);
             }
             resetMultiFiles();

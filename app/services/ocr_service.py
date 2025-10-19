@@ -23,10 +23,13 @@ class AzureOCRService:
         )
     def extract_text(self, data: bytes, content_type: Optional[str] = None) -> str:
 
+        options = {}
+        if content_type:
+            options["content_type"] = content_type
         poller = self._client.begin_analyze_document(
             model_id="prebuilt-read",
             document=data,
-            #content_type=content_type,
+            **options,
         )
         result = poller.result()
         lines = []
