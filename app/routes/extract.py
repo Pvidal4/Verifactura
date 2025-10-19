@@ -3,11 +3,15 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
 from pydantic import BaseModel, Field
 
 from app.config import Config
-from app.services.extraction_service import IMAGE_EXTENSIONS, ExtractionService
+from app.services.extraction_service import (
+    IMAGE_EXTENSIONS,
+    PDF_EXTENSIONS,
+    ExtractionService,
+)
 
 router = APIRouter(tags=["Extracción"])
 
@@ -71,6 +75,12 @@ async def extract_from_text_endpoint(
 )
 async def extract_from_file_endpoint(
     file: UploadFile = File(...),
+    force_ocr: bool = Query(
+        False,
+        description=(
+            "Forzar el uso de OCR incluso si se puede leer texto directamente (PDF)."
+        ),
+    ),
     service: ExtractionService = Depends(_get_service),
 ) -> Dict[str, Any]:
 
@@ -79,7 +89,9 @@ async def extract_from_file_endpoint(
     if not data:
         raise HTTPException(status_code=400, detail="El archivo subido está vacío.")
     try:
-        return service.extract_from_file(file.filename or "archivo", data, file.content_type)
+        return service.extract_from_file(
+            file.filename or "archivo", data, file.content_type, force_ocr=force_ocr
+        )
     except RuntimeError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -98,13 +110,18 @@ async def extract_from_image_endpoint(
     service: ExtractionService = Depends(_get_service),
 ) -> Dict[str, Any]:
 
-    if not (image.content_type or "").startswith("image/"):
-        suffix = Path((image.filename or "").lower()).suffix
-        if suffix not in IMAGE_EXTENSIONS:
-            raise HTTPException(
-                status_code=400,
-                detail="El archivo proporcionado no es una imagen soportada.",
-            )
+    content_type = (image.content_type or "").lower()
+    suffix = Path((image.filename or "").lower()).suffix
+    if not (
+        content_type.startswith("image/")
+        or suffix in IMAGE_EXTENSIONS
+        or suffix in PDF_EXTENSIONS
+        or content_type == "application/pdf"
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="El archivo proporcionado no es una imagen soportada.",
+        )
     data = await image.read()
     if not data:
         raise HTTPException(status_code=400, detail="La imagen subida está vacía.")
