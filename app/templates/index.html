@@ -229,6 +229,46 @@
         gap: 1.5rem;
       }
 
+      .llm-provider-row {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 1rem;
+        border-radius: 1rem;
+        border: 1px dashed var(--border);
+        background: var(--surface-subtle);
+      }
+
+      .llm-provider-row label {
+        font-weight: 600;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        color: var(--text);
+      }
+
+      .llm-provider-row label span {
+        font-weight: 400;
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+
+      .llm-provider-row select {
+        appearance: none;
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        padding: 0.6rem 0.75rem;
+        font-size: 0.95rem;
+        background: var(--surface);
+        color: var(--text);
+      }
+
+      .llm-provider-row select:focus-visible {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+
       .panel-toggle {
         border: 1px solid var(--border);
         background: var(--surface);
@@ -1123,6 +1163,23 @@
           </div>
 
           <div class="panel-body" id="inputPanelBody">
+            <div
+              class="llm-provider-row"
+              id="llmProviderRow"
+              hidden
+              aria-hidden="true"
+            >
+              <label for="llmProviderSelect">
+                Proveedor LLM
+                <span
+                  >Elige entre el servicio API y el modelo local (GPT OSS 20B).</span
+                >
+              </label>
+              <select id="llmProviderSelect">
+                <option value="api">Servicio API</option>
+                <option value="local">Servicio local (GPT OSS 20B)</option>
+              </select>
+            </div>
             <div class="segmented-control" role="tablist">
               <button
                 type="button"
@@ -1338,6 +1395,7 @@
         multiUseOcr: false,
         results: [],
         currentIndex: -1,
+        llmProvider: "api",
         settings: {
           autoClear: true,
           theme: "light",
@@ -1392,6 +1450,8 @@
       const themeSelect = document.getElementById("themeSelect");
       const developerToggle = document.getElementById("developerToggle");
       const developerBadge = document.getElementById("developerBadge");
+      const llmProviderRow = document.getElementById("llmProviderRow");
+      const llmProviderSelect = document.getElementById("llmProviderSelect");
 
       let lastFocusedElement = null;
       let lastSettingsTrigger = null;
@@ -1412,6 +1472,20 @@
 
       function applyDeveloperMode(enabled) {
         developerBadge.hidden = !enabled;
+        if (llmProviderRow) {
+          llmProviderRow.hidden = !enabled;
+          llmProviderRow.setAttribute("aria-hidden", String(!enabled));
+          if (enabled) {
+            if (llmProviderSelect) {
+              llmProviderSelect.value = state.llmProvider;
+            }
+          } else {
+            state.llmProvider = "api";
+            if (llmProviderSelect) {
+              llmProviderSelect.value = "api";
+            }
+          }
+        }
       }
 
       function syncSettingsControls() {
@@ -1647,6 +1721,13 @@
         state.settings.developerMode = event.target.checked;
         applyDeveloperMode(state.settings.developerMode);
       });
+
+      if (llmProviderSelect) {
+        llmProviderSelect.addEventListener("change", (event) => {
+          const value = event.target.value === "local" ? "local" : "api";
+          state.llmProvider = value;
+        });
+      }
 
       applyTheme(state.settings.theme);
       applyDeveloperMode(state.settings.developerMode);
@@ -2089,7 +2170,10 @@
         const response = await fetch("/api/v1/extract/text", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text }),
+          body: JSON.stringify({
+            text,
+            llm_provider: state.llmProvider,
+          }),
         });
         if (!response.ok) {
           const detail = await response.json().catch(() => ({}));
@@ -2105,10 +2189,13 @@
         let endpoint = "/api/v1/extract/file";
         if (type === "image") {
           endpoint = "/api/v1/extract/image";
-        } else if (type === "pdf" && useOcr) {
-          endpoint = "/api/v1/extract/file?force_ocr=true";
         }
-        const response = await fetch(endpoint, {
+        const url = new URL(endpoint, window.location.origin);
+        if (type === "pdf" && useOcr) {
+          url.searchParams.set("force_ocr", "true");
+        }
+        url.searchParams.set("llm_provider", state.llmProvider);
+        const response = await fetch(url, {
           method: "POST",
           body: formData,
         });

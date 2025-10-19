@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import io
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from PyPDF2 import PdfReader
 
@@ -103,7 +103,7 @@ class PDFTextExtractor:
                 images = []
             if not images:
                 continue
-            chosen: Tuple[bytes, str] | None = None
+            chosen: Optional[Tuple[bytes, str]] = None
             max_area = -1
             for image in images:
                 data = getattr(image, "data", b"")
