@@ -26,6 +26,24 @@ class TextExtractionRequest(BaseModel):
             "Usa 'api' para OpenAI o 'local' para el modelo con pesos abiertos."
         ),
     )
+    llm_model: Optional[str] = Field(
+        None,
+        description=(
+            "Modelo específico a utilizar para el proveedor seleccionado."
+        ),
+    )
+    temperature: Optional[float] = Field(
+        None,
+        ge=0,
+        le=2,
+        description="Temperatura para el muestreo del modelo (0-2).",
+    )
+    top_p: Optional[float] = Field(
+        None,
+        ge=0,
+        le=1,
+        description="Top-p (nucleus sampling) del modelo (0-1).",
+    )
 
 
 def _get_service(request: Request) -> ExtractionService:
@@ -68,7 +86,13 @@ async def extract_from_text_endpoint(
             status_code=400,
             detail="El texto proporcionado está vacío.",
         )
-    return service.extract_from_text(text, provider=payload.llm_provider)
+    return service.extract_from_text(
+        text,
+        provider=payload.llm_provider,
+        model=payload.llm_model,
+        temperature=payload.temperature,
+        top_p=payload.top_p,
+    )
 
 
 @router.post(
@@ -96,6 +120,24 @@ async def extract_from_file_endpoint(
             "Usa 'api' para OpenAI o 'local' para el modelo con pesos abiertos."
         ),
     ),
+    llm_model: Optional[str] = Query(
+        None,
+        description=(
+            "Modelo específico a utilizar para el proveedor seleccionado."
+        ),
+    ),
+    temperature: Optional[float] = Query(
+        None,
+        ge=0,
+        le=2,
+        description="Temperatura para el muestreo del modelo (0-2).",
+    ),
+    top_p: Optional[float] = Query(
+        None,
+        ge=0,
+        le=1,
+        description="Top-p (nucleus sampling) del modelo (0-1).",
+    ),
     service: ExtractionService = Depends(_get_service),
 ) -> Dict[str, Any]:
 
@@ -110,6 +152,9 @@ async def extract_from_file_endpoint(
             file.content_type,
             force_ocr=force_ocr,
             provider=llm_provider,
+            model=llm_model,
+            temperature=temperature,
+            top_p=top_p,
         )
     except RuntimeError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -132,6 +177,24 @@ async def extract_from_image_endpoint(
             "Proveedor del modelo de lenguaje a utilizar. "
             "Usa 'api' para OpenAI o 'local' para el modelo con pesos abiertos."
         ),
+    ),
+    llm_model: Optional[str] = Query(
+        None,
+        description=(
+            "Modelo específico a utilizar para el proveedor seleccionado."
+        ),
+    ),
+    temperature: Optional[float] = Query(
+        None,
+        ge=0,
+        le=2,
+        description="Temperatura para el muestreo del modelo (0-2).",
+    ),
+    top_p: Optional[float] = Query(
+        None,
+        ge=0,
+        le=1,
+        description="Top-p (nucleus sampling) del modelo (0-1).",
     ),
     service: ExtractionService = Depends(_get_service),
 ) -> Dict[str, Any]:
@@ -157,6 +220,9 @@ async def extract_from_image_endpoint(
             data,
             image.content_type,
             provider=llm_provider,
+            model=llm_model,
+            temperature=temperature,
+            top_p=top_p,
         )
     except RuntimeError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

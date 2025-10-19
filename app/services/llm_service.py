@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Sequence, Tuple
+from typing import Any, Dict, List, Optional
 
 import torch
 from openai import OpenAI
@@ -12,7 +12,6 @@ from transformers import (
     AutoTokenizer,
     pipeline,
 )
-from transformers.dynamic_module_utils import get_class_from_dynamic_module
 
 from app.config import Config
 
@@ -81,10 +80,20 @@ class OpenAILLMService:
         self._client = OpenAI(api_key=config.OPENAI_API_KEY)
         self._model = config.OPENAI_MODEL
         self._schema_name = config.JSON_MODE_SCHEMA_NAME
+        self._default_temperature = 1.0
+        self._default_top_p = 1.0
 
-    def extract(self, text: str) -> Dict[str, Any]:
+    def extract(
+        self,
+        text: str,
+        *,
+        model: Optional[str] = None,
+        temperature: Optional[float] = None,
+        top_p: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        chosen_model = (model or self._model).strip()
         response = self._client.chat.completions.create(
-            model=self._model,
+            model=chosen_model,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": text},
@@ -97,8 +106,9 @@ class OpenAILLMService:
                     "strict": True,
                 },
             },
-            temperature=1,
-            reasoning_effort="minimal"
+            temperature=self._default_temperature if temperature is None else temperature,
+            top_p=self._default_top_p if top_p is None else top_p,
+            reasoning_effort="minimal",
         )
         content = response.choices[0].message.content
         return _parse_model_response(content)
@@ -106,189 +116,87 @@ class OpenAILLMService:
 
 class LocalLLMService:
     def __init__(self, config: Config) -> None:
-        self._model_id = config.LOCAL_LLM_MODEL_ID
-        self._model_path = config.LOCAL_LLM_MODEL_PATH
-        self._pipeline = None
+        configured_path = config.LOCAL_LLM_MODEL_PATH
+        configured_id = config.LOCAL_LLM_MODEL_ID
+        candidate = configured_path or configured_id or "models/gpt-oss-20b"
+        if configured_path:
+            resolved_path = Path(configured_path)
+            if resolved_path.exists():
+                candidate = str(resolved_path)
+            elif configured_id:
+                candidate = configured_id
 
-    def _resolve_model_source(self) -> str:
-        if self._model_path:
-            local_path = Path(self._model_path)
-            if local_path.exists():
-                return str(local_path)
-        return self._model_id
+        self._default_model = candidate
+        self._device = 0 if torch.cuda.is_available() else -1
+        print(
+            f"Using device: {'GPU (CUDA)' if self._device == 0 else 'CPU'}"
+        )
+        self._pipelines: Dict[str, Any] = {}
+        self._default_temperature = 1.0
+        self._default_top_p = 1.0
 
-    def _load_tokenizer_config(self, model_source: str) -> Tuple[Dict[str, Any], List[str]]:
-        errors: List[str] = []
-        config_data: Dict[str, Any] = {}
+    def _get_pipeline(self, model: Optional[str] = None):
+        source = (model or self._default_model).strip()
+        if source not in self._pipelines:
+            resolved = Path(source)
+            model_source = str(resolved) if resolved.exists() else source
+            load_kwargs: Dict[str, Any] = {"trust_remote_code": True}
 
-        local_config = Path(model_source) / "tokenizer_config.json"
-        if local_config.exists():
-            try:
-                config_data = json.loads(local_config.read_text())
-                return config_data, errors
-            except Exception as exc:  # pragma: no cover - defensive
-                errors.append(f"tokenizer_config.json lectura local: {exc}")
+            config = AutoConfig.from_pretrained(model_source, **load_kwargs)
+            tokenizer = AutoTokenizer.from_pretrained(model_source, **load_kwargs)
 
-        try:
-            from huggingface_hub import hf_hub_download
+            model_kwargs: Dict[str, Any] = {
+                "config": config,
+                "trust_remote_code": True,
+            }
+            if torch.cuda.is_available():
+                model_kwargs["torch_dtype"] = torch.bfloat16
 
-            downloaded_path = hf_hub_download(
-                model_source,
-                filename="tokenizer_config.json",
-            )
-            config_data = json.loads(Path(downloaded_path).read_text())
-        except Exception as exc:  # pragma: no cover - defensivo
-            errors.append(f"tokenizer_config.json descarga: {exc}")
-        return config_data, errors
-
-    def _ensure_pipeline(self):
-        if self._pipeline is None:
-            dtype = torch.float16 if torch.cuda.is_available() else torch.float32
-            model_source = self._resolve_model_source()
-            try:
-                config = AutoConfig.from_pretrained(
-                    model_source,
-                    trust_remote_code=True,
-                )
-            except KeyError:
-                config = None
-            tokenizer = None
-            tokenizer_errors: List[str] = []
-            tokenizer_config: Dict[str, Any] = {}
-            tokenizer_config_errors: List[str] = []
-            tokenizer_attempts = [
-                {"use_fast": True},
-                {"use_fast": False},
-            ]
-            local_tokenizer_file = Path(model_source) / "tokenizer.model"
-            if local_tokenizer_file.exists():
-                tokenizer_attempts.append(
-                    {
-                        "use_fast": False,
-                        "tokenizer_file": str(local_tokenizer_file),
-                    }
-                )
-
-            for attempt in tokenizer_attempts:
-                try:
-                    tokenizer = AutoTokenizer.from_pretrained(
-                        model_source,
-                        trust_remote_code=True,
-                        **attempt,
-                    )
-                    break
-                except Exception as exc:
-                    tokenizer_errors.append(f"{attempt}: {exc}")
-
-            if tokenizer is None and config is not None:
-                auto_map = getattr(config, "auto_map", None)
-                mapping = None
-                if isinstance(auto_map, dict):
-                    mapping = auto_map.get("AutoTokenizer")
-                if mapping:
-                    dynamic_spec: str
-                    if isinstance(mapping, (list, tuple)) and mapping:
-                        dynamic_spec = mapping[0]
-                    else:
-                        dynamic_spec = str(mapping)
-                    try:
-                        tokenizer_cls = get_class_from_dynamic_module(
-                            dynamic_spec,
-                            model_source,
-                            trust_remote_code=True,
-                        )
-                        tokenizer = tokenizer_cls.from_pretrained(
-                            model_source,
-                            trust_remote_code=True,
-                        )
-                    except Exception as exc:
-                        tokenizer_errors.append(
-                            f"dynamic AutoTokenizer {dynamic_spec}: {exc}"
-                        )
-
-            if tokenizer is None:
-                tokenizer_config, tokenizer_config_errors = self._load_tokenizer_config(
-                    model_source
-                )
-
-            if tokenizer is None and tokenizer_config:
-                tokenizer_class = tokenizer_config.get("tokenizer_class")
-                dynamic_candidates: List[str] = []
-                if isinstance(tokenizer_class, str) and tokenizer_class:
-                    if "." in tokenizer_class:
-                        dynamic_candidates.append(tokenizer_class)
-                    elif config is not None and getattr(config, "model_type", None):
-                        model_type = getattr(config, "model_type")
-                        dynamic_candidates.append(
-                            f"tokenization_{model_type}.{tokenizer_class}"
-                        )
-                        dynamic_candidates.append(tokenizer_class)
-
-                for candidate in dynamic_candidates:
-                    try:
-                        tokenizer_cls = get_class_from_dynamic_module(
-                            candidate,
-                            model_source,
-                            trust_remote_code=True,
-                        )
-                        tokenizer = tokenizer_cls.from_pretrained(
-                            model_source,
-                            trust_remote_code=True,
-                        )
-                        break
-                    except Exception as exc:
-                        tokenizer_errors.append(
-                            f"dynamic tokenizer {candidate}: {exc}"
-                        )
-
-            if tokenizer is None:
-                error_sources = tokenizer_errors + tokenizer_config_errors
-                error_details = " | ".join(error_sources)
-                raise RuntimeError(
-                    "No se pudo cargar el tokenizador del modelo local. "
-                    "Verifica la descarga de los pesos o vuelve a intentarlo con "
-                    "un paquete actualizado de transformers. "
-                    f"Detalles: {error_details}"
-                )
             model = AutoModelForCausalLM.from_pretrained(
                 model_source,
-                config=config,
-                trust_remote_code=True,
-                torch_dtype=dtype,
-                device_map="auto",
+                **model_kwargs,
             )
-            self._pipeline = pipeline(
+
+            self._pipelines[source] = pipeline(
                 "text-generation",
                 model=model,
                 tokenizer=tokenizer,
-                torch_dtype=dtype,
-                device_map="auto",
+                device_map=None,
+                device=self._device,
             )
-        return self._pipeline
+        return self._pipelines[source]
 
-    def _extract_content(self, outputs: Sequence[Dict[str, Any]]) -> str:
-        if not outputs:
-            raise RuntimeError("El modelo local no generó ninguna respuesta.")
-        generated = outputs[0].get("generated_text")
-        if isinstance(generated, list):
-            # Los modelos con formato de chat retornan una lista de mensajes
-            final_message = generated[-1]
-            if isinstance(final_message, dict):
-                return str(final_message.get("content", ""))
-            return str(final_message)
-        return str(generated or "")
-
-    def extract(self, text: str) -> Dict[str, Any]:
-        pipe = self._ensure_pipeline()
+    def extract(
+        self,
+        text: str,
+        *,
+        model: Optional[str] = None,
+        temperature: Optional[float] = None,
+        top_p: Optional[float] = None,
+    ) -> Dict[str, Any]:
         messages: List[Dict[str, str]] = [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": text},
+            {
+                "role": "user",
+                "content": f"{SYSTEM_PROMPT}\n\n{text}",
+            },
         ]
-        outputs = pipe(
+
+        pipeline_instance = self._get_pipeline(model)
+
+        outputs = pipeline_instance(
             messages,
             max_new_tokens=256,
+            temperature=self._default_temperature if temperature is None else temperature,
+            top_p=self._default_top_p if top_p is None else top_p,
         )
-        content = self._extract_content(outputs)
+
+        final_message = outputs[0]["generated_text"][-1]
+        if isinstance(final_message, dict):
+            content = str(final_message.get("content", ""))
+        else:
+            content = str(final_message)
+
         if not content.strip():
             raise RuntimeError("El modelo local devolvió una respuesta vacía.")
+
         return _parse_model_response(content)
