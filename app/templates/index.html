@@ -412,13 +412,25 @@
         color: var(--muted);
       }
 
-      .multi-file-item button {
+      .multi-file-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .multi-file-item button.remove-button {
         border: none;
         background: transparent;
         color: var(--danger);
         font-weight: 600;
         font-size: 0.95rem;
         cursor: pointer;
+      }
+
+      .multi-file-item button.remove-button:hover,
+      .multi-file-item button.remove-button:focus-visible {
+        color: #b91c1c;
+        outline: none;
       }
 
       textarea {
@@ -889,6 +901,7 @@
         file: null,
         fileCategory: null,
         filePreviewUrl: null,
+        modalPreviewUrl: null,
         multiFiles: [],
         multiCategory: null,
         multiUseOcr: false,
@@ -950,6 +963,7 @@
       function setPdfToggleVisibility(visible) {
         pdfToggleRow.hidden = !visible;
         pdfToggleRow.setAttribute("aria-hidden", String(!visible));
+        pdfToggleRow.style.display = visible ? "flex" : "none";
         if (!visible) {
           pdfOcrToggle.checked = false;
         }
@@ -958,6 +972,7 @@
       function setMultiPdfToggleVisibility(visible) {
         multiPdfToggleRow.hidden = !visible;
         multiPdfToggleRow.setAttribute("aria-hidden", String(!visible));
+        multiPdfToggleRow.style.display = visible ? "flex" : "none";
         if (!visible) {
           state.multiUseOcr = false;
           multiPdfOcrToggle.checked = false;
@@ -970,6 +985,10 @@
         }
         previewModal.hidden = true;
         previewModal.setAttribute("aria-hidden", "true");
+        if (state.modalPreviewUrl) {
+          URL.revokeObjectURL(state.modalPreviewUrl);
+          state.modalPreviewUrl = null;
+        }
         previewModalContent.innerHTML = "";
         document.body.classList.remove("modal-open");
         if (lastFocusedElement && typeof lastFocusedElement.focus === "function") {
@@ -978,7 +997,7 @@
         lastFocusedElement = null;
       }
 
-      function renderModalPreview(file, category) {
+      function renderModalPreview(file, category, { reusePreviewUrl = false } = {}) {
         previewModalContent.innerHTML = "";
         if (!file || !category) {
           const message = document.createElement("p");
@@ -987,25 +1006,49 @@
           previewModalContent.appendChild(message);
           return;
         }
-        if (category === "image") {
-          const url = state.filePreviewUrl || URL.createObjectURL(file);
-          if (!state.filePreviewUrl) {
-            state.filePreviewUrl = url;
+
+        const revokeModalUrl = () => {
+          if (state.modalPreviewUrl) {
+            URL.revokeObjectURL(state.modalPreviewUrl);
+            state.modalPreviewUrl = null;
           }
-          const img = document.createElement("img");
-          img.src = url;
-          img.alt = "Vista previa ampliada de la imagen subida";
-          previewModalContent.appendChild(img);
-        } else if (category === "pdf") {
-          const url = state.filePreviewUrl || URL.createObjectURL(file);
-          if (!state.filePreviewUrl) {
-            state.filePreviewUrl = url;
+        };
+
+        if (category === "image" || category === "pdf") {
+          let url = null;
+          const shouldReuse = reusePreviewUrl && state.filePreviewUrl;
+          if (shouldReuse) {
+            url = state.filePreviewUrl;
+            revokeModalUrl();
+          } else {
+            url = URL.createObjectURL(file);
+            if (reusePreviewUrl) {
+              if (state.filePreviewUrl && state.filePreviewUrl !== url) {
+                URL.revokeObjectURL(state.filePreviewUrl);
+              }
+              state.filePreviewUrl = url;
+              revokeModalUrl();
+            } else {
+              if (state.modalPreviewUrl && state.modalPreviewUrl !== url) {
+                URL.revokeObjectURL(state.modalPreviewUrl);
+              }
+              state.modalPreviewUrl = url;
+            }
           }
-          const iframe = document.createElement("iframe");
-          iframe.src = url;
-          iframe.title = "Vista previa ampliada del PDF";
-          previewModalContent.appendChild(iframe);
+
+          if (category === "image") {
+            const img = document.createElement("img");
+            img.src = url;
+            img.alt = "Vista previa ampliada de la imagen subida";
+            previewModalContent.appendChild(img);
+          } else {
+            const iframe = document.createElement("iframe");
+            iframe.src = url;
+            iframe.title = "Vista previa ampliada del PDF";
+            previewModalContent.appendChild(iframe);
+          }
         } else {
+          revokeModalUrl();
           const placeholder = document.createElement("p");
           placeholder.style.padding = "1.25rem";
           placeholder.textContent = "Cargando vista previa...";
@@ -1022,10 +1065,15 @@
         }
       }
 
-      function openPreviewModal() {
-        if (!state.file || !state.fileCategory) {
+      function showModalPreview(file, category, options = {}) {
+        if (!file || !category) {
           return;
         }
+        renderModalPreview(file, category, options);
+        openPreviewModal();
+      }
+
+      function openPreviewModal() {
         lastFocusedElement = document.activeElement;
         previewModal.hidden = false;
         previewModal.setAttribute("aria-hidden", "false");
@@ -1054,8 +1102,7 @@
         if (!state.file || !state.fileCategory) {
           return;
         }
-        renderModalPreview(state.file, state.fileCategory);
-        openPreviewModal();
+        showModalPreview(state.file, state.fileCategory, { reusePreviewUrl: true });
       });
 
       setPreviewActionVisibility(false);
@@ -1244,9 +1291,25 @@
               : SUPPORTED_TYPES[entry.category].label;
           info.appendChild(name);
           info.appendChild(type);
+          const actions = document.createElement("div");
+          actions.className = "multi-file-actions";
+
+          const viewButton = document.createElement("button");
+          viewButton.type = "button";
+          viewButton.textContent = "Ver";
+          viewButton.className = "preview-action";
+          viewButton.setAttribute(
+            "aria-label",
+            `Ver ${entry.file.name} en pantalla completa`
+          );
+          viewButton.addEventListener("click", () => {
+            showModalPreview(entry.file, entry.category);
+          });
+
           const removeButton = document.createElement("button");
           removeButton.type = "button";
           removeButton.textContent = "×";
+          removeButton.className = "remove-button";
           removeButton.setAttribute(
             "aria-label",
             `Eliminar ${entry.file.name} de la lista`
@@ -1260,8 +1323,12 @@
             }
             renderMultiList();
           });
+
+          actions.appendChild(viewButton);
+          actions.appendChild(removeButton);
+
           item.appendChild(info);
-          item.appendChild(removeButton);
+          item.appendChild(actions);
           multiFileList.appendChild(item);
         });
       }
