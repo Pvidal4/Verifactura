@@ -127,16 +127,39 @@ class LocalLLMService:
                 )
             except KeyError:
                 config = None
-            try:
-                tokenizer = AutoTokenizer.from_pretrained(
-                    model_source,
-                    trust_remote_code=True,
+            tokenizer = None
+            tokenizer_errors: List[str] = []
+            tokenizer_attempts = [
+                {"use_fast": True},
+                {"use_fast": False},
+            ]
+            local_tokenizer_file = Path(model_source) / "tokenizer.model"
+            if local_tokenizer_file.exists():
+                tokenizer_attempts.append(
+                    {
+                        "use_fast": False,
+                        "tokenizer_file": str(local_tokenizer_file),
+                    }
                 )
-            except Exception:
-                tokenizer = AutoTokenizer.from_pretrained(
-                    model_source,
-                    trust_remote_code=True,
-                    use_fast=False,
+
+            for attempt in tokenizer_attempts:
+                try:
+                    tokenizer = AutoTokenizer.from_pretrained(
+                        model_source,
+                        trust_remote_code=True,
+                        **attempt,
+                    )
+                    break
+                except Exception as exc:
+                    tokenizer_errors.append(f"{attempt}: {exc}")
+
+            if tokenizer is None:
+                error_details = " | ".join(tokenizer_errors)
+                raise RuntimeError(
+                    "No se pudo cargar el tokenizador del modelo local. "
+                    "Verifica la descarga de los pesos o vuelve a intentarlo con "
+                    "un paquete actualizado de transformers. "
+                    f"Detalles: {error_details}"
                 )
             model = AutoModelForCausalLM.from_pretrained(
                 model_source,
