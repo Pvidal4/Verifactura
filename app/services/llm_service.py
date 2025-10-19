@@ -194,7 +194,10 @@ class LocalLLMService:
         if self._model_path:
             local_path = Path(self._model_path)
             if local_path.exists():
-                return str(local_path)
+                try:
+                    return local_path.resolve().as_posix()
+                except (OSError, RuntimeError, ValueError):
+                    return str(local_path)
         return self._model_id
 
     def _load_tokenizer_config(self, model_source: str) -> Tuple[Dict[str, Any], List[str]]:
