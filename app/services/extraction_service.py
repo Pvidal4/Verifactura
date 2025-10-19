@@ -115,9 +115,23 @@ class ExtractionService:
             content_type = None
         return self._ocr.extract_text(data, content_type=content_type)
 
-    def extract_from_text(self, text: str, *, provider: Optional[str] = None) -> Dict[str, object]:
+    def extract_from_text(
+        self,
+        text: str,
+        *,
+        provider: Optional[str] = None,
+        model: Optional[str] = None,
+        temperature: Optional[float] = None,
+        top_p: Optional[float] = None,
+    ) -> Dict[str, object]:
+        sanitized_model = model.strip() if isinstance(model, str) else None
         llm = self._get_llm(provider)
-        return llm.extract(text)
+        return llm.extract(
+            text,
+            model=sanitized_model,
+            temperature=temperature,
+            top_p=top_p,
+        )
 
     def extract_from_image(
         self,
@@ -126,6 +140,9 @@ class ExtractionService:
         content_type: Optional[str] = None,
         *,
         provider: Optional[str] = None,
+        model: Optional[str] = None,
+        temperature: Optional[float] = None,
+        top_p: Optional[float] = None,
     ) -> Dict[str, object]:
         if self._ocr is None:
             raise RuntimeError(
@@ -146,7 +163,13 @@ class ExtractionService:
         text = self._ocr.extract_text(data, content_type=content_type)
         if not text:
             raise RuntimeError("No se pudo extraer texto de la imagen ingresada")
-        return self.extract_from_text(text, provider=provider)
+        return self.extract_from_text(
+            text,
+            provider=provider,
+            model=model,
+            temperature=temperature,
+            top_p=top_p,
+        )
 
     def extract_from_file(
         self,
@@ -156,6 +179,9 @@ class ExtractionService:
         *,
         force_ocr: bool = False,
         provider: Optional[str] = None,
+        model: Optional[str] = None,
+        temperature: Optional[float] = None,
+        top_p: Optional[float] = None,
     ) -> Dict[str, object]:
         suffix = Path(filename).suffix.lower()
         if suffix in IMAGE_EXTENSIONS:
@@ -164,6 +190,9 @@ class ExtractionService:
                 data,
                 content_type,
                 provider=provider,
+                model=model,
+                temperature=temperature,
+                top_p=top_p,
             )
         text = ""
         if not force_ocr:
@@ -178,4 +207,10 @@ class ExtractionService:
                 content_type,
                 force_ocr=force_ocr,
             )
-        return self.extract_from_text(text, provider=provider)
+        return self.extract_from_text(
+            text,
+            provider=provider,
+            model=model,
+            temperature=temperature,
+            top_p=top_p,
+        )
