@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Verifactura · Consola de extracción</title>
+    <title>Verifactura · Extracción y validación de facturas vehiculares</title>
     <style>
       :root {
         color-scheme: light;
@@ -55,12 +55,27 @@
       header {
         display: flex;
         flex-direction: column;
+        gap: 1rem;
+        max-width: 100%;
+      }
+
+      .header-bar {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: clamp(1.5rem, 4vw, 3rem);
+        flex-wrap: wrap;
+      }
+
+      .header-text {
+        display: flex;
+        flex-direction: column;
         gap: 0.75rem;
-        max-width: 960px;
+        max-width: min(640px, 100%);
       }
 
       header h1 {
-        font-size: clamp(1.75rem, 3vw, 2.75rem);
+        font-size: clamp(1.85rem, 3.2vw, 3rem);
         font-weight: 600;
         letter-spacing: -0.02em;
       }
@@ -70,6 +85,12 @@
         font-size: 1rem;
         line-height: 1.6;
         max-width: 72ch;
+      }
+
+      .hero-logo {
+        width: clamp(180px, 22vw, 260px);
+        height: auto;
+        display: block;
       }
 
       .workspace {
@@ -93,6 +114,54 @@
       .panel h2 {
         font-size: 1.2rem;
         font-weight: 600;
+      }
+
+      .panel--input {
+        position: relative;
+      }
+
+      .panel-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+
+      .panel-header__text {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .panel-body {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+
+      .panel-toggle {
+        border: 1px solid var(--border);
+        background: #fff;
+        color: var(--muted);
+        border-radius: 999px;
+        padding: 0.35rem 0.75rem;
+        font-size: 0.85rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+      }
+
+      .panel-toggle:hover,
+      .panel-toggle:focus-visible {
+        border-color: var(--accent);
+        color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+        outline: none;
+      }
+
+      .panel-toggle span[aria-hidden="true"] {
+        font-size: 1rem;
       }
 
       .segmented-control {
@@ -503,6 +572,18 @@
         gap: 0.75rem;
       }
 
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
       .primary {
         background: var(--accent);
         color: #fff;
@@ -625,6 +706,72 @@
         text-align: center;
       }
 
+      .workspace--input-hidden {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .workspace--input-hidden .panel--input {
+        display: none;
+      }
+
+      .panel-restore {
+        position: fixed;
+        top: clamp(1.25rem, 4vw, 2rem);
+        right: clamp(1.25rem, 5vw, 3rem);
+        border: 1px solid var(--border);
+        background: #fff;
+        border-radius: 999px;
+        padding: 0.45rem 0.85rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        color: var(--muted);
+        box-shadow: 0 20px 45px -30px rgba(15, 23, 42, 0.4);
+        z-index: 200;
+      }
+
+      .panel-restore:hover,
+      .panel-restore:focus-visible {
+        border-color: var(--accent);
+        color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+        outline: none;
+      }
+
+      .progress-row {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 1rem;
+        padding: 0.75rem 1rem;
+      }
+
+      .progress-row__meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      .progress-track {
+        width: 100%;
+        height: 10px;
+        border-radius: 999px;
+        background: var(--surface-subtle);
+        overflow: hidden;
+      }
+
+      .progress-bar {
+        height: 100%;
+        width: 0;
+        border-radius: inherit;
+        background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+        transition: width 0.3s ease;
+      }
+
       .result-field {
         border: 1px solid var(--border);
         border-radius: 1rem;
@@ -680,65 +827,84 @@
   <body>
     <div class="app-shell">
       <header>
-        <h1>Consola inteligente de extracción</h1>
-        <p>
-          Arrastra y suelta tus facturas o comprobantes en PDF, XML, JSON o imagen. La
-          consola detecta el tipo de documento automáticamente y te permite alternar
-          entre OCR o lectura directa cuando sea necesario. También puedes ingresar
-          texto manualmente como alternativa.
-        </p>
+        <div class="header-bar">
+          <div class="header-text">
+            <h1>Verifactura · Extracción y validación de facturas vehiculares</h1>
+            <p>
+              Carga tus comprobantes y obtén campos normalizados y validados con reglas
+              SRI y VIN.
+            </p>
+          </div>
+          <img
+            src="{{ request.url_for('static', path='verifactura-logo.svg') }}"
+            alt="VeriFactura"
+            class="hero-logo"
+          />
+        </div>
       </header>
 
       <div class="workspace">
-        <section class="panel" aria-labelledby="inputHeading">
-          <div>
-            <h2 id="inputHeading">Entrada del documento</h2>
-            <p class="helper-text">
-              Formatos admitidos: PDF, XML, JSON, PNG, JPG, JPEG, TIF, TIFF.
-            </p>
-          </div>
-
-          <div class="segmented-control" role="tablist">
-            <button
-              type="button"
-              id="fileModeButton"
-              class="active"
-              role="tab"
-              aria-selected="true"
-            >
-              Archivo
-            </button>
-            <button
-              type="button"
-              id="textModeButton"
-              role="tab"
-              aria-selected="false"
-            >
-              Texto manual
-            </button>
-            <button
-              type="button"
-              id="multiModeButton"
-              role="tab"
-              aria-selected="false"
-            >
-              Multi-archivo
-            </button>
-          </div>
-
-          <div id="fileMode" role="tabpanel" aria-labelledby="fileModeButton">
-            <div class="drop-zone" id="dropZone" tabindex="0">
-              <div class="drop-zone__icon">⬆</div>
-              <strong>Arrastra tu archivo aquí</strong>
-              <p id="dropInstruction">o haz clic para seleccionarlo desde tu equipo</p>
-              <button type="button" id="browseButton">Buscar archivo</button>
-              <input
-                type="file"
-                id="fileInput"
-                accept=".pdf,.xml,.json,.png,.jpg,.jpeg,.tif,.tiff"
-                hidden
-              />
+        <section class="panel panel--input" aria-labelledby="inputHeading" id="inputPanel">
+          <div class="panel-header">
+            <div class="panel-header__text">
+              <h2 id="inputHeading">Carga de facturas</h2>
+              <p class="helper-text">
+                Formatos admitidos: PDF, XML, JSON, PNG, JPG, JPEG, TIF, TIFF.
+              </p>
             </div>
+            <button
+              type="button"
+              class="panel-toggle"
+              id="hideInputPanelButton"
+              aria-label="Ocultar sección de carga"
+              aria-pressed="false"
+            >
+              <span aria-hidden="true">👁️</span>
+              <span class="sr-only">Ocultar sección de carga de facturas</span>
+            </button>
+          </div>
+
+          <div class="panel-body" id="inputPanelBody">
+            <div class="segmented-control" role="tablist">
+              <button
+                type="button"
+                id="fileModeButton"
+                class="active"
+                role="tab"
+                aria-selected="true"
+              >
+                Cargar Factura
+              </button>
+              <button
+                type="button"
+                id="multiModeButton"
+                role="tab"
+                aria-selected="false"
+              >
+                Múltiples Facturas
+              </button>
+              <button
+                type="button"
+                id="textModeButton"
+                role="tab"
+                aria-selected="false"
+              >
+                Manual
+              </button>
+            </div>
+
+            <div id="fileMode" role="tabpanel" aria-labelledby="fileModeButton">
+              <div class="drop-zone" id="dropZone" tabindex="0">
+                <div class="drop-zone__icon">⬆</div>
+                <strong>Selecciona la factura a procesar</strong>
+                <button type="button" id="browseButton">Buscar archivo</button>
+                <input
+                  type="file"
+                  id="fileInput"
+                  accept=".pdf,.xml,.json,.png,.jpg,.jpeg,.tif,.tiff"
+                  hidden
+                />
+              </div>
 
             <div class="file-details" id="fileDetails" hidden>
               <div class="file-meta" id="fileMeta">
@@ -748,7 +914,7 @@
 
               <div class="toggle" id="pdfToggleRow" hidden>
                 <input type="checkbox" id="pdfOcrToggle" />
-                <label for="pdfOcrToggle">Usar OCR y tratar el PDF como imagen</label>
+                <label for="pdfOcrToggle">OCR</label>
               </div>
 
               <div class="preview" id="previewContainer" hidden>
@@ -768,23 +934,11 @@
             </div>
           </div>
 
-          <div id="textMode" role="tabpanel" aria-labelledby="textModeButton" hidden>
-            <label for="plainText">Contenido del documento</label>
-            <textarea
-              id="plainText"
-              placeholder="Pega aquí el contenido completo a procesar..."
-              aria-label="Contenido del documento en texto"
-            ></textarea>
-            <p class="helper-text">
-              El texto se enviará directamente al modelo de extracción.
-            </p>
-          </div>
-
           <div id="multiMode" role="tabpanel" aria-labelledby="multiModeButton" hidden>
             <div class="drop-zone" id="multiDropZone" tabindex="0">
               <div class="drop-zone__icon">📁</div>
-              <strong>Agrega varios archivos del mismo tipo</strong>
-              <p>Selecciona todos los archivos y los procesaremos en secuencia.</p>
+              <strong>Selecciona las facturas a procesar</strong>
+              <p>Las facturas deben ser del mismo formato.</p>
               <button type="button" id="multiBrowseButton">Buscar archivos</button>
               <input
                 type="file"
@@ -802,9 +956,25 @@
               </div>
               <div class="toggle" id="multiPdfToggleRow" hidden>
                 <input type="checkbox" id="multiPdfOcrToggle" />
-                <label for="multiPdfOcrToggle">Usar OCR y tratar los PDF como imagen</label>
+                <label for="multiPdfOcrToggle">OCR</label>
               </div>
               <ul class="multi-file-list" id="multiFileList"></ul>
+              <div class="progress-row" id="multiProgress" hidden aria-live="polite">
+                <div class="progress-row__meta">
+                  <span id="multiProgressText">0 de 0 facturas</span>
+                  <strong id="multiProgressPercent">0%</strong>
+                </div>
+                <div
+                  class="progress-track"
+                  id="multiProgressTrack"
+                  role="progressbar"
+                  aria-valuemin="0"
+                  aria-valuemax="1"
+                  aria-valuenow="0"
+                >
+                  <div class="progress-bar" id="multiProgressBar"></div>
+                </div>
+              </div>
             </div>
 
             <p class="helper-text" id="multiEmptyState">
@@ -812,10 +982,19 @@
             </p>
           </div>
 
+          <div id="textMode" role="tabpanel" aria-labelledby="textModeButton" hidden>
+            <textarea
+              id="plainText"
+              placeholder="Manualmente coloca el contenido de la factura..."
+              aria-label="Contenido manual de la factura"
+            ></textarea>
+          </div>
+
           <div class="submit-row">
             <button id="submitButton" class="primary">Procesar</button>
             <button id="clearButton" class="secondary" type="button">Limpiar</button>
             <span id="statusMessage" class="status" role="status"></span>
+          </div>
           </div>
         </section>
 
@@ -844,6 +1023,16 @@
           </div>
         </section>
       </div>
+      <button
+        type="button"
+        id="showInputPanelButton"
+        class="panel-restore"
+        hidden
+        aria-label="Mostrar sección de carga"
+      >
+        <span aria-hidden="true">👁️</span>
+        <span>Mostrar carga</span>
+      </button>
     </div>
 
     <div id="previewModal" class="preview-modal" hidden aria-hidden="true">
@@ -952,6 +1141,16 @@
       const multiEmptyState = document.getElementById("multiEmptyState");
       const multiPdfToggleRow = document.getElementById("multiPdfToggleRow");
       const multiPdfOcrToggle = document.getElementById("multiPdfOcrToggle");
+      const workspace = document.querySelector(".workspace");
+      const inputPanel = document.getElementById("inputPanel");
+      const inputPanelBody = document.getElementById("inputPanelBody");
+      const hideInputPanelButton = document.getElementById("hideInputPanelButton");
+      const showInputPanelButton = document.getElementById("showInputPanelButton");
+      const multiProgress = document.getElementById("multiProgress");
+      const multiProgressText = document.getElementById("multiProgressText");
+      const multiProgressPercent = document.getElementById("multiProgressPercent");
+      const multiProgressTrack = document.getElementById("multiProgressTrack");
+      const multiProgressBar = document.getElementById("multiProgressBar");
 
       let lastFocusedElement = null;
 
@@ -977,6 +1176,57 @@
           state.multiUseOcr = false;
           multiPdfOcrToggle.checked = false;
         }
+      }
+
+      function collapseInputPanel() {
+        if (workspace.classList.contains("workspace--input-hidden")) {
+          return;
+        }
+        workspace.classList.add("workspace--input-hidden");
+        inputPanel.setAttribute("aria-hidden", "true");
+        inputPanelBody.setAttribute("aria-hidden", "true");
+        showInputPanelButton.hidden = false;
+        hideInputPanelButton.setAttribute("aria-pressed", "true");
+        showInputPanelButton.focus({ preventScroll: true });
+      }
+
+      function expandInputPanel() {
+        if (!workspace.classList.contains("workspace--input-hidden")) {
+          return;
+        }
+        workspace.classList.remove("workspace--input-hidden");
+        inputPanel.removeAttribute("aria-hidden");
+        inputPanelBody.removeAttribute("aria-hidden");
+        showInputPanelButton.hidden = true;
+        hideInputPanelButton.setAttribute("aria-pressed", "false");
+        hideInputPanelButton.focus({ preventScroll: true });
+      }
+
+      function resetMultiProgress() {
+        multiProgress.hidden = true;
+        multiProgressTrack.setAttribute("aria-valuenow", "0");
+        multiProgressTrack.setAttribute("aria-valuemax", "1");
+        multiProgressBar.style.width = "0%";
+        multiProgressText.textContent = "0 de 0 facturas";
+        multiProgressPercent.textContent = "0%";
+      }
+
+      function showMultiProgress(total) {
+        multiProgress.hidden = false;
+        multiProgressTrack.setAttribute("aria-valuemin", "0");
+        multiProgressTrack.setAttribute("aria-valuemax", String(total));
+        multiProgressTrack.setAttribute("aria-valuenow", "0");
+        multiProgressBar.style.width = "0%";
+        multiProgressText.textContent = `0 de ${total} facturas`;
+        multiProgressPercent.textContent = "0%";
+      }
+
+      function updateMultiProgress(current, total) {
+        multiProgressTrack.setAttribute("aria-valuenow", String(current));
+        const percentage = total === 0 ? 0 : Math.round((current / total) * 100);
+        multiProgressBar.style.width = `${percentage}%`;
+        multiProgressText.textContent = `${current} de ${total} facturas`;
+        multiProgressPercent.textContent = `${percentage}%`;
       }
 
       function closePreviewModal() {
@@ -1108,6 +1358,15 @@
       setPreviewActionVisibility(false);
       setPdfToggleVisibility(false);
       setMultiPdfToggleVisibility(false);
+      resetMultiProgress();
+
+      hideInputPanelButton.addEventListener("click", () => {
+        collapseInputPanel();
+      });
+
+      showInputPanelButton.addEventListener("click", () => {
+        expandInputPanel();
+      });
 
       fileInput.setAttribute("accept", ACCEPT_STRING);
       multiFileInput.setAttribute("accept", ACCEPT_STRING);
@@ -1140,6 +1399,7 @@
         multiFileList.innerHTML = "";
         multiTypeLabel.textContent = "—";
         setMultiPdfToggleVisibility(false);
+        resetMultiProgress();
       }
 
       function setStatus(message, isError = false) {
@@ -1164,16 +1424,23 @@
         setActiveModeButton(fileModeButton, isFileMode);
         setActiveModeButton(textModeButton, isTextMode);
         setActiveModeButton(multiModeButton, isMultiMode);
+        const inputHidden = workspace.classList.contains("workspace--input-hidden");
         if (isFileMode) {
           resetMultiFiles();
-          dropZone.focus();
+          if (!inputHidden) {
+            dropZone.focus();
+          }
         } else if (isTextMode) {
           resetFile();
           resetMultiFiles();
-          plainText.focus();
+          if (!inputHidden) {
+            plainText.focus();
+          }
         } else {
           resetFile();
-          multiDropZone.focus();
+          if (!inputHidden) {
+            multiDropZone.focus();
+          }
         }
         setStatus("");
       }
@@ -1697,12 +1964,14 @@
           const { type, payload } = validateBeforeSend();
           if (type === "text") {
             const result = await sendText(payload);
-            addResultEntry(result, "Texto manual");
+            addResultEntry(result, "Manual");
           } else if (type === "multi") {
             const { category, files, useOcr } = payload;
+            showMultiProgress(files.length);
+            updateMultiProgress(0, files.length);
             for (let index = 0; index < files.length; index += 1) {
               setStatus(
-                `Procesando archivo ${index + 1} de ${files.length}...`,
+                `Procesando factura ${index + 1} de ${files.length}...`,
                 false
               );
               const currentFile = files[index];
@@ -1715,6 +1984,7 @@
                   : SUPPORTED_TYPES[category].label;
               const description = `${label} · ${currentFile.name}`;
               addResultEntry(currentResult, description);
+              updateMultiProgress(index + 1, files.length);
             }
             resetMultiFiles();
           } else {
@@ -1730,6 +2000,7 @@
           setStatus("¡Extracción completada!", false);
         } catch (error) {
           console.error(error);
+          resetMultiProgress();
           setStatus(error.message || "No se pudo completar la solicitud.", true);
         } finally {
           submitButton.disabled = false;
