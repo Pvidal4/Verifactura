@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Literal, Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
 from pydantic import BaseModel, Field
@@ -18,6 +18,13 @@ router = APIRouter(tags=["Extracción"])
 class TextExtractionRequest(BaseModel):
     text: str = Field(
         ..., description="Texto completo del comprobante o documento a procesar."
+    )
+    llm_provider: Literal["api", "local"] | None = Field(
+        None,
+        description=(
+            "Proveedor del modelo de lenguaje a utilizar. "
+            "Usa 'api' para OpenAI o 'local' para el modelo con pesos abiertos."
+        ),
     )
 
 
@@ -61,7 +68,7 @@ async def extract_from_text_endpoint(
             status_code=400,
             detail="El texto proporcionado está vacío.",
         )
-    return service.extract_from_text(text)
+    return service.extract_from_text(text, provider=payload.llm_provider)
 
 
 @router.post(
@@ -82,6 +89,13 @@ async def extract_from_file_endpoint(
             "Convierte cada página del PDF en imagen antes de aplicar Azure OCR."
         ),
     ),
+    llm_provider: Literal["api", "local"] | None = Query(
+        None,
+        description=(
+            "Proveedor del modelo de lenguaje a utilizar. "
+            "Usa 'api' para OpenAI o 'local' para el modelo con pesos abiertos."
+        ),
+    ),
     service: ExtractionService = Depends(_get_service),
 ) -> Dict[str, Any]:
 
@@ -91,7 +105,11 @@ async def extract_from_file_endpoint(
         raise HTTPException(status_code=400, detail="El archivo subido está vacío.")
     try:
         return service.extract_from_file(
-            file.filename or "archivo", data, file.content_type, force_ocr=force_ocr
+            file.filename or "archivo",
+            data,
+            file.content_type,
+            force_ocr=force_ocr,
+            provider=llm_provider,
         )
     except RuntimeError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -108,6 +126,13 @@ async def extract_from_file_endpoint(
 )
 async def extract_from_image_endpoint(
     image: UploadFile = File(...),
+    llm_provider: Literal["api", "local"] | None = Query(
+        None,
+        description=(
+            "Proveedor del modelo de lenguaje a utilizar. "
+            "Usa 'api' para OpenAI o 'local' para el modelo con pesos abiertos."
+        ),
+    ),
     service: ExtractionService = Depends(_get_service),
 ) -> Dict[str, Any]:
 
@@ -128,7 +153,10 @@ async def extract_from_image_endpoint(
         raise HTTPException(status_code=400, detail="La imagen subida está vacía.")
     try:
         return service.extract_from_image(
-            image.filename or "imagen", data, image.content_type
+            image.filename or "imagen",
+            data,
+            image.content_type,
+            provider=llm_provider,
         )
     except RuntimeError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

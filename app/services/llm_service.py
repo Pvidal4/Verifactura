@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Dict
+from pathlib import Path
+from typing import Any, Dict, List, Sequence
 
+import torch
 from openai import OpenAI
+from transformers import pipeline
 
 from app.config import Config
 
@@ -54,6 +57,16 @@ SYSTEM_PROMPT = (
     "Utiliza null cuando la información no esté presente."
 )
 
+
+def _parse_model_response(raw: str) -> Dict[str, Any]:
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as exc:  # pragma: no cover - defensive programming
+        raise RuntimeError(
+            "El modelo no devolvió un JSON válido conforme al esquema solicitado."
+        ) from exc
+    return data
+
 class OpenAILLMService:
     def __init__(self, config: Config) -> None:
 
@@ -82,5 +95,56 @@ class OpenAILLMService:
             reasoning_effort="minimal"
         )
         content = response.choices[0].message.content
-        data = json.loads(content)
-        return data
+        return _parse_model_response(content)
+
+
+class LocalLLMService:
+    def __init__(self, config: Config) -> None:
+        self._model_id = config.LOCAL_LLM_MODEL_ID
+        self._model_path = config.LOCAL_LLM_MODEL_PATH
+        self._pipeline = None
+
+    def _resolve_model_source(self) -> str:
+        if self._model_path:
+            local_path = Path(self._model_path)
+            if local_path.exists():
+                return str(local_path)
+        return self._model_id
+
+    def _ensure_pipeline(self):
+        if self._pipeline is None:
+            dtype = torch.float16 if torch.cuda.is_available() else torch.float32
+            self._pipeline = pipeline(
+                "text-generation",
+                model=self._resolve_model_source(),
+                torch_dtype=dtype,
+                device_map="auto",
+            )
+        return self._pipeline
+
+    def _extract_content(self, outputs: Sequence[Dict[str, Any]]) -> str:
+        if not outputs:
+            raise RuntimeError("El modelo local no generó ninguna respuesta.")
+        generated = outputs[0].get("generated_text")
+        if isinstance(generated, list):
+            # Los modelos con formato de chat retornan una lista de mensajes
+            final_message = generated[-1]
+            if isinstance(final_message, dict):
+                return str(final_message.get("content", ""))
+            return str(final_message)
+        return str(generated or "")
+
+    def extract(self, text: str) -> Dict[str, Any]:
+        pipe = self._ensure_pipeline()
+        messages: List[Dict[str, str]] = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": text},
+        ]
+        outputs = pipe(
+            messages,
+            max_new_tokens=256,
+        )
+        content = self._extract_content(outputs)
+        if not content.strip():
+            raise RuntimeError("El modelo local devolvió una respuesta vacía.")
+        return _parse_model_response(content)

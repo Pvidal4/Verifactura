@@ -12,6 +12,9 @@ class Config:
     OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-5-mini")
     OPENAI_API_KEY: str | None = os.getenv("OPENAI_API_KEY")
 
+    LOCAL_LLM_MODEL_ID: str = os.getenv("LOCAL_LLM_MODEL_ID", "openai/gpt-oss-20b")
+    LOCAL_LLM_MODEL_PATH: str = os.getenv("LOCAL_LLM_MODEL_PATH", "models/gpt-oss-20b")
+
     AZURE_ENDPOINT: str | None = os.getenv("AZURE_FORM_RECOGNIZER_ENDPOINT")
     AZURE_KEY: str | None = os.getenv("AZURE_FORM_RECOGNIZER_KEY")
 
