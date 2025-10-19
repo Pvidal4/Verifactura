@@ -1,0 +1,14 @@
+<svg width="360" height="120" viewBox="0 0 360 120" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="logoTitle logoDesc">
+  <title id="logoTitle">VeriFactura</title>
+  <desc id="logoDesc">Ícono de documento con marca de verificación y texto de la marca VeriFactura</desc>
+  <g>
+    <path d="M42 18C34.268 18 28 24.268 28 32V88C28 95.732 34.268 102 42 102H104C111.732 102 118 95.732 118 88V51.5C118 49.2909 117.124 47.1735 115.556 45.606L88.394 18.444C86.8265 16.8764 84.7091 16 82.5 16H42V18Z" fill="#F1F5FF" stroke="#1E3A8A" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M82 20V36C82 41.5228 86.4772 46 92 46H108" stroke="#1E3A8A" stroke-width="5" stroke-linecap="round"/>
+    <rect x="44" y="44" width="28" height="6" rx="3" fill="#1E3A8A" opacity="0.65"/>
+    <rect x="44" y="60" width="52" height="6" rx="3" fill="#1E3A8A" opacity="0.65"/>
+    <rect x="44" y="76" width="40" height="6" rx="3" fill="#1E3A8A" opacity="0.65"/>
+    <circle cx="100" cy="94" r="26" fill="#F5FFFA" stroke="#16A34A" stroke-width="5"/>
+    <path d="M91.5 94L97.5 100L109.5 84" stroke="#16A34A" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="140" y="70" font-family="'Inter', 'Segoe UI', sans-serif" font-size="42" font-weight="600" letter-spacing="-0.02em" fill="#1E3A8A">VeriFactura</text>
+</svg>

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Verifactura · Consola de extracción</title>
+    <title>Verifactura · Extracción y validación de facturas vehiculares</title>
     <style>
       :root {
         color-scheme: light;
@@ -30,6 +30,7 @@
       body {
         margin: 0;
         background: var(--surface);
+        color: var(--text);
       }
 
       h1,
@@ -55,14 +56,43 @@
       header {
         display: flex;
         flex-direction: column;
+        gap: 1rem;
+        max-width: 100%;
+      }
+
+      .header-bar {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: clamp(1.5rem, 4vw, 3rem);
+        flex-wrap: wrap;
+      }
+
+      .header-text {
+        display: flex;
+        flex-direction: column;
         gap: 0.75rem;
-        max-width: 960px;
+        max-width: min(860px, 100%);
+      }
+
+      .header-extra {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 1rem;
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
       }
 
       header h1 {
-        font-size: clamp(1.75rem, 3vw, 2.75rem);
+        font-size: clamp(1.85rem, 3.2vw, 3rem);
         font-weight: 600;
         letter-spacing: -0.02em;
+        color: var(--text);
       }
 
       header p {
@@ -70,6 +100,64 @@
         font-size: 1rem;
         line-height: 1.6;
         max-width: 72ch;
+      }
+
+      .hero-logo {
+        width: clamp(180px, 22vw, 260px);
+        height: auto;
+        display: block;
+      }
+
+      .developer-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 0.85rem;
+        font-weight: 500;
+      }
+
+      .header-restore {
+        align-self: flex-start;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        border-radius: 999px;
+        padding: 0.5rem 1.1rem;
+        font-weight: 500;
+        color: var(--accent);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+      }
+
+      .header-restore:hover,
+      .header-restore:focus-visible {
+        border-color: var(--accent);
+        color: var(--accent-dark);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+        outline: none;
+      }
+
+      .settings-button {
+        border: 1px solid var(--border);
+        background: var(--surface);
+        border-radius: 999px;
+        padding: 0.5rem 1.1rem;
+        font-weight: 500;
+        color: var(--muted);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+      }
+
+      .settings-button:hover,
+      .settings-button:focus-visible {
+        border-color: var(--accent);
+        color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+        outline: none;
       }
 
       .workspace {
@@ -93,6 +181,55 @@
       .panel h2 {
         font-size: 1.2rem;
         font-weight: 600;
+        color: var(--text);
+      }
+
+      .panel--input {
+        position: relative;
+      }
+
+      .panel-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+
+      .panel-header__text {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .panel-body {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+
+      .panel-toggle {
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--muted);
+        border-radius: 999px;
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+      }
+
+      .panel-toggle:hover,
+      .panel-toggle:focus-visible {
+        border-color: var(--accent);
+        color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+        outline: none;
+      }
+
+      .panel-toggle span[aria-hidden="true"] {
+        font-size: 1rem;
       }
 
       .segmented-control {
@@ -161,7 +298,7 @@
 
       .drop-zone button {
         border: 1px solid var(--border);
-        background: #fff;
+        background: var(--surface);
         border-radius: 999px;
         padding: 0.6rem 1.4rem;
         font-weight: 500;
@@ -223,7 +360,7 @@
 
       .preview-action {
         border: 1px solid var(--border);
-        background: #fff;
+        background: var(--surface);
         color: var(--accent);
         font-size: 0.85rem;
         font-weight: 500;
@@ -244,7 +381,7 @@
         max-height: 320px;
         overflow: auto;
         border-radius: 0.75rem;
-        background: #fff;
+        background: var(--surface);
         border: 1px solid var(--border);
       }
 
@@ -333,7 +470,7 @@
       .preview-modal__body {
         flex: 1;
         overflow: auto;
-        background: #fff;
+        background: var(--surface);
         padding: 0;
       }
 
@@ -449,7 +586,7 @@
         outline: none;
         border-color: var(--accent);
         box-shadow: 0 0 0 3px var(--accent-soft);
-        background: #fff;
+        background: var(--surface);
       }
 
       .helper-text {
@@ -503,6 +640,18 @@
         gap: 0.75rem;
       }
 
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
       .primary {
         background: var(--accent);
         color: #fff;
@@ -520,7 +669,7 @@
 
       .secondary {
         border: 1px solid var(--border);
-        background: #fff;
+        background: var(--surface);
         color: var(--muted);
         border-radius: 1rem;
         padding: 0.8rem 1.2rem;
@@ -564,7 +713,7 @@
         border-radius: 0.9rem;
         padding: 0.65rem 1.1rem;
         border: 1px solid var(--border);
-        background: #fff;
+        background: var(--surface);
         color: var(--muted);
         font-weight: 500;
         transition: border-color 0.2s ease, color 0.2s ease;
@@ -625,6 +774,181 @@
         text-align: center;
       }
 
+      .workspace--input-hidden {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .workspace--input-hidden .panel--input {
+        display: none;
+      }
+
+      .settings-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.35);
+        backdrop-filter: blur(2px);
+        z-index: 300;
+      }
+
+      .settings-panel {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: min(320px, 90vw);
+        height: 100vh;
+        background: var(--surface);
+        border-left: 1px solid var(--border);
+        box-shadow: -30px 0 60px -40px rgba(15, 23, 42, 0.35);
+        display: flex;
+        flex-direction: column;
+        transform: translateX(100%);
+        transition: transform 0.25s ease;
+        z-index: 400;
+      }
+
+      .settings-panel[aria-hidden="false"] {
+        transform: translateX(0);
+      }
+
+      .settings-panel__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .settings-panel__header h3 {
+        margin: 0;
+        font-size: 1.1rem;
+      }
+
+      .settings-close {
+        border: none;
+        background: transparent;
+        font-size: 1.5rem;
+        color: var(--muted);
+        cursor: pointer;
+        padding: 0.25rem;
+        border-radius: 0.5rem;
+      }
+
+      .settings-close:hover,
+      .settings-close:focus-visible {
+        color: var(--text);
+        background: var(--surface-subtle);
+        outline: none;
+      }
+
+      .settings-panel__body {
+        padding: 1.25rem 1.5rem 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+        overflow-y: auto;
+      }
+
+      .settings-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .settings-option {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        font-size: 0.95rem;
+      }
+
+      .settings-option label {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        font-weight: 500;
+      }
+
+      .settings-option span {
+        color: var(--muted);
+        font-size: 0.85rem;
+        font-weight: 400;
+      }
+
+      .settings-option input[type="checkbox"] {
+        width: 46px;
+        height: 24px;
+      }
+
+      .settings-option select {
+        border-radius: 0.75rem;
+        border: 1px solid var(--border);
+        padding: 0.45rem 0.75rem;
+        background: var(--surface-subtle);
+        font: inherit;
+      }
+
+      body.theme-dark {
+        color-scheme: dark;
+        --surface: #0f172a;
+        --surface-subtle: #16213c;
+        --border: rgba(148, 163, 184, 0.25);
+        --border-strong: rgba(148, 163, 184, 0.45);
+        --text: #e2e8f0;
+        --muted: #cbd5f5;
+        background: var(--surface);
+        color: var(--text);
+      }
+
+      body.theme-dark header h1,
+      body.theme-dark header p,
+      body.theme-dark .panel h2,
+      body.theme-dark .panel-header__text p,
+      body.theme-dark .multi-summary,
+      body.theme-dark .multi-file-item span,
+      body.theme-dark .multi-file-item strong,
+      body.theme-dark .settings-button {
+        color: var(--text);
+      }
+
+      body.theme-dark .settings-button {
+        border-color: var(--border-strong);
+      }
+
+      .progress-row {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 1rem;
+        padding: 0.75rem 1rem;
+      }
+
+      .progress-row__meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      .progress-track {
+        width: 100%;
+        height: 10px;
+        border-radius: 999px;
+        background: var(--surface-subtle);
+        overflow: hidden;
+      }
+
+      .progress-bar {
+        height: 100%;
+        width: 0;
+        border-radius: inherit;
+        background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+        transition: width 0.3s ease;
+      }
+
       .result-field {
         border: 1px solid var(--border);
         border-radius: 1rem;
@@ -671,6 +995,15 @@
           padding: 2rem 1.25rem 3rem;
         }
 
+        .header-extra {
+          align-items: flex-start;
+          width: 100%;
+        }
+
+        .header-actions {
+          align-self: flex-start;
+        }
+
         .results-navigation {
           justify-content: center;
         }
@@ -680,142 +1013,146 @@
   <body>
     <div class="app-shell">
       <header>
-        <h1>Consola inteligente de extracción</h1>
-        <p>
-          Arrastra y suelta tus facturas o comprobantes en PDF, XML, JSON o imagen. La
-          consola detecta el tipo de documento automáticamente y te permite alternar
-          entre OCR o lectura directa cuando sea necesario. También puedes ingresar
-          texto manualmente como alternativa.
-        </p>
+        <div class="header-bar">
+          <div class="header-text">
+            <h1>Verifactura · Extracción y validación de facturas vehiculares</h1>
+            <p>
+              Carga tus comprobantes y obtén campos normalizados y validados con reglas
+              SRI y VIN.
+            </p>
+            <span class="developer-badge" id="developerBadge" hidden>Modo desarrollador</span>
+            <button
+              type="button"
+              id="showInputPanelButton"
+              class="header-restore"
+              hidden
+            >
+              Cargar más facturas
+            </button>
+          </div>
+          <div class="header-extra">
+            <div class="header-actions">
+              <button
+                type="button"
+                id="settingsButton"
+                class="settings-button"
+                aria-haspopup="dialog"
+                aria-expanded="false"
+              >
+                Ajustes
+              </button>
+            </div>
+            <img
+              src="{{ request.url_for('static', path='verifactura-logo.svg') }}"
+              alt="VeriFactura"
+              class="hero-logo"
+            />
+          </div>
+        </div>
       </header>
 
       <div class="workspace">
-        <section class="panel" aria-labelledby="inputHeading">
-          <div>
-            <h2 id="inputHeading">Entrada del documento</h2>
-            <p class="helper-text">
-              Formatos admitidos: PDF, XML, JSON, PNG, JPG, JPEG, TIF, TIFF.
-            </p>
-          </div>
-
-          <div class="segmented-control" role="tablist">
+        <section class="panel panel--input" aria-labelledby="inputHeading" id="inputPanel">
+          <div class="panel-header">
+            <div class="panel-header__text">
+              <h2 id="inputHeading">Carga de facturas</h2>
+              <p class="helper-text">
+                Formatos admitidos: PDF, XML, JSON, PNG, JPG, JPEG, TIF, TIFF.
+              </p>
+            </div>
             <button
               type="button"
-              id="fileModeButton"
-              class="active"
-              role="tab"
-              aria-selected="true"
+              class="panel-toggle"
+              id="hideInputPanelButton"
+              aria-label="Ocultar sección de carga"
+              aria-pressed="false"
             >
-              Archivo
-            </button>
-            <button
-              type="button"
-              id="textModeButton"
-              role="tab"
-              aria-selected="false"
-            >
-              Texto manual
-            </button>
-            <button
-              type="button"
-              id="multiModeButton"
-              role="tab"
-              aria-selected="false"
-            >
-              Multi-archivo
+              Ocultar
             </button>
           </div>
 
-          <div id="fileMode" role="tabpanel" aria-labelledby="fileModeButton">
-            <div class="drop-zone" id="dropZone" tabindex="0">
-              <div class="drop-zone__icon">⬆</div>
-              <strong>Arrastra tu archivo aquí</strong>
-              <p id="dropInstruction">o haz clic para seleccionarlo desde tu equipo</p>
-              <button type="button" id="browseButton">Buscar archivo</button>
-              <input
-                type="file"
-                id="fileInput"
-                accept=".pdf,.xml,.json,.png,.jpg,.jpeg,.tif,.tiff"
-                hidden
-              />
+          <div class="panel-body" id="inputPanelBody">
+            <div class="segmented-control" role="tablist">
+              <button
+                type="button"
+                id="multiModeButton"
+                class="active"
+                role="tab"
+                aria-selected="true"
+              >
+                Subir archivo
+              </button>
+              <button
+                type="button"
+                id="textModeButton"
+                role="tab"
+                aria-selected="false"
+              >
+                Ingreso manual
+              </button>
             </div>
 
-            <div class="file-details" id="fileDetails" hidden>
-              <div class="file-meta" id="fileMeta">
-                <div><span>Archivo:</span> <strong id="fileName">—</strong></div>
-                <div><span>Tipo detectado:</span> <strong id="fileType">—</strong></div>
+            <div id="multiMode" role="tabpanel" aria-labelledby="multiModeButton">
+              <div class="drop-zone" id="multiDropZone" tabindex="0">
+                <div class="drop-zone__icon">📁</div>
+                <strong>Selecciona las facturas a procesar</strong>
+                <p>Las facturas deben ser del mismo formato.</p>
+                <button type="button" id="multiBrowseButton">Buscar archivos</button>
+                <input
+                  type="file"
+                  id="multiFileInput"
+                  accept=".pdf,.xml,.json,.png,.jpg,.jpeg,.tif,.tiff"
+                  multiple
+                  hidden
+                />
               </div>
 
-              <div class="toggle" id="pdfToggleRow" hidden>
-                <input type="checkbox" id="pdfOcrToggle" />
-                <label for="pdfOcrToggle">Usar OCR y tratar el PDF como imagen</label>
-              </div>
-
-              <div class="preview" id="previewContainer" hidden>
-                <div class="preview-header">
-                  <h3>Vista previa</h3>
-                  <button
-                    type="button"
-                    id="previewFullscreenButton"
-                    class="preview-action"
-                    hidden
-                  >
-                    Ver en pantalla completa
-                  </button>
+              <div class="multi-details" id="multiDetails" hidden>
+                <div class="multi-summary">
+                  <span>Tipo detectado:</span>
+                  <strong id="multiTypeLabel">—</strong>
                 </div>
-                <div class="preview-content" id="previewContent"></div>
+                <div class="toggle" id="multiPdfToggleRow" hidden>
+                  <input type="checkbox" id="multiPdfOcrToggle" />
+                  <label for="multiPdfOcrToggle">OCR</label>
+                </div>
+                <ul class="multi-file-list" id="multiFileList"></ul>
+                <div class="progress-row" id="multiProgress" hidden aria-live="polite">
+                  <div class="progress-row__meta">
+                    <span id="multiProgressText">0 de 0 facturas</span>
+                    <strong id="multiProgressPercent">0%</strong>
+                  </div>
+                  <div
+                    class="progress-track"
+                    id="multiProgressTrack"
+                    role="progressbar"
+                    aria-valuemin="0"
+                    aria-valuemax="1"
+                    aria-valuenow="0"
+                  >
+                    <div class="progress-bar" id="multiProgressBar"></div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
 
-          <div id="textMode" role="tabpanel" aria-labelledby="textModeButton" hidden>
-            <label for="plainText">Contenido del documento</label>
-            <textarea
-              id="plainText"
-              placeholder="Pega aquí el contenido completo a procesar..."
-              aria-label="Contenido del documento en texto"
-            ></textarea>
-            <p class="helper-text">
-              El texto se enviará directamente al modelo de extracción.
-            </p>
-          </div>
-
-          <div id="multiMode" role="tabpanel" aria-labelledby="multiModeButton" hidden>
-            <div class="drop-zone" id="multiDropZone" tabindex="0">
-              <div class="drop-zone__icon">📁</div>
-              <strong>Agrega varios archivos del mismo tipo</strong>
-              <p>Selecciona todos los archivos y los procesaremos en secuencia.</p>
-              <button type="button" id="multiBrowseButton">Buscar archivos</button>
-              <input
-                type="file"
-                id="multiFileInput"
-                accept=".pdf,.xml,.json,.png,.jpg,.jpeg,.tif,.tiff"
-                multiple
-                hidden
-              />
+              <p class="helper-text" id="multiEmptyState">
+                Aún no has agregado archivos. Arrástralos o selecciónalos desde tu equipo.
+              </p>
             </div>
 
-            <div class="multi-details" id="multiDetails" hidden>
-              <div class="multi-summary">
-                <span>Tipo detectado:</span>
-                <strong id="multiTypeLabel">—</strong>
-              </div>
-              <div class="toggle" id="multiPdfToggleRow" hidden>
-                <input type="checkbox" id="multiPdfOcrToggle" />
-                <label for="multiPdfOcrToggle">Usar OCR y tratar los PDF como imagen</label>
-              </div>
-              <ul class="multi-file-list" id="multiFileList"></ul>
+            <div id="textMode" role="tabpanel" aria-labelledby="textModeButton" hidden>
+              <textarea
+                id="plainText"
+                placeholder="Manualmente coloca el contenido de la factura..."
+                aria-label="Contenido manual de la factura"
+              ></textarea>
             </div>
 
-            <p class="helper-text" id="multiEmptyState">
-              Aún no has agregado archivos. Arrástralos o selecciónalos desde tu equipo.
-            </p>
-          </div>
-
-          <div class="submit-row">
-            <button id="submitButton" class="primary">Procesar</button>
-            <button id="clearButton" class="secondary" type="button">Limpiar</button>
-            <span id="statusMessage" class="status" role="status"></span>
+            <div class="submit-row">
+              <button id="submitButton" class="primary">Procesar</button>
+              <button id="clearButton" class="secondary" type="button">Limpiar</button>
+              <span id="statusMessage" class="status" role="status"></span>
+            </div>
           </div>
         </section>
 
@@ -868,6 +1205,52 @@
       </div>
     </div>
 
+    <div id="settingsBackdrop" class="settings-backdrop" hidden></div>
+    <aside
+      id="settingsPanel"
+      class="settings-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-hidden="true"
+      aria-labelledby="settingsTitle"
+      tabindex="-1"
+    >
+      <div class="settings-panel__header">
+        <h3 id="settingsTitle">Ajustes</h3>
+        <button type="button" id="closeSettingsButton" class="settings-close" aria-label="Cerrar ajustes">
+          &times;
+        </button>
+      </div>
+      <div class="settings-panel__body">
+        <div class="settings-group">
+          <div class="settings-option">
+            <label for="autoClearToggle">
+              Limpiar automáticamente
+              <span>Vacía el formulario después de procesar.</span>
+            </label>
+            <input type="checkbox" id="autoClearToggle" />
+          </div>
+          <div class="settings-option">
+            <label for="themeSelect">
+              Apariencia
+              <span>Selecciona modo claro u oscuro.</span>
+            </label>
+            <select id="themeSelect">
+              <option value="light">Modo claro</option>
+              <option value="dark">Modo oscuro</option>
+            </select>
+          </div>
+          <div class="settings-option">
+            <label for="developerToggle">
+              Modo desarrollador
+              <span>Muestra indicadores adicionales.</span>
+            </label>
+            <input type="checkbox" id="developerToggle" />
+          </div>
+        </div>
+      </div>
+    </aside>
+
     <script>
       const SUPPORTED_TYPES = {
         pdf: {
@@ -897,30 +1280,20 @@
         .join(",");
 
       const state = {
-        mode: "file",
-        file: null,
-        fileCategory: null,
-        filePreviewUrl: null,
+        mode: "multi",
         modalPreviewUrl: null,
         multiFiles: [],
         multiCategory: null,
         multiUseOcr: false,
         results: [],
         currentIndex: -1,
+        settings: {
+          autoClear: true,
+          theme: "light",
+          developerMode: false,
+        },
       };
 
-      const dropZone = document.getElementById("dropZone");
-      const fileInput = document.getElementById("fileInput");
-      const browseButton = document.getElementById("browseButton");
-      const fileDetails = document.getElementById("fileDetails");
-      const fileMeta = document.getElementById("fileMeta");
-      const fileNameElement = document.getElementById("fileName");
-      const fileTypeElement = document.getElementById("fileType");
-      const pdfToggleRow = document.getElementById("pdfToggleRow");
-      const pdfOcrToggle = document.getElementById("pdfOcrToggle");
-      const previewContainer = document.getElementById("previewContainer");
-      const previewContent = document.getElementById("previewContent");
-      const previewFullscreenButton = document.getElementById("previewFullscreenButton");
       const previewModal = document.getElementById("previewModal");
       const previewModalContent = document.getElementById("previewModalContent");
       const previewModalClose = document.getElementById("previewModalClose");
@@ -937,10 +1310,8 @@
       const downloadCsv = document.getElementById("downloadCsv");
       const prevResultBtn = document.getElementById("prevResult");
       const nextResultBtn = document.getElementById("nextResult");
-      const fileMode = document.getElementById("fileMode");
       const textMode = document.getElementById("textMode");
       const multiMode = document.getElementById("multiMode");
-      const fileModeButton = document.getElementById("fileModeButton");
       const textModeButton = document.getElementById("textModeButton");
       const multiModeButton = document.getElementById("multiModeButton");
       const multiDropZone = document.getElementById("multiDropZone");
@@ -952,22 +1323,27 @@
       const multiEmptyState = document.getElementById("multiEmptyState");
       const multiPdfToggleRow = document.getElementById("multiPdfToggleRow");
       const multiPdfOcrToggle = document.getElementById("multiPdfOcrToggle");
+      const workspace = document.querySelector(".workspace");
+      const inputPanel = document.getElementById("inputPanel");
+      const inputPanelBody = document.getElementById("inputPanelBody");
+      const hideInputPanelButton = document.getElementById("hideInputPanelButton");
+      const showInputPanelButton = document.getElementById("showInputPanelButton");
+      const multiProgress = document.getElementById("multiProgress");
+      const multiProgressText = document.getElementById("multiProgressText");
+      const multiProgressPercent = document.getElementById("multiProgressPercent");
+      const multiProgressTrack = document.getElementById("multiProgressTrack");
+      const multiProgressBar = document.getElementById("multiProgressBar");
+      const settingsButton = document.getElementById("settingsButton");
+      const settingsPanel = document.getElementById("settingsPanel");
+      const settingsBackdrop = document.getElementById("settingsBackdrop");
+      const closeSettingsButton = document.getElementById("closeSettingsButton");
+      const autoClearToggle = document.getElementById("autoClearToggle");
+      const themeSelect = document.getElementById("themeSelect");
+      const developerToggle = document.getElementById("developerToggle");
+      const developerBadge = document.getElementById("developerBadge");
 
       let lastFocusedElement = null;
-
-      function setPreviewActionVisibility(visible) {
-        previewFullscreenButton.hidden = !visible;
-        previewFullscreenButton.disabled = !visible;
-      }
-
-      function setPdfToggleVisibility(visible) {
-        pdfToggleRow.hidden = !visible;
-        pdfToggleRow.setAttribute("aria-hidden", String(!visible));
-        pdfToggleRow.style.display = visible ? "flex" : "none";
-        if (!visible) {
-          pdfOcrToggle.checked = false;
-        }
-      }
+      let lastSettingsTrigger = null;
 
       function setMultiPdfToggleVisibility(visible) {
         multiPdfToggleRow.hidden = !visible;
@@ -977,6 +1353,96 @@
           state.multiUseOcr = false;
           multiPdfOcrToggle.checked = false;
         }
+      }
+
+      function applyTheme(theme) {
+        document.body.classList.toggle("theme-dark", theme === "dark");
+      }
+
+      function applyDeveloperMode(enabled) {
+        developerBadge.hidden = !enabled;
+      }
+
+      function syncSettingsControls() {
+        autoClearToggle.checked = state.settings.autoClear;
+        themeSelect.value = state.settings.theme;
+        developerToggle.checked = state.settings.developerMode;
+      }
+
+      function openSettingsPanel() {
+        if (settingsPanel.getAttribute("aria-hidden") === "false") {
+          return;
+        }
+        syncSettingsControls();
+        lastSettingsTrigger = document.activeElement;
+        settingsPanel.setAttribute("aria-hidden", "false");
+        settingsBackdrop.hidden = false;
+        settingsButton.setAttribute("aria-expanded", "true");
+        settingsPanel.focus({ preventScroll: true });
+      }
+
+      function closeSettingsPanel() {
+        if (settingsPanel.getAttribute("aria-hidden") === "true") {
+          return;
+        }
+        settingsPanel.setAttribute("aria-hidden", "true");
+        settingsBackdrop.hidden = true;
+        settingsButton.setAttribute("aria-expanded", "false");
+        if (lastSettingsTrigger && typeof lastSettingsTrigger.focus === "function") {
+          lastSettingsTrigger.focus({ preventScroll: true });
+        }
+        lastSettingsTrigger = null;
+      }
+
+      function collapseInputPanel() {
+        if (workspace.classList.contains("workspace--input-hidden")) {
+          return;
+        }
+        workspace.classList.add("workspace--input-hidden");
+        inputPanel.setAttribute("aria-hidden", "true");
+        inputPanelBody.setAttribute("aria-hidden", "true");
+        showInputPanelButton.hidden = false;
+        hideInputPanelButton.setAttribute("aria-pressed", "true");
+        showInputPanelButton.focus({ preventScroll: true });
+      }
+
+      function expandInputPanel() {
+        if (!workspace.classList.contains("workspace--input-hidden")) {
+          return;
+        }
+        workspace.classList.remove("workspace--input-hidden");
+        inputPanel.removeAttribute("aria-hidden");
+        inputPanelBody.removeAttribute("aria-hidden");
+        showInputPanelButton.hidden = true;
+        hideInputPanelButton.setAttribute("aria-pressed", "false");
+        hideInputPanelButton.focus({ preventScroll: true });
+      }
+
+      function resetMultiProgress() {
+        multiProgress.hidden = true;
+        multiProgressTrack.setAttribute("aria-valuenow", "0");
+        multiProgressTrack.setAttribute("aria-valuemax", "1");
+        multiProgressBar.style.width = "0%";
+        multiProgressText.textContent = "0 de 0 facturas";
+        multiProgressPercent.textContent = "0%";
+      }
+
+      function showMultiProgress(total) {
+        multiProgress.hidden = false;
+        multiProgressTrack.setAttribute("aria-valuemin", "0");
+        multiProgressTrack.setAttribute("aria-valuemax", String(total));
+        multiProgressTrack.setAttribute("aria-valuenow", "0");
+        multiProgressBar.style.width = "0%";
+        multiProgressText.textContent = `0 de ${total} facturas`;
+        multiProgressPercent.textContent = "0%";
+      }
+
+      function updateMultiProgress(current, total) {
+        multiProgressTrack.setAttribute("aria-valuenow", String(current));
+        const percentage = total === 0 ? 0 : Math.round((current / total) * 100);
+        multiProgressBar.style.width = `${percentage}%`;
+        multiProgressText.textContent = `${current} de ${total} facturas`;
+        multiProgressPercent.textContent = `${percentage}%`;
       }
 
       function closePreviewModal() {
@@ -997,7 +1463,7 @@
         lastFocusedElement = null;
       }
 
-      function renderModalPreview(file, category, { reusePreviewUrl = false } = {}) {
+      function renderModalPreview(file, category) {
         previewModalContent.innerHTML = "";
         if (!file || !category) {
           const message = document.createElement("p");
@@ -1007,34 +1473,13 @@
           return;
         }
 
-        const revokeModalUrl = () => {
+        if (category === "image" || category === "pdf") {
           if (state.modalPreviewUrl) {
             URL.revokeObjectURL(state.modalPreviewUrl);
             state.modalPreviewUrl = null;
           }
-        };
-
-        if (category === "image" || category === "pdf") {
-          let url = null;
-          const shouldReuse = reusePreviewUrl && state.filePreviewUrl;
-          if (shouldReuse) {
-            url = state.filePreviewUrl;
-            revokeModalUrl();
-          } else {
-            url = URL.createObjectURL(file);
-            if (reusePreviewUrl) {
-              if (state.filePreviewUrl && state.filePreviewUrl !== url) {
-                URL.revokeObjectURL(state.filePreviewUrl);
-              }
-              state.filePreviewUrl = url;
-              revokeModalUrl();
-            } else {
-              if (state.modalPreviewUrl && state.modalPreviewUrl !== url) {
-                URL.revokeObjectURL(state.modalPreviewUrl);
-              }
-              state.modalPreviewUrl = url;
-            }
-          }
+          const url = URL.createObjectURL(file);
+          state.modalPreviewUrl = url;
 
           if (category === "image") {
             const img = document.createElement("img");
@@ -1048,7 +1493,10 @@
             previewModalContent.appendChild(iframe);
           }
         } else {
-          revokeModalUrl();
+          if (state.modalPreviewUrl) {
+            URL.revokeObjectURL(state.modalPreviewUrl);
+            state.modalPreviewUrl = null;
+          }
           const placeholder = document.createElement("p");
           placeholder.style.padding = "1.25rem";
           placeholder.textContent = "Cargando vista previa...";
@@ -1065,11 +1513,11 @@
         }
       }
 
-      function showModalPreview(file, category, options = {}) {
+      function showModalPreview(file, category) {
         if (!file || !category) {
           return;
         }
-        renderModalPreview(file, category, options);
+        renderModalPreview(file, category);
         openPreviewModal();
       }
 
@@ -1092,43 +1540,61 @@
       });
 
       document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && !previewModal.hidden) {
-          event.preventDefault();
-          closePreviewModal();
-        }
-      });
-
-      previewFullscreenButton.addEventListener("click", () => {
-        if (!state.file || !state.fileCategory) {
+        if (event.key !== "Escape") {
           return;
         }
-        showModalPreview(state.file, state.fileCategory, { reusePreviewUrl: true });
+        if (!previewModal.hidden) {
+          event.preventDefault();
+          closePreviewModal();
+          return;
+        }
+        if (settingsPanel.getAttribute("aria-hidden") === "false") {
+          event.preventDefault();
+          closeSettingsPanel();
+        }
       });
 
-      setPreviewActionVisibility(false);
-      setPdfToggleVisibility(false);
       setMultiPdfToggleVisibility(false);
+      resetMultiProgress();
 
-      fileInput.setAttribute("accept", ACCEPT_STRING);
+      hideInputPanelButton.addEventListener("click", () => {
+        collapseInputPanel();
+      });
+
+      showInputPanelButton.addEventListener("click", () => {
+        expandInputPanel();
+      });
+
+      settingsButton.addEventListener("click", () => {
+        openSettingsPanel();
+      });
+
+      closeSettingsButton.addEventListener("click", () => {
+        closeSettingsPanel();
+      });
+
+      settingsBackdrop.addEventListener("click", () => {
+        closeSettingsPanel();
+      });
+
+      autoClearToggle.addEventListener("change", (event) => {
+        state.settings.autoClear = event.target.checked;
+      });
+
+      themeSelect.addEventListener("change", (event) => {
+        state.settings.theme = event.target.value;
+        applyTheme(state.settings.theme);
+      });
+
+      developerToggle.addEventListener("change", (event) => {
+        state.settings.developerMode = event.target.checked;
+        applyDeveloperMode(state.settings.developerMode);
+      });
+
+      applyTheme(state.settings.theme);
+      applyDeveloperMode(state.settings.developerMode);
+
       multiFileInput.setAttribute("accept", ACCEPT_STRING);
-
-      function resetFile() {
-        if (state.filePreviewUrl) {
-          URL.revokeObjectURL(state.filePreviewUrl);
-        }
-        state.file = null;
-        state.fileCategory = null;
-        state.filePreviewUrl = null;
-        fileInput.value = "";
-        fileDetails.hidden = true;
-        fileNameElement.textContent = "—";
-        fileTypeElement.textContent = "—";
-        setPdfToggleVisibility(false);
-        previewContainer.hidden = true;
-        previewContent.innerHTML = "";
-        setPreviewActionVisibility(false);
-        closePreviewModal();
-      }
 
       function resetMultiFiles() {
         state.multiFiles = [];
@@ -1140,6 +1606,7 @@
         multiFileList.innerHTML = "";
         multiTypeLabel.textContent = "—";
         setMultiPdfToggleVisibility(false);
+        resetMultiProgress();
       }
 
       function setStatus(message, isError = false) {
@@ -1155,30 +1622,25 @@
       function switchMode(mode) {
         if (mode === state.mode) return;
         state.mode = mode;
-        const isFileMode = mode === "file";
         const isTextMode = mode === "text";
         const isMultiMode = mode === "multi";
-        fileMode.hidden = !isFileMode;
         textMode.hidden = !isTextMode;
         multiMode.hidden = !isMultiMode;
-        setActiveModeButton(fileModeButton, isFileMode);
         setActiveModeButton(textModeButton, isTextMode);
         setActiveModeButton(multiModeButton, isMultiMode);
-        if (isFileMode) {
+        const inputHidden = workspace.classList.contains("workspace--input-hidden");
+        if (isTextMode) {
           resetMultiFiles();
-          dropZone.focus();
-        } else if (isTextMode) {
-          resetFile();
-          resetMultiFiles();
-          plainText.focus();
-        } else {
-          resetFile();
+          if (!inputHidden) {
+            plainText.focus();
+          }
+        } else if (!inputHidden) {
+          plainText.value = "";
           multiDropZone.focus();
         }
         setStatus("");
       }
 
-      fileModeButton.addEventListener("click", () => switchMode("file"));
       textModeButton.addEventListener("click", () => switchMode("text"));
       multiModeButton.addEventListener("click", () => switchMode("multi"));
 
@@ -1197,68 +1659,6 @@
           return "pdf";
         }
         return null;
-      }
-
-      function renderPreview(file, category) {
-        closePreviewModal();
-        previewContent.innerHTML = "";
-        previewContainer.hidden = false;
-
-        if (state.filePreviewUrl) {
-          URL.revokeObjectURL(state.filePreviewUrl);
-          state.filePreviewUrl = null;
-        }
-
-        if (category === "image") {
-          const url = URL.createObjectURL(file);
-          state.filePreviewUrl = url;
-          const img = document.createElement("img");
-          img.src = url;
-          img.alt = "Vista previa de la imagen subida";
-          previewContent.appendChild(img);
-        } else if (category === "pdf") {
-          const url = URL.createObjectURL(file);
-          state.filePreviewUrl = url;
-          const iframe = document.createElement("iframe");
-          iframe.src = url;
-          iframe.title = "Vista previa del PDF";
-          previewContent.appendChild(iframe);
-        } else {
-          const reader = new FileReader();
-          reader.onload = () => {
-            const text = reader.result || "";
-            const snippet = String(text).slice(0, 4000);
-            const pre = document.createElement("pre");
-            pre.textContent = snippet;
-            previewContent.appendChild(pre);
-          };
-          reader.readAsText(file, "utf-8");
-        }
-        setPreviewActionVisibility(true);
-      }
-
-      function updateFileSelection(file) {
-        const category = detectCategory(file);
-        if (!category) {
-          setStatus("El archivo no es de un formato admitido.", true);
-          resetFile();
-          return;
-        }
-        state.file = file;
-        state.fileCategory = category;
-        fileDetails.hidden = false;
-        fileNameElement.textContent = file.name;
-        fileTypeElement.textContent = SUPPORTED_TYPES[category].label;
-        setPdfToggleVisibility(category === "pdf");
-        renderPreview(file, category);
-        setStatus("");
-      }
-
-      function handleFileList(fileList) {
-        if (!fileList || !fileList.length) {
-          return;
-        }
-        updateFileSelection(fileList[0]);
       }
 
       function renderMultiList() {
@@ -1350,7 +1750,8 @@
         if (category !== "pdf") {
           setMultiPdfToggleVisibility(false);
         }
-        state.multiFiles.push({ file, category });
+        const uploadedAt = Date.now();
+        state.multiFiles.push({ file, category, uploadedAt });
         renderMultiList();
         setStatus("");
       }
@@ -1362,40 +1763,6 @@
         Array.from(fileList).forEach((file) => handleMultiSelection(file));
         multiFileInput.value = "";
       }
-
-      browseButton.addEventListener("click", () => {
-        if (state.mode !== "file") return;
-        fileInput.click();
-      });
-      fileInput.addEventListener("change", (event) => {
-        const files = event.target.files;
-        handleFileList(files);
-      });
-
-      dropZone.addEventListener("click", () => {
-        if (state.mode !== "file") return;
-        fileInput.click();
-      });
-
-      dropZone.addEventListener("dragover", (event) => {
-        event.preventDefault();
-        if (state.mode === "file") {
-          dropZone.classList.add("dragging");
-        }
-      });
-
-      ["dragleave", "dragend", "drop"].forEach((eventName) => {
-        dropZone.addEventListener(eventName, () => dropZone.classList.remove("dragging"));
-      });
-
-      dropZone.addEventListener("drop", (event) => {
-        event.preventDefault();
-        if (state.mode !== "file") {
-          return;
-        }
-        const { files } = event.dataTransfer;
-        handleFileList(files);
-      });
 
       multiBrowseButton.addEventListener("click", () => {
         if (state.mode !== "multi") return;
@@ -1487,10 +1854,11 @@
         }
 
         const entry = state.results[index];
+        const uploadedAt = entry.uploadedAt || entry.timestamp;
         resultsContainer.classList.remove("empty");
         resultsContainer.innerHTML = "";
         resultsSummary.textContent = `Última actualización: ${new Date(
-          entry.timestamp
+          uploadedAt
         ).toLocaleString()}`;
 
         const flat = flattenData(entry.data);
@@ -1518,10 +1886,12 @@
           });
 
         resultMeta.hidden = false;
-        resultMeta.innerHTML = `
-          <div><span class="pill">${entry.source}</span></div>
-          <div>Procesado el <strong>${new Date(entry.timestamp).toLocaleString()}</strong></div>
-        `;
+        const metaParts = [
+          `<div><span class="pill">${entry.source}</span></div>`,
+          `<div>Subido el <strong>${new Date(uploadedAt).toLocaleString()}</strong></div>`,
+          `<div>Procesado el <strong>${new Date(entry.timestamp).toLocaleString()}</strong></div>`,
+        ];
+        resultMeta.innerHTML = metaParts.join("");
 
         resultsNavigation.hidden = state.results.length <= 1;
         resultPosition.textContent = `Documento ${index + 1} de ${state.results.length}`;
@@ -1532,7 +1902,8 @@
         downloadCsv.disabled = false;
       }
 
-      function addResultEntry(data, source) {
+      function addResultEntry(data, source, options = {}) {
+        const timestamp = Date.now();
         const entry = {
           id:
             typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
@@ -1540,7 +1911,8 @@
               : Math.random().toString(36).slice(2),
           data,
           source,
-          timestamp: Date.now(),
+          timestamp,
+          uploadedAt: options.uploadedAt || timestamp,
         };
         state.results.push(entry);
         state.currentIndex = state.results.length - 1;
@@ -1574,6 +1946,7 @@
         const enriched = state.results.map((entry) => ({
           id: entry.id,
           archivo: entry.source,
+          subido_en: new Date((entry.uploadedAt || entry.timestamp)).toISOString(),
           procesado_en: new Date(entry.timestamp).toISOString(),
           datos: entry.data,
         }));
@@ -1589,7 +1962,7 @@
       downloadCsv.addEventListener("click", () => {
         if (!state.results.length) return;
         const payload = buildDownloadPayloads();
-        const allKeys = new Set(["id", "archivo", "procesado_en"]);
+        const allKeys = new Set(["id", "archivo", "subido_en", "procesado_en"]);
         payload.forEach((item) => {
           Object.keys(flattenData(item.datos)).forEach((key) => {
             if (!key) {
@@ -1605,6 +1978,7 @@
           const values = headers.map((header) => {
             if (header === "id") return item.id;
             if (header === "archivo") return item.archivo;
+            if (header === "subido_en") return item.subido_en;
             if (header === "procesado_en") return item.procesado_en;
             const key = header === "datos" ? "" : header.replace(/^datos\./, "");
             const value = Object.prototype.hasOwnProperty.call(flat, key)
@@ -1645,15 +2019,12 @@
             type: "multi",
             payload: {
               category: state.multiCategory,
-              files: state.multiFiles.map((entry) => entry.file),
+              entries: state.multiFiles.map((entry) => ({ ...entry })),
               useOcr: state.multiUseOcr,
             },
           };
         }
-        if (!state.file) {
-          throw new Error("Selecciona un archivo válido antes de procesar.");
-        }
-        return { type: state.fileCategory, payload: state.file };
+        throw new Error("Selecciona un modo de procesamiento válido.");
       }
 
       async function sendText(text) {
@@ -1696,40 +2067,45 @@
           submitButton.disabled = true;
           const { type, payload } = validateBeforeSend();
           if (type === "text") {
+            const now = Date.now();
             const result = await sendText(payload);
-            addResultEntry(result, "Texto manual");
+            addResultEntry(result, "Ingreso manual", { uploadedAt: now });
+            if (state.settings.autoClear) {
+              plainText.value = "";
+            }
           } else if (type === "multi") {
-            const { category, files, useOcr } = payload;
-            for (let index = 0; index < files.length; index += 1) {
+            const { category, entries, useOcr } = payload;
+            showMultiProgress(entries.length);
+            updateMultiProgress(0, entries.length);
+            for (let index = 0; index < entries.length; index += 1) {
+              const currentEntry = entries[index];
               setStatus(
-                `Procesando archivo ${index + 1} de ${files.length}...`,
+                `Procesando factura ${index + 1} de ${entries.length}...`,
                 false
               );
-              const currentFile = files[index];
-              const currentResult = await sendFile(currentFile, category, {
+              const currentResult = await sendFile(currentEntry.file, category, {
                 useOcr: category === "pdf" ? useOcr : false,
               });
               const label =
                 category === "pdf"
                   ? `${SUPPORTED_TYPES[category].label}${useOcr ? " (OCR)" : ""}`
                   : SUPPORTED_TYPES[category].label;
-              const description = `${label} · ${currentFile.name}`;
-              addResultEntry(currentResult, description);
+              const description = `${label} · ${currentEntry.file.name}`;
+              addResultEntry(currentResult, description, {
+                uploadedAt: currentEntry.uploadedAt || Date.now(),
+              });
+              updateMultiProgress(index + 1, entries.length);
             }
-            resetMultiFiles();
-          } else {
-            const useOcr = type === "pdf" ? pdfOcrToggle.checked : false;
-            const result = await sendFile(payload, type, { useOcr });
-            const description =
-              type === "pdf"
-                ? `PDF (${useOcr ? "OCR" : "texto"})`
-                : SUPPORTED_TYPES[type].label;
-            addResultEntry(result, `${description} · ${payload.name}`);
-            resetFile();
+            if (state.settings.autoClear) {
+              resetMultiFiles();
+            } else {
+              renderMultiList();
+            }
           }
           setStatus("¡Extracción completada!", false);
         } catch (error) {
           console.error(error);
+          resetMultiProgress();
           setStatus(error.message || "No se pudo completar la solicitud.", true);
         } finally {
           submitButton.disabled = false;
@@ -1750,7 +2126,6 @@
       clearButton.addEventListener("click", () => {
         setStatus("");
         plainText.value = "";
-        resetFile();
         resetMultiFiles();
       });
 
