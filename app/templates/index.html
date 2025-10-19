@@ -1381,13 +1381,16 @@
                           <span>Ajusta el esfuerzo de razonamiento solicitado.</span>
                         </label>
                       </div>
+                      <label class="llm-toggle" for="llmApiReasoningEnabled">
+                        <input type="checkbox" id="llmApiReasoningEnabled" checked />
+                        <span>Activado</span>
+                      </label>
                     </div>
                     <select id="llmApiReasoningEffort">
                       <option value="minimal">Mínimo</option>
                       <option value="low">Bajo</option>
                       <option value="medium">Medio</option>
                       <option value="high">Alto</option>
-                      <option value="none">Desactivado</option>
                     </select>
                   </div>
                   <div class="llm-field">
@@ -1815,6 +1818,7 @@
             top_p: 1,
             top_p_enabled: true,
             reasoning_effort: "minimal",
+            reasoning_effort_enabled: true,
             frequency_penalty: 0,
             frequency_penalty_enabled: true,
             presence_penalty: 0,
@@ -1828,6 +1832,7 @@
             top_p: 1,
             top_p_enabled: true,
             reasoning_effort: "minimal",
+            reasoning_effort_enabled: true,
             frequency_penalty: 0,
             frequency_penalty_enabled: true,
             presence_penalty: 0,
@@ -1914,6 +1919,10 @@
         api: document.getElementById("llmApiTopPEnabled"),
         local: document.getElementById("llmLocalTopPEnabled"),
       };
+      const llmReasoningToggles = {
+        api: document.getElementById("llmApiReasoningEnabled"),
+        local: document.getElementById("llmLocalReasoningEnabled"),
+      };
       const llmReasoningInputs = {
         api: document.getElementById("llmApiReasoningEffort"),
         local: document.getElementById("llmLocalReasoningEffort"),
@@ -1980,6 +1989,7 @@
                   top_p: 1,
                   top_p_enabled: true,
                   reasoning_effort: "minimal",
+                  reasoning_effort_enabled: true,
                   frequency_penalty: 0,
                   frequency_penalty_enabled: true,
                   presence_penalty: 0,
@@ -1993,6 +2003,7 @@
                   top_p: 1,
                   top_p_enabled: true,
                   reasoning_effort: "minimal",
+                  reasoning_effort_enabled: true,
                   frequency_penalty: 0,
                   frequency_penalty_enabled: true,
                   presence_penalty: 0,
@@ -2014,6 +2025,9 @@
         }
         if (typeof params.reasoning_effort !== "string") {
           params.reasoning_effort = "minimal";
+        }
+        if (typeof params.reasoning_effort_enabled !== "boolean") {
+          params.reasoning_effort_enabled = true;
         }
         if (!Number.isFinite(params.frequency_penalty)) {
           params.frequency_penalty = 0;
@@ -2094,10 +2108,16 @@
           params.top_p_enabled !== false
         );
         const reasoningInput = llmReasoningInputs[targetProvider];
+        const reasoningToggle = llmReasoningToggles[targetProvider];
         if (reasoningInput) {
           const value = params.reasoning_effort ?? "minimal";
           reasoningInput.value = value;
         }
+        setNumericFieldState(
+          reasoningInput,
+          reasoningToggle,
+          params.reasoning_effort_enabled !== false
+        );
         const frequencyInput = llmFrequencyInputs[targetProvider];
         const frequencyToggle = llmFrequencyToggles[targetProvider];
         if (frequencyInput) {
@@ -2277,6 +2297,22 @@
             const params = ensureLlmParameters(provider);
             params.top_p_enabled = toggle.checked;
             setNumericFieldState(input, toggle, params.top_p_enabled);
+          });
+        });
+
+        Object.entries(llmReasoningToggles).forEach(([provider, toggle]) => {
+          if (!toggle) {
+            return;
+          }
+          const input = llmReasoningInputs[provider];
+          toggle.addEventListener("change", () => {
+            const params = ensureLlmParameters(provider);
+            params.reasoning_effort_enabled = toggle.checked;
+            setNumericFieldState(
+              input,
+              toggle,
+              params.reasoning_effort_enabled
+            );
           });
         });
 
@@ -3046,7 +3082,10 @@
         ) {
           payload.top_p = activeSettings.top_p;
         }
-        if (typeof activeSettings.reasoning_effort === "string") {
+        if (
+          activeSettings.reasoning_effort_enabled !== false &&
+          typeof activeSettings.reasoning_effort === "string"
+        ) {
           const value = activeSettings.reasoning_effort.trim();
           if (value) {
             payload.reasoning_effort = value;
@@ -3114,7 +3153,10 @@
         ) {
           url.searchParams.set("top_p", String(activeSettings.top_p));
         }
-        if (typeof activeSettings.reasoning_effort === "string") {
+        if (
+          activeSettings.reasoning_effort_enabled !== false &&
+          typeof activeSettings.reasoning_effort === "string"
+        ) {
           const value = activeSettings.reasoning_effort.trim();
           if (value) {
             url.searchParams.set("reasoning_effort", value);
