@@ -12,6 +12,7 @@ from transformers import (
     AutoTokenizer,
     pipeline,
 )
+from transformers.dynamic_module_utils import get_class_from_dynamic_module
 
 from app.config import Config
 
@@ -152,6 +153,32 @@ class LocalLLMService:
                     break
                 except Exception as exc:
                     tokenizer_errors.append(f"{attempt}: {exc}")
+
+            if tokenizer is None and config is not None:
+                auto_map = getattr(config, "auto_map", None)
+                mapping = None
+                if isinstance(auto_map, dict):
+                    mapping = auto_map.get("AutoTokenizer")
+                if mapping:
+                    dynamic_spec: str
+                    if isinstance(mapping, (list, tuple)) and mapping:
+                        dynamic_spec = mapping[0]
+                    else:
+                        dynamic_spec = str(mapping)
+                    try:
+                        tokenizer_cls = get_class_from_dynamic_module(
+                            dynamic_spec,
+                            model_source,
+                            trust_remote_code=True,
+                        )
+                        tokenizer = tokenizer_cls.from_pretrained(
+                            model_source,
+                            trust_remote_code=True,
+                        )
+                    except Exception as exc:
+                        tokenizer_errors.append(
+                            f"dynamic AutoTokenizer {dynamic_spec}: {exc}"
+                        )
 
             if tokenizer is None:
                 error_details = " | ".join(tokenizer_errors)
