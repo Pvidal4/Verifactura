@@ -173,10 +173,22 @@
         box-shadow: 0 0 0 3px var(--accent-soft);
       }
 
+      .file-details {
+        display: grid;
+        gap: 1.25rem;
+        margin-top: 1.5rem;
+      }
+
       .file-meta {
         display: grid;
-        gap: 0.25rem;
+        gap: 0.75rem;
         font-size: 0.9rem;
+      }
+
+      .file-meta div {
+        display: flex;
+        align-items: baseline;
+        gap: 0.35rem;
       }
 
       .file-meta span {
@@ -231,6 +243,63 @@
         font-size: 0.85rem;
         white-space: pre-wrap;
         line-height: 1.5;
+      }
+
+      .multi-details {
+        display: grid;
+        gap: 1rem;
+        margin-top: 1.5rem;
+      }
+
+      .multi-summary {
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: baseline;
+        gap: 0.35rem;
+        color: var(--muted);
+      }
+
+      .multi-summary strong {
+        color: var(--text);
+      }
+
+      .multi-file-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 0.75rem;
+      }
+
+      .multi-file-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.75rem 1rem;
+        border-radius: 1rem;
+        background: var(--surface-subtle);
+        border: 1px solid var(--border);
+      }
+
+      .multi-file-item span {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        font-size: 0.9rem;
+      }
+
+      .multi-file-item small {
+        color: var(--muted);
+      }
+
+      .multi-file-item button {
+        border: none;
+        background: transparent;
+        color: var(--danger);
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
       }
 
       textarea {
@@ -516,6 +585,14 @@
             >
               Texto manual
             </button>
+            <button
+              type="button"
+              id="multiModeButton"
+              role="tab"
+              aria-selected="false"
+            >
+              Multi-archivo
+            </button>
           </div>
 
           <div id="fileMode" role="tabpanel" aria-labelledby="fileModeButton">
@@ -532,19 +609,21 @@
               />
             </div>
 
-            <div class="file-meta" id="fileMeta" hidden>
-              <div><span>Archivo:</span> <strong id="fileName">—</strong></div>
-              <div><span>Tipo detectado:</span> <strong id="fileType">—</strong></div>
-            </div>
+            <div class="file-details" id="fileDetails" hidden>
+              <div class="file-meta" id="fileMeta">
+                <div><span>Archivo:</span> <strong id="fileName">—</strong></div>
+                <div><span>Tipo detectado:</span> <strong id="fileType">—</strong></div>
+              </div>
 
-            <div class="toggle" id="pdfToggleRow" hidden>
-              <input type="checkbox" id="pdfOcrToggle" />
-              <label for="pdfOcrToggle">Usar OCR y tratar el PDF como imagen</label>
-            </div>
+              <div class="toggle" id="pdfToggleRow" hidden>
+                <input type="checkbox" id="pdfOcrToggle" />
+                <label for="pdfOcrToggle">Usar OCR y tratar el PDF como imagen</label>
+              </div>
 
-            <div class="preview" id="previewContainer" hidden>
-              <h3>Vista previa</h3>
-              <div class="preview-content" id="previewContent"></div>
+              <div class="preview" id="previewContainer" hidden>
+                <h3>Vista previa</h3>
+                <div class="preview-content" id="previewContent"></div>
+              </div>
             </div>
           </div>
 
@@ -557,6 +636,34 @@
             ></textarea>
             <p class="helper-text">
               El texto se enviará directamente al modelo de extracción.
+            </p>
+          </div>
+
+          <div id="multiMode" role="tabpanel" aria-labelledby="multiModeButton" hidden>
+            <div class="drop-zone" id="multiDropZone" tabindex="0">
+              <div class="drop-zone__icon">📁</div>
+              <strong>Agrega varios archivos del mismo tipo</strong>
+              <p>Selecciona todos los archivos y los procesaremos en secuencia.</p>
+              <button type="button" id="multiBrowseButton">Buscar archivos</button>
+              <input
+                type="file"
+                id="multiFileInput"
+                accept=".pdf,.xml,.txt,.json,.png,.jpg,.jpeg,.tif,.tiff"
+                multiple
+                hidden
+              />
+            </div>
+
+            <div class="multi-details" id="multiDetails" hidden>
+              <div class="multi-summary">
+                <span>Tipo detectado:</span>
+                <strong id="multiTypeLabel">—</strong>
+              </div>
+              <ul class="multi-file-list" id="multiFileList"></ul>
+            </div>
+
+            <p class="helper-text" id="multiEmptyState">
+              Aún no has agregado archivos. Arrástralos o selecciónalos desde tu equipo.
             </p>
           </div>
 
@@ -627,6 +734,8 @@
         file: null,
         fileCategory: null,
         filePreviewUrl: null,
+        multiFiles: [],
+        multiCategory: null,
         results: [],
         currentIndex: -1,
       };
@@ -634,6 +743,7 @@
       const dropZone = document.getElementById("dropZone");
       const fileInput = document.getElementById("fileInput");
       const browseButton = document.getElementById("browseButton");
+      const fileDetails = document.getElementById("fileDetails");
       const fileMeta = document.getElementById("fileMeta");
       const fileNameElement = document.getElementById("fileName");
       const fileTypeElement = document.getElementById("fileType");
@@ -656,10 +766,20 @@
       const nextResultBtn = document.getElementById("nextResult");
       const fileMode = document.getElementById("fileMode");
       const textMode = document.getElementById("textMode");
+      const multiMode = document.getElementById("multiMode");
       const fileModeButton = document.getElementById("fileModeButton");
       const textModeButton = document.getElementById("textModeButton");
+      const multiModeButton = document.getElementById("multiModeButton");
+      const multiDropZone = document.getElementById("multiDropZone");
+      const multiBrowseButton = document.getElementById("multiBrowseButton");
+      const multiFileInput = document.getElementById("multiFileInput");
+      const multiDetails = document.getElementById("multiDetails");
+      const multiFileList = document.getElementById("multiFileList");
+      const multiTypeLabel = document.getElementById("multiTypeLabel");
+      const multiEmptyState = document.getElementById("multiEmptyState");
 
       fileInput.setAttribute("accept", ACCEPT_STRING);
+      multiFileInput.setAttribute("accept", ACCEPT_STRING);
 
       function resetFile() {
         if (state.filePreviewUrl) {
@@ -669,11 +789,23 @@
         state.fileCategory = null;
         state.filePreviewUrl = null;
         fileInput.value = "";
-        fileMeta.hidden = true;
+        fileDetails.hidden = true;
+        fileNameElement.textContent = "—";
+        fileTypeElement.textContent = "—";
         pdfToggleRow.hidden = true;
         pdfOcrToggle.checked = false;
         previewContainer.hidden = true;
         previewContent.innerHTML = "";
+      }
+
+      function resetMultiFiles() {
+        state.multiFiles = [];
+        state.multiCategory = null;
+        multiFileInput.value = "";
+        multiDetails.hidden = true;
+        multiEmptyState.hidden = false;
+        multiFileList.innerHTML = "";
+        multiTypeLabel.textContent = "—";
       }
 
       function setStatus(message, isError = false) {
@@ -681,27 +813,40 @@
         statusMessage.classList.toggle("error", Boolean(isError));
       }
 
+      function setActiveModeButton(button, isActive) {
+        button.classList.toggle("active", isActive);
+        button.setAttribute("aria-selected", String(isActive));
+      }
+
       function switchMode(mode) {
         if (mode === state.mode) return;
         state.mode = mode;
         const isFileMode = mode === "file";
+        const isTextMode = mode === "text";
+        const isMultiMode = mode === "multi";
         fileMode.hidden = !isFileMode;
-        textMode.hidden = isFileMode;
-        fileModeButton.classList.toggle("active", isFileMode);
-        fileModeButton.setAttribute("aria-selected", String(isFileMode));
-        textModeButton.classList.toggle("active", !isFileMode);
-        textModeButton.setAttribute("aria-selected", String(!isFileMode));
+        textMode.hidden = !isTextMode;
+        multiMode.hidden = !isMultiMode;
+        setActiveModeButton(fileModeButton, isFileMode);
+        setActiveModeButton(textModeButton, isTextMode);
+        setActiveModeButton(multiModeButton, isMultiMode);
         if (isFileMode) {
+          resetMultiFiles();
           dropZone.focus();
+        } else if (isTextMode) {
+          resetFile();
+          resetMultiFiles();
+          plainText.focus();
         } else {
           resetFile();
-          plainText.focus();
+          multiDropZone.focus();
         }
         setStatus("");
       }
 
       fileModeButton.addEventListener("click", () => switchMode("file"));
       textModeButton.addEventListener("click", () => switchMode("text"));
+      multiModeButton.addEventListener("click", () => switchMode("multi"));
 
       function detectCategory(file) {
         const extension = (file.name.split(".").pop() || "").toLowerCase();
@@ -765,7 +910,7 @@
         }
         state.file = file;
         state.fileCategory = category;
-        fileMeta.hidden = false;
+        fileDetails.hidden = false;
         fileNameElement.textContent = file.name;
         fileTypeElement.textContent = SUPPORTED_TYPES[category].label;
         pdfToggleRow.hidden = category !== "pdf";
@@ -783,7 +928,76 @@
         updateFileSelection(fileList[0]);
       }
 
-      browseButton.addEventListener("click", () => fileInput.click());
+      function renderMultiList() {
+        if (!state.multiFiles.length) {
+          resetMultiFiles();
+          return;
+        }
+        multiDetails.hidden = false;
+        multiEmptyState.hidden = true;
+        multiTypeLabel.textContent = SUPPORTED_TYPES[state.multiCategory].label;
+        multiFileList.innerHTML = "";
+        state.multiFiles.forEach((entry, index) => {
+          const item = document.createElement("li");
+          item.className = "multi-file-item";
+          const info = document.createElement("span");
+          const name = document.createElement("strong");
+          name.textContent = entry.file.name;
+          const type = document.createElement("small");
+          type.textContent = SUPPORTED_TYPES[entry.category].label;
+          info.appendChild(name);
+          info.appendChild(type);
+          const removeButton = document.createElement("button");
+          removeButton.type = "button";
+          removeButton.textContent = "×";
+          removeButton.setAttribute(
+            "aria-label",
+            `Eliminar ${entry.file.name} de la lista`
+          );
+          removeButton.addEventListener("click", () => {
+            state.multiFiles.splice(index, 1);
+            if (!state.multiFiles.length) {
+              state.multiCategory = null;
+            }
+            renderMultiList();
+          });
+          item.appendChild(info);
+          item.appendChild(removeButton);
+          multiFileList.appendChild(item);
+        });
+      }
+
+      function handleMultiSelection(file) {
+        const category = detectCategory(file);
+        if (!category) {
+          setStatus(`El archivo ${file.name} no es de un formato admitido.`, true);
+          return;
+        }
+        if (state.multiCategory && state.multiCategory !== category) {
+          setStatus(
+            "Todos los archivos deben ser del mismo tipo para el procesamiento en lote.",
+            true
+          );
+          return;
+        }
+        state.multiCategory = category;
+        state.multiFiles.push({ file, category });
+        renderMultiList();
+        setStatus("");
+      }
+
+      function handleMultiFileList(fileList) {
+        if (!fileList || !fileList.length) {
+          return;
+        }
+        Array.from(fileList).forEach((file) => handleMultiSelection(file));
+        multiFileInput.value = "";
+      }
+
+      browseButton.addEventListener("click", () => {
+        if (state.mode !== "file") return;
+        fileInput.click();
+      });
       fileInput.addEventListener("change", (event) => {
         const files = event.target.files;
         handleFileList(files);
@@ -812,6 +1026,43 @@
         }
         const { files } = event.dataTransfer;
         handleFileList(files);
+      });
+
+      multiBrowseButton.addEventListener("click", () => {
+        if (state.mode !== "multi") return;
+        multiFileInput.click();
+      });
+
+      multiFileInput.addEventListener("change", (event) => {
+        const files = event.target.files;
+        handleMultiFileList(files);
+      });
+
+      multiDropZone.addEventListener("click", () => {
+        if (state.mode !== "multi") return;
+        multiFileInput.click();
+      });
+
+      multiDropZone.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        if (state.mode === "multi") {
+          multiDropZone.classList.add("dragging");
+        }
+      });
+
+      ["dragleave", "dragend", "drop"].forEach((eventName) => {
+        multiDropZone.addEventListener(eventName, () =>
+          multiDropZone.classList.remove("dragging")
+        );
+      });
+
+      multiDropZone.addEventListener("drop", (event) => {
+        event.preventDefault();
+        if (state.mode !== "multi") {
+          return;
+        }
+        const { files } = event.dataTransfer;
+        handleMultiFileList(files);
       });
 
       function flattenData(data, prefix = "") {
@@ -1012,6 +1263,18 @@
           }
           return { type: "text", payload: value };
         }
+        if (state.mode === "multi") {
+          if (!state.multiFiles.length || !state.multiCategory) {
+            throw new Error("Agrega al menos un archivo para procesar en lote.");
+          }
+          return {
+            type: "multi",
+            payload: {
+              category: state.multiCategory,
+              files: state.multiFiles.map((entry) => entry.file),
+            },
+          };
+        }
         if (!state.file) {
           throw new Error("Selecciona un archivo válido antes de procesar.");
         }
@@ -1031,16 +1294,15 @@
         return response.json();
       }
 
-      async function sendFile(file, type) {
+      async function sendFile(file, type, options = {}) {
+        const { useOcr = false } = options;
         const formData = new FormData();
         formData.append("file", file);
         let endpoint = "/api/v1/extract/file";
         if (type === "image") {
           endpoint = "/api/v1/extract/image";
-        } else if (type === "pdf" && pdfOcrToggle.checked) {
-          endpoint = "/api/v1/extract/image";
-        } else if (type === "pdf" && !pdfOcrToggle.checked) {
-          endpoint = "/api/v1/extract/file";
+        } else if (type === "pdf") {
+          endpoint = useOcr ? "/api/v1/extract/image" : "/api/v1/extract/file";
         }
         const response = await fetch(endpoint, {
           method: "POST",
@@ -1058,17 +1320,31 @@
           setStatus("Procesando...", false);
           submitButton.disabled = true;
           const { type, payload } = validateBeforeSend();
-          let result;
           if (type === "text") {
-            result = await sendText(payload);
+            const result = await sendText(payload);
             addResultEntry(result, "Texto manual");
+          } else if (type === "multi") {
+            const { category, files } = payload;
+            for (let index = 0; index < files.length; index += 1) {
+              setStatus(
+                `Procesando archivo ${index + 1} de ${files.length}...`,
+                false
+              );
+              const currentFile = files[index];
+              const currentResult = await sendFile(currentFile, category);
+              const description = `${SUPPORTED_TYPES[category].label} · ${currentFile.name}`;
+              addResultEntry(currentResult, description);
+            }
+            resetMultiFiles();
           } else {
-            result = await sendFile(payload, type);
+            const useOcr = type === "pdf" ? pdfOcrToggle.checked : false;
+            const result = await sendFile(payload, type, { useOcr });
             const description =
               type === "pdf"
-                ? `PDF (${pdfOcrToggle.checked ? "OCR" : "texto"})`
+                ? `PDF (${useOcr ? "OCR" : "texto"})`
                 : SUPPORTED_TYPES[type].label;
             addResultEntry(result, `${description} · ${payload.name}`);
+            resetFile();
           }
           setStatus("¡Extracción completada!", false);
         } catch (error) {
@@ -1094,6 +1370,7 @@
         setStatus("");
         plainText.value = "";
         resetFile();
+        resetMultiFiles();
       });
 
       renderResult(state.currentIndex);
