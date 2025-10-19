@@ -141,6 +141,7 @@ class LocalLLMService:
                 dtype=torch.bfloat16,
                 device_map=None,
                 device=self._device,
+                trust_remote_code=True,
             )
         return self._pipelines[source]
 
