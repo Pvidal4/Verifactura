@@ -65,14 +65,16 @@
         align-items: flex-start;
         justify-content: space-between;
         gap: clamp(1.5rem, 4vw, 3rem);
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
       }
 
       .header-text {
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
-        max-width: min(860px, 100%);
+        flex: 1 1 70%;
+        min-width: min(720px, 100%);
+        max-width: 100%;
       }
 
       .header-extra {
@@ -80,6 +82,7 @@
         flex-direction: column;
         align-items: flex-end;
         gap: 1rem;
+        flex-shrink: 0;
       }
 
       .header-actions {
@@ -118,6 +121,10 @@
         color: var(--accent);
         font-size: 0.85rem;
         font-weight: 500;
+      }
+
+      .developer-badge[hidden] {
+        display: none !important;
       }
 
       .header-restore {
@@ -990,6 +997,22 @@
         padding: 0.35rem 0.75rem;
       }
 
+      @media (max-width: 1024px) {
+        .header-bar {
+          flex-wrap: wrap;
+        }
+
+        .header-text {
+          flex-basis: 100%;
+          min-width: 100%;
+        }
+
+        .header-extra {
+          align-items: flex-start;
+          width: 100%;
+        }
+      }
+
       @media (max-width: 760px) {
         .app-shell {
           padding: 2rem 1.25rem 3rem;
@@ -1027,7 +1050,7 @@
               class="header-restore"
               hidden
             >
-              Cargar más facturas
+              Mostrar carga de facturas
             </button>
           </div>
           <div class="header-extra">
@@ -1344,6 +1367,7 @@
 
       let lastFocusedElement = null;
       let lastSettingsTrigger = null;
+      let showInputPanelWasVisibleBeforeModal = null;
 
       function setMultiPdfToggleVisibility(visible) {
         multiPdfToggleRow.hidden = !visible;
@@ -1449,6 +1473,7 @@
         if (previewModal.hidden) {
           return;
         }
+        const focusTarget = lastFocusedElement;
         previewModal.hidden = true;
         previewModal.setAttribute("aria-hidden", "true");
         if (state.modalPreviewUrl) {
@@ -1457,8 +1482,17 @@
         }
         previewModalContent.innerHTML = "";
         document.body.classList.remove("modal-open");
-        if (lastFocusedElement && typeof lastFocusedElement.focus === "function") {
-          lastFocusedElement.focus();
+        if (showInputPanelWasVisibleBeforeModal !== null) {
+          if (
+            showInputPanelWasVisibleBeforeModal &&
+            workspace.classList.contains("workspace--input-hidden")
+          ) {
+            showInputPanelButton.hidden = false;
+          }
+          showInputPanelWasVisibleBeforeModal = null;
+        }
+        if (focusTarget && typeof focusTarget.focus === "function") {
+          focusTarget.focus();
         }
         lastFocusedElement = null;
       }
@@ -1523,6 +1557,8 @@
 
       function openPreviewModal() {
         lastFocusedElement = document.activeElement;
+        showInputPanelWasVisibleBeforeModal = !showInputPanelButton.hidden;
+        showInputPanelButton.hidden = true;
         previewModal.hidden = false;
         previewModal.setAttribute("aria-hidden", "false");
         document.body.classList.add("modal-open");
