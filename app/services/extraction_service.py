@@ -47,7 +47,7 @@ class ExtractionService:
             LOGGER.warning(
                 "No fue posible renderizar el PDF a imágenes, se enviará el PDF directo a Azure OCR."
             )
-            text = self._ocr.extract_text(data, content_type="application/pdf")
+            text = self._ocr.extract_text(data)
             if not text:
                 raise RuntimeError(
                     "No se pudo extraer texto del PDF mediante OCR."
@@ -90,6 +90,8 @@ class ExtractionService:
             return self._extract_text_from_pdf_with_ocr(data)
         if content_type is None:
             content_type = mimetypes.guess_type(filename)[0]
+        if content_type and content_type.lower() == "application/pdf":
+            content_type = None
         return self._ocr.extract_text(data, content_type=content_type)
 
     def extract_from_text(self, text: str) -> Dict[str, object]:
@@ -112,7 +114,7 @@ class ExtractionService:
             guessed = mimetypes.guess_type(filename)[0]
             content_type = guessed.lower() if guessed else None
         if suffix in PDF_EXTENSIONS or content_type == "application/pdf":
-            content_type = content_type or "application/pdf"
+            content_type = None
         elif suffix and suffix not in IMAGE_EXTENSIONS and not (
             (content_type or "").startswith("image/")
         ):
