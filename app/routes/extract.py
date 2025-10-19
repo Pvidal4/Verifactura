@@ -79,11 +79,28 @@ def _normalize_reasoning_effort(
     return value
 
 
-def _normalize_api_key(value: Optional[str]) -> Optional[str]:
-    if not value:
+def _normalize_optional_string(value: Optional[str]) -> Optional[str]:
+    if value is None:
         return None
     trimmed = value.strip()
     return trimmed or None
+
+
+def _normalize_api_key(value: Optional[str]) -> Optional[str]:
+    return _normalize_optional_string(value)
+
+
+def _normalize_ocr_provider(value: Optional[str]) -> Optional[str]:
+    normalized = _normalize_optional_string(value)
+    if not normalized:
+        return None
+    lowered = normalized.lower()
+    if lowered in {"azure-vision", "azure_vision", "azurevision", "azure"}:
+        return "azure-vision"
+    raise HTTPException(
+        status_code=400,
+        detail=f"Proveedor OCR '{value}' no es válido.",
+    )
 
 
 def _get_service(request: Request) -> ExtractionService:
@@ -207,6 +224,18 @@ async def extract_from_file_endpoint(
         None,
         description="Clave de API de OpenAI a utilizar para la solicitud actual.",
     ),
+    ocr_provider: Optional[str] = Query(
+        None,
+        description="Proveedor OCR a utilizar (por ejemplo, 'azure-vision').",
+    ),
+    azure_form_recognizer_endpoint: Optional[str] = Query(
+        None,
+        description="Endpoint de Azure Form Recognizer para esta solicitud.",
+    ),
+    azure_form_recognizer_key: Optional[str] = Query(
+        None,
+        description="Clave de Azure Form Recognizer para esta solicitud.",
+    ),
     service: ExtractionService = Depends(_get_service),
 ) -> Dict[str, Any]:
 
@@ -228,6 +257,9 @@ async def extract_from_file_endpoint(
             frequency_penalty=frequency_penalty,
             presence_penalty=presence_penalty,
             openai_api_key=_normalize_api_key(openai_api_key),
+            ocr_provider=_normalize_ocr_provider(ocr_provider),
+            ocr_endpoint=_normalize_optional_string(azure_form_recognizer_endpoint),
+            ocr_key=_normalize_optional_string(azure_form_recognizer_key),
         )
     except RuntimeError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -294,6 +326,18 @@ async def extract_from_image_endpoint(
         None,
         description="Clave de API de OpenAI a utilizar para la solicitud actual.",
     ),
+    ocr_provider: Optional[str] = Query(
+        None,
+        description="Proveedor OCR a utilizar (por ejemplo, 'azure-vision').",
+    ),
+    azure_form_recognizer_endpoint: Optional[str] = Query(
+        None,
+        description="Endpoint de Azure Form Recognizer para esta solicitud.",
+    ),
+    azure_form_recognizer_key: Optional[str] = Query(
+        None,
+        description="Clave de Azure Form Recognizer para esta solicitud.",
+    ),
     service: ExtractionService = Depends(_get_service),
 ) -> Dict[str, Any]:
 
@@ -325,6 +369,9 @@ async def extract_from_image_endpoint(
             frequency_penalty=frequency_penalty,
             presence_penalty=presence_penalty,
             openai_api_key=_normalize_api_key(openai_api_key),
+            ocr_provider=_normalize_ocr_provider(ocr_provider),
+            ocr_endpoint=_normalize_optional_string(azure_form_recognizer_endpoint),
+            ocr_key=_normalize_optional_string(azure_form_recognizer_key),
         )
     except RuntimeError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

@@ -229,7 +229,8 @@
         gap: 1.5rem;
       }
 
-      .llm-provider-row {
+      .llm-provider-row,
+      .ocr-provider-row {
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
@@ -239,7 +240,8 @@
         background: var(--surface-subtle);
       }
 
-      .llm-provider-row label {
+      .llm-provider-row label,
+      .ocr-provider-row label {
         font-weight: 600;
         display: flex;
         flex-direction: column;
@@ -247,13 +249,15 @@
         color: var(--text);
       }
 
-      .llm-provider-row label span {
+      .llm-provider-row label span,
+      .ocr-provider-row label span {
         font-weight: 400;
         color: var(--muted);
         font-size: 0.85rem;
       }
 
-      .llm-provider-row select {
+      .llm-provider-row select,
+      .ocr-provider-row select {
         appearance: none;
         border: 1px solid var(--border);
         border-radius: 0.75rem;
@@ -263,7 +267,8 @@
         color: var(--text);
       }
 
-      .llm-provider-row select:focus-visible {
+      .llm-provider-row select:focus-visible,
+      .ocr-provider-row select:focus-visible {
         outline: none;
         border-color: var(--accent);
         box-shadow: 0 0 0 3px var(--accent-soft);
@@ -282,6 +287,25 @@
       .llm-settings__section {
         display: grid;
         gap: 1rem;
+      }
+
+      .ocr-settings {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem;
+        border-radius: 1rem;
+        border: 1px dashed var(--border);
+        background: var(--surface-subtle);
+      }
+
+      .ocr-settings__fields {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .ocr-settings__fields[hidden] {
+        display: none !important;
       }
 
       .llm-settings__section[hidden] {
@@ -1554,6 +1578,62 @@
                 </div>
               </div>
             </div>
+            <div class="ocr-settings" id="ocrSettings">
+              <div class="ocr-provider-row">
+                <label for="ocrProviderSelect">
+                  Proveedor OCR
+                  <span>
+                    Selecciona el servicio para el reconocimiento óptico de
+                    caracteres.
+                  </span>
+                </label>
+                <select id="ocrProviderSelect">
+                  <option value="">Selecciona un proveedor</option>
+                  <option value="azure-vision">Azure Vision</option>
+                </select>
+              </div>
+              <div
+                class="ocr-settings__fields"
+                data-ocr-provider="azure-vision"
+                hidden
+                aria-hidden="true"
+              >
+                <div class="llm-field">
+                  <div class="llm-field__heading">
+                    <div class="llm-field__text">
+                      <label for="ocrAzureEndpoint">
+                        AZURE_FORM_RECOGNIZER_ENDPOINT
+                        <span>
+                          Introduce el endpoint de Azure Form Recognizer.
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                  <input
+                    id="ocrAzureEndpoint"
+                    type="text"
+                    placeholder="https://<nombre>.cognitiveservices.azure.com/"
+                    autocomplete="off"
+                  />
+                </div>
+                <div class="llm-field">
+                  <div class="llm-field__heading">
+                    <div class="llm-field__text">
+                      <label for="ocrAzureKey">
+                        AZURE_FORM_RECOGNIZER_KEY
+                        <span>Clave del recurso que se usará para el OCR.</span>
+                      </label>
+                    </div>
+                  </div>
+                  <input
+                    id="ocrAzureKey"
+                    type="password"
+                    placeholder="Azure key"
+                    autocomplete="off"
+                  />
+                </div>
+              </div>
+            </div>
             <div class="segmented-control" role="tablist">
               <button
                 type="button"
@@ -1839,6 +1919,13 @@
             presence_penalty_enabled: true,
           },
         },
+        ocrProvider: "",
+        ocrParameters: {
+          "azure-vision": {
+            endpoint: "",
+            key: "",
+          },
+        },
         settings: {
           autoClear: true,
           theme: "light",
@@ -1899,6 +1986,15 @@
       const llmSettingsSections = document.querySelectorAll(
         "[data-llm-provider-settings]"
       );
+      const ocrSettingsContainer = document.getElementById("ocrSettings");
+      const ocrProviderSelect = document.getElementById("ocrProviderSelect");
+      const ocrSettingsSections = document.querySelectorAll("[data-ocr-provider]");
+      const ocrInputs = {
+        "azure-vision": {
+          endpoint: document.getElementById("ocrAzureEndpoint"),
+          key: document.getElementById("ocrAzureKey"),
+        },
+      };
       const llmModelInputs = {
         api: document.getElementById("llmApiModel"),
         local: document.getElementById("llmLocalModel"),
@@ -1965,6 +2061,18 @@
 
       function getActiveLlmSettings() {
         return ensureLlmParameters(state.llmProvider);
+      }
+
+      function getActiveOcrSettings() {
+        if (!state.ocrProvider) {
+          return { provider: "", endpoint: "", key: "" };
+        }
+        const params = ensureOcrParameters(state.ocrProvider);
+        return {
+          provider: state.ocrProvider,
+          endpoint: (params.endpoint || "").trim(),
+          key: (params.key || "").trim(),
+        };
       }
 
       function parseNumeric(value) {
@@ -2043,6 +2151,23 @@
         }
         if (provider === "api" && typeof params.api_key !== "string") {
           params.api_key = "";
+        }
+        return params;
+      }
+
+      function ensureOcrParameters(provider) {
+        if (!provider) {
+          return { endpoint: "", key: "" };
+        }
+        if (!state.ocrParameters[provider]) {
+          state.ocrParameters[provider] = { endpoint: "", key: "" };
+        }
+        const params = state.ocrParameters[provider];
+        if (typeof params.endpoint !== "string") {
+          params.endpoint = "";
+        }
+        if (typeof params.key !== "string") {
+          params.key = "";
         }
         return params;
       }
@@ -2147,6 +2272,42 @@
         if (targetProvider === "api" && llmApiKeyInput) {
           llmApiKeyInput.value = params.api_key ?? "";
         }
+      }
+
+      function refreshOcrSettings(provider) {
+        if (!ocrSettingsContainer) {
+          return;
+        }
+        const targetProvider = provider ?? state.ocrProvider;
+        if (
+          ocrProviderSelect &&
+          ocrProviderSelect.value !== (targetProvider || "")
+        ) {
+          ocrProviderSelect.value = targetProvider || "";
+        }
+        ocrSettingsSections.forEach((section) => {
+          const sectionProvider = section.getAttribute("data-ocr-provider");
+          const isActive = sectionProvider === targetProvider && !!sectionProvider;
+          section.hidden = !isActive;
+          section.setAttribute("aria-hidden", String(!isActive));
+          if (!isActive || !sectionProvider) {
+            return;
+          }
+          const params = ensureOcrParameters(sectionProvider);
+          const inputs = ocrInputs[sectionProvider] || {};
+          if (inputs.endpoint) {
+            const nextValue = params.endpoint || "";
+            if (inputs.endpoint.value !== nextValue) {
+              inputs.endpoint.value = nextValue;
+            }
+          }
+          if (inputs.key) {
+            const nextValue = params.key || "";
+            if (inputs.key.value !== nextValue) {
+              inputs.key.value = nextValue;
+            }
+          }
+        });
       }
 
       function bindLlmInputs() {
@@ -2346,6 +2507,33 @@
             params.api_key = llmApiKeyInput.value.trim();
           });
         }
+      }
+
+      function bindOcrInputs() {
+        if (ocrProviderSelect) {
+          ocrProviderSelect.addEventListener("change", (event) => {
+            state.ocrProvider = event.target.value;
+            refreshOcrSettings(state.ocrProvider);
+          });
+        }
+        Object.entries(ocrInputs).forEach(([provider, inputs]) => {
+          if (!inputs) {
+            return;
+          }
+          ensureOcrParameters(provider);
+          if (inputs.endpoint) {
+            inputs.endpoint.addEventListener("input", () => {
+              const params = ensureOcrParameters(provider);
+              params.endpoint = inputs.endpoint.value.trim();
+            });
+          }
+          if (inputs.key) {
+            inputs.key.addEventListener("input", () => {
+              const params = ensureOcrParameters(provider);
+              params.key = inputs.key.value.trim();
+            });
+          }
+        });
       }
 
       function applyDeveloperMode(enabled) {
@@ -2577,7 +2765,9 @@
       });
 
       bindLlmInputs();
+      bindOcrInputs();
       refreshLlmSettings(state.llmProvider);
+      refreshOcrSettings(state.ocrProvider);
 
       setMultiPdfToggleVisibility(false);
       resetMultiProgress();
@@ -3184,6 +3374,22 @@
           const apiKey = (activeSettings.api_key || "").trim();
           if (apiKey) {
             url.searchParams.set("openai_api_key", apiKey);
+          }
+        }
+        const ocrSettings = getActiveOcrSettings();
+        if (ocrSettings.provider) {
+          url.searchParams.set("ocr_provider", ocrSettings.provider);
+          if (ocrSettings.endpoint) {
+            url.searchParams.set(
+              "azure_form_recognizer_endpoint",
+              ocrSettings.endpoint
+            );
+          }
+          if (ocrSettings.key) {
+            url.searchParams.set(
+              "azure_form_recognizer_key",
+              ocrSettings.key
+            );
           }
         }
         const response = await fetch(url, {
