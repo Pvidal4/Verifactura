@@ -30,6 +30,7 @@
       body {
         margin: 0;
         background: var(--surface);
+        color: var(--text);
       }
 
       h1,
@@ -91,6 +92,7 @@
         font-size: clamp(1.85rem, 3.2vw, 3rem);
         font-weight: 600;
         letter-spacing: -0.02em;
+        color: var(--text);
       }
 
       header p {
@@ -179,6 +181,7 @@
       .panel h2 {
         font-size: 1.2rem;
         font-weight: 600;
+        color: var(--text);
       }
 
       .panel--input {
@@ -892,8 +895,24 @@
         --border: rgba(148, 163, 184, 0.25);
         --border-strong: rgba(148, 163, 184, 0.45);
         --text: #e2e8f0;
-        --muted: #94a3b8;
+        --muted: #cbd5f5;
         background: var(--surface);
+        color: var(--text);
+      }
+
+      body.theme-dark header h1,
+      body.theme-dark header p,
+      body.theme-dark .panel h2,
+      body.theme-dark .panel-header__text p,
+      body.theme-dark .multi-summary,
+      body.theme-dark .multi-file-item span,
+      body.theme-dark .multi-file-item strong,
+      body.theme-dark .settings-button {
+        color: var(--text);
+      }
+
+      body.theme-dark .settings-button {
+        border-color: var(--border-strong);
       }
 
       .progress-row {
@@ -1222,16 +1241,6 @@
             </select>
           </div>
           <div class="settings-option">
-            <label for="languageSelect">
-              Idioma
-              <span>Alterna entre español e inglés.</span>
-            </label>
-            <select id="languageSelect">
-              <option value="es">Español</option>
-              <option value="en">English</option>
-            </select>
-          </div>
-          <div class="settings-option">
             <label for="developerToggle">
               Modo desarrollador
               <span>Muestra indicadores adicionales.</span>
@@ -1279,9 +1288,8 @@
         results: [],
         currentIndex: -1,
         settings: {
-          autoClear: false,
+          autoClear: true,
           theme: "light",
-          language: "es",
           developerMode: false,
         },
       };
@@ -1331,7 +1339,6 @@
       const closeSettingsButton = document.getElementById("closeSettingsButton");
       const autoClearToggle = document.getElementById("autoClearToggle");
       const themeSelect = document.getElementById("themeSelect");
-      const languageSelect = document.getElementById("languageSelect");
       const developerToggle = document.getElementById("developerToggle");
       const developerBadge = document.getElementById("developerBadge");
 
@@ -1352,10 +1359,6 @@
         document.body.classList.toggle("theme-dark", theme === "dark");
       }
 
-      function applyLanguage(language) {
-        document.documentElement.lang = language;
-      }
-
       function applyDeveloperMode(enabled) {
         developerBadge.hidden = !enabled;
       }
@@ -1363,7 +1366,6 @@
       function syncSettingsControls() {
         autoClearToggle.checked = state.settings.autoClear;
         themeSelect.value = state.settings.theme;
-        languageSelect.value = state.settings.language;
         developerToggle.checked = state.settings.developerMode;
       }
 
@@ -1584,18 +1586,12 @@
         applyTheme(state.settings.theme);
       });
 
-      languageSelect.addEventListener("change", (event) => {
-        state.settings.language = event.target.value;
-        applyLanguage(state.settings.language);
-      });
-
       developerToggle.addEventListener("change", (event) => {
         state.settings.developerMode = event.target.checked;
         applyDeveloperMode(state.settings.developerMode);
       });
 
       applyTheme(state.settings.theme);
-      applyLanguage(state.settings.language);
       applyDeveloperMode(state.settings.developerMode);
 
       multiFileInput.setAttribute("accept", ACCEPT_STRING);
@@ -2100,7 +2096,11 @@
               });
               updateMultiProgress(index + 1, entries.length);
             }
-            resetMultiFiles();
+            if (state.settings.autoClear) {
+              resetMultiFiles();
+            } else {
+              renderMultiList();
+            }
           }
           setStatus("¡Extracción completada!", false);
         } catch (error) {
