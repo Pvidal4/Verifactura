@@ -127,10 +127,17 @@ class LocalLLMService:
                 )
             except KeyError:
                 config = None
-            tokenizer = AutoTokenizer.from_pretrained(
-                model_source,
-                trust_remote_code=True,
-            )
+            try:
+                tokenizer = AutoTokenizer.from_pretrained(
+                    model_source,
+                    trust_remote_code=True,
+                )
+            except Exception:
+                tokenizer = AutoTokenizer.from_pretrained(
+                    model_source,
+                    trust_remote_code=True,
+                    use_fast=False,
+                )
             model = AutoModelForCausalLM.from_pretrained(
                 model_source,
                 config=config,
