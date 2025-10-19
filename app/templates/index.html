@@ -138,6 +138,10 @@
         display: none !important;
       }
 
+      .header-restore[hidden] {
+        display: none !important;
+      }
+
       .header-restore {
         align-self: flex-start;
         border: 1px solid var(--border);
@@ -1072,6 +1076,7 @@
               id="showInputPanelButton"
               class="header-restore"
               hidden
+              aria-hidden="true"
             >
               Mostrar carga de facturas
             </button>
@@ -1440,6 +1445,11 @@
         lastSettingsTrigger = null;
       }
 
+      function setShowPanelButtonVisibility(visible) {
+        showInputPanelButton.toggleAttribute("hidden", !visible);
+        showInputPanelButton.setAttribute("aria-hidden", String(!visible));
+      }
+
       function collapseInputPanel() {
         if (workspace.classList.contains("workspace--input-hidden")) {
           return;
@@ -1447,7 +1457,7 @@
         workspace.classList.add("workspace--input-hidden");
         inputPanel.setAttribute("aria-hidden", "true");
         inputPanelBody.setAttribute("aria-hidden", "true");
-        showInputPanelButton.hidden = false;
+        setShowPanelButtonVisibility(true);
         hideInputPanelButton.setAttribute("aria-pressed", "true");
         showInputPanelButton.focus({ preventScroll: true });
       }
@@ -1459,7 +1469,7 @@
         workspace.classList.remove("workspace--input-hidden");
         inputPanel.removeAttribute("aria-hidden");
         inputPanelBody.removeAttribute("aria-hidden");
-        showInputPanelButton.hidden = true;
+        setShowPanelButtonVisibility(false);
         hideInputPanelButton.setAttribute("aria-pressed", "false");
         hideInputPanelButton.focus({ preventScroll: true });
       }
@@ -1640,6 +1650,7 @@
 
       applyTheme(state.settings.theme);
       applyDeveloperMode(state.settings.developerMode);
+      setShowPanelButtonVisibility(false);
 
       multiFileInput.setAttribute("accept", ACCEPT_STRING);
 
