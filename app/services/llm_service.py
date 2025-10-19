@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from openai import OpenAI
 
@@ -84,3 +84,40 @@ class OpenAILLMService:
         content = response.choices[0].message.content
         data = json.loads(content)
         return data
+
+
+class LocalLLMService:
+    """Servicio de inferencia para modelos alojados localmente."""
+
+    def __init__(
+        self,
+        model_id: str,
+        *,
+        task: str = "text-generation",
+        pipeline_kwargs: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        self._model_id = model_id
+        self._task = task
+        self._pipeline_kwargs = dict(pipeline_kwargs or {})
+        self._pipeline: Optional[Any] = None
+
+    def _ensure_pipeline(self) -> Any:
+        if self._pipeline is None:
+            from transformers import pipeline as hf_pipeline
+
+            kwargs = dict(self._pipeline_kwargs)
+            model_kwargs = dict(kwargs.pop('model_kwargs', {}))
+            model_kwargs.setdefault('trust_remote_code', True)
+            if model_kwargs:
+                kwargs['model_kwargs'] = model_kwargs
+
+            trust_remote_code = kwargs.pop('trust_remote_code', True)
+
+            self._pipeline = hf_pipeline(
+                self._task,
+                model=self._model_id,
+                trust_remote_code=trust_remote_code,
+                **kwargs,
+            )
+
+        return self._pipeline
