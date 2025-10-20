@@ -33,6 +33,10 @@
         color: var(--text);
       }
 
+      body:not(.developer-mode) [data-developer-only] {
+        display: none !important;
+      }
+
       h1,
       h2,
       h3,
@@ -2557,6 +2561,7 @@
       }
 
       function applyDeveloperMode(enabled) {
+        document.body.classList.toggle("developer-mode", enabled);
         developerBadge.hidden = !enabled;
         if (llmProviderRow) {
           llmProviderRow.hidden = !enabled;
