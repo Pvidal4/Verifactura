@@ -3459,7 +3459,8 @@
       async function sendFile(file, type, options = {}) {
         const { useOcr = false } = options;
         const formData = new FormData();
-        formData.append("file", file);
+        const fieldName = type === "image" ? "image" : "file";
+        formData.append(fieldName, file);
         let endpoint = "/api/v1/extract/file";
         if (type === "image") {
           endpoint = "/api/v1/extract/image";
