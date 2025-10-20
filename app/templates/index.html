@@ -631,27 +631,7 @@
       }
 
       .preview-highlight[data-field]::after {
-        content: attr(data-field);
-        position: absolute;
-        left: 50%;
-        top: calc(100% + 0.35rem);
-        transform: translateX(-50%);
-        background: var(--accent);
-        color: var(--surface);
-        font-size: 0.7rem;
-        padding: 0.15rem 0.45rem;
-        border-radius: 0.35rem;
-        white-space: nowrap;
-        pointer-events: none;
-        opacity: 0;
-        box-shadow: 0 12px 28px -18px rgba(15, 23, 42, 0.5);
-        z-index: 3;
-        transition: opacity 0.2s ease, transform 0.2s ease;
-      }
-
-      .preview-highlight[data-field]:hover::after {
-        opacity: 1;
-        transform: translate(-50%, 0);
+        display: none;
       }
 
       .preview-hint {
@@ -1034,6 +1014,40 @@
         font-weight: 600;
         color: var(--text);
         letter-spacing: 0.02em;
+      }
+
+      .results-section__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+      }
+
+      .results-section__toggle {
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--muted);
+        border-radius: 999px;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.8rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease,
+          background-color 0.2s ease;
+      }
+
+      .results-section__toggle.is-active {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+        color: var(--accent-dark);
+        box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.12);
+      }
+
+      .results-section__toggle:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--accent-soft);
       }
 
       .results-section__grid {
@@ -2020,6 +2034,7 @@
         results: [],
         currentIndex: -1,
         currentHighlights: [],
+        highlightVisibility: {},
         llmProvider: "api",
         llmParameters: {
           api: {
@@ -3377,6 +3392,90 @@
         return filtered;
       }
 
+      function normalizeHighlightKey(field) {
+        if (field === null || field === undefined) {
+          return "";
+        }
+        return String(field).toLowerCase();
+      }
+
+      function getVisibleHighlights() {
+        if (!Array.isArray(state.currentHighlights) || !state.currentHighlights.length) {
+          return [];
+        }
+        const visibility = state.highlightVisibility || {};
+        const hasRules = Object.keys(visibility).length > 0;
+        if (!hasRules) {
+          return state.currentHighlights;
+        }
+        return state.currentHighlights.filter(({ field }) => {
+          const key = normalizeHighlightKey(field);
+          if (!key) {
+            return true;
+          }
+          if (Object.prototype.hasOwnProperty.call(visibility, key)) {
+            return visibility[key] !== false;
+          }
+          return true;
+        });
+      }
+
+      function setGroupHighlightVisibility(fields, visible) {
+        if (!Array.isArray(fields) || !fields.length) {
+          return;
+        }
+        if (!state.highlightVisibility || typeof state.highlightVisibility !== "object") {
+          state.highlightVisibility = {};
+        }
+        const visibility = state.highlightVisibility;
+        fields.forEach((field) => {
+          const key = normalizeHighlightKey(field);
+          if (!key) {
+            return;
+          }
+          if (visible) {
+            delete visibility[key];
+          } else {
+            visibility[key] = false;
+          }
+        });
+      }
+
+      function updateGroupToggleButton(button, active, title) {
+        if (!button) {
+          return;
+        }
+        button.classList.toggle("is-active", active);
+        button.setAttribute("aria-pressed", active ? "true" : "false");
+        const action = active ? "Ocultar" : "Ver";
+        const target = title ? ` resaltados de ${title}` : " resaltados";
+        button.setAttribute("aria-label", `${action}${target}`.trim());
+        button.dataset.state = active ? "visible" : "oculto";
+      }
+
+      function refreshPreviewHighlights() {
+        if (!state.results.length) {
+          return;
+        }
+        const entry = state.results[state.currentIndex];
+        if (!entry) {
+          return;
+        }
+        const previewText = typeof entry.previewText === "string" ? entry.previewText : "";
+        const origin = entry.textOrigin || "";
+        if (isPreviewDocked) {
+          if (previewText && previewText.trim()) {
+            showPlainTextPreview(previewText, origin);
+          } else {
+            setDockedPreviewMessage("No hay contenido disponible.");
+          }
+          return;
+        }
+        if (!previewModal.hidden) {
+          showPlainTextPreview(previewText, origin);
+        }
+      }
+
       function applyPreviewHighlights(target, text, highlights) {
         if (!target) {
           return;
@@ -3397,7 +3496,7 @@
           const attrLabel = escapeAttribute(label);
           const highlighted = escapeHtml(source.slice(match.start, match.end));
           fragments.push(
-            `<span class="preview-highlight" data-field="${attrLabel}" title="${attrLabel}">${highlighted}</span>`
+            `<span class="preview-highlight" data-field="${attrLabel}">${highlighted}</span>`
           );
           cursor = match.end;
         });
@@ -3485,7 +3584,7 @@
             }
           }
           const pre = document.createElement("pre");
-          applyPreviewHighlights(pre, normalized, state.currentHighlights);
+          applyPreviewHighlights(pre, normalized, getVisibleHighlights());
           dockedPreviewContent.replaceChildren(pre);
           return;
         }
@@ -3495,7 +3594,9 @@
           message.style.padding = "1.25rem";
           message.textContent = "No hay contenido disponible.";
           previewModalContent.appendChild(message);
-          openPreviewModal();
+          if (previewModal.hidden) {
+            openPreviewModal();
+          }
           return;
         }
         if (hint) {
@@ -3505,9 +3606,11 @@
           previewModalContent.appendChild(hintElement);
         }
         const pre = document.createElement("pre");
-        applyPreviewHighlights(pre, normalized, state.currentHighlights);
+        applyPreviewHighlights(pre, normalized, getVisibleHighlights());
         previewModalContent.appendChild(pre);
-        openPreviewModal();
+        if (previewModal.hidden) {
+          openPreviewModal();
+        }
       }
 
       function renderResult(index) {
@@ -3543,6 +3646,7 @@
         const flat = flattenData(entry.data);
         const highlights = getEntryHighlights(entry, flat);
         state.currentHighlights = Array.isArray(highlights) ? highlights : [];
+        state.highlightVisibility = {};
         const flatKeys = Object.keys(flat);
         const usedKeys = new Set();
 
@@ -3599,6 +3703,7 @@
               "NOMBRE_CLIENTE",
               "RUC",
               "CONCESIONARIA",
+              "DIRECCION",
               "FECHA_DOCUMENTO",
               "AÑO",
               "PAIS_ORIGEN",
@@ -3622,6 +3727,7 @@
               "RUEDAS",
               "EJES",
               "TONELAJE",
+              "COMBUSTIBLE",
             ],
           },
           {
@@ -3636,23 +3742,43 @@
           }
           const section = document.createElement("section");
           section.className = "results-section";
+          const header = document.createElement("div");
+          header.className = "results-section__header";
           const heading = document.createElement("h4");
           heading.className = "results-section__title";
           heading.textContent = title;
-          section.appendChild(heading);
+          header.appendChild(heading);
+          const toggle = document.createElement("button");
+          toggle.type = "button";
+          toggle.className = "results-section__toggle";
+          toggle.textContent = "Ver";
+          updateGroupToggleButton(toggle, true, title);
+          header.appendChild(toggle);
+          section.appendChild(header);
           const grid = document.createElement("div");
           grid.className = "results-section__grid";
+          const resolvedGroupFields = [];
           fields.forEach((key) => {
             const resolvedKey = resolveFieldKey(key);
             if (usedKeys.has(resolvedKey)) {
               return;
             }
+            resolvedGroupFields.push(resolvedKey);
             grid.appendChild(createFieldElement(resolvedKey, key));
           });
           if (!grid.children.length) {
             return;
           }
           section.appendChild(grid);
+          const groupFields = resolvedGroupFields.slice();
+          let isActive = true;
+          toggle.addEventListener("click", () => {
+            isActive = !isActive;
+            setGroupHighlightVisibility(groupFields, isActive);
+            updateGroupToggleButton(toggle, isActive, title);
+            refreshPreviewHighlights();
+          });
+          setGroupHighlightVisibility(groupFields, true);
           resultsContainer.appendChild(section);
         });
 
