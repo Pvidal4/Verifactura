@@ -588,6 +588,13 @@
         border: 1px solid var(--border);
       }
 
+      .preview-placeholder {
+        margin: 0;
+        padding: 1.25rem;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
       .preview-content iframe,
       .preview-content embed {
         width: 100%;
@@ -990,6 +997,28 @@
 
       .workspace--input-hidden .panel--input {
         display: none;
+      }
+
+      .panel--preview {
+        display: none;
+      }
+
+      .workspace--input-hidden.workspace--with-preview {
+        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      }
+
+      .workspace--input-hidden.workspace--with-preview .panel--preview {
+        display: flex;
+      }
+
+      .panel-body--preview {
+        gap: 1rem;
+        flex: 1;
+      }
+
+      .panel-body--preview .preview-content {
+        max-height: 60vh;
+        flex: 1;
       }
 
       .settings-backdrop {
@@ -1756,6 +1785,29 @@
             Aún no hay resultados. Procesa un documento para comenzar.
           </div>
         </section>
+
+        <section
+          class="panel panel--preview"
+          aria-labelledby="previewHeading"
+          id="previewPanel"
+          hidden
+          aria-hidden="true"
+        >
+          <div class="panel-header">
+            <div class="panel-header__text">
+              <h2 id="previewHeading">Vista previa</h2>
+              <p class="helper-text">Consulta el contenido original del documento seleccionado.</p>
+            </div>
+          </div>
+          <div class="panel-body panel-body--preview">
+            <p class="preview-hint" id="dockedPreviewHint" hidden></p>
+            <div class="preview-content" id="dockedPreviewContent">
+              <p class="preview-placeholder">
+                Selecciona “Ver contenido” para mostrarlo aquí.
+              </p>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
 
@@ -1950,6 +2002,9 @@
       const previewModal = document.getElementById("previewModal");
       const previewModalContent = document.getElementById("previewModalContent");
       const previewModalClose = document.getElementById("previewModalClose");
+      const previewPanel = document.getElementById("previewPanel");
+      const dockedPreviewContent = document.getElementById("dockedPreviewContent");
+      const dockedPreviewHint = document.getElementById("dockedPreviewHint");
       const submitButton = document.getElementById("submitButton");
       const clearButton = document.getElementById("clearButton");
       const statusMessage = document.getElementById("statusMessage");
@@ -2059,6 +2114,7 @@
 
       let lastFocusedElement = null;
       let lastSettingsTrigger = null;
+      let isPreviewDocked = false;
 
       function setMultiPdfToggleVisibility(visible) {
         multiPdfToggleRow.hidden = !visible;
@@ -2645,6 +2701,55 @@
         showInputPanelButton.setAttribute("aria-hidden", String(!visible));
       }
 
+      function setDockedPreviewMessage(message) {
+        if (!dockedPreviewContent) {
+          return;
+        }
+        const placeholder = document.createElement("p");
+        placeholder.className = "preview-placeholder";
+        placeholder.textContent = message;
+        dockedPreviewContent.replaceChildren(placeholder);
+        if (dockedPreviewHint) {
+          dockedPreviewHint.hidden = true;
+          dockedPreviewHint.textContent = "";
+        }
+      }
+
+      function resetDockedPreview() {
+        setDockedPreviewMessage("Selecciona “Ver contenido” para mostrarlo aquí.");
+      }
+
+      function setPreviewDocked(enabled) {
+        isPreviewDocked = enabled;
+        workspace.classList.toggle("workspace--with-preview", enabled);
+        if (!previewPanel) {
+          return;
+        }
+        if (enabled) {
+          previewPanel.hidden = false;
+          previewPanel.setAttribute("aria-hidden", "false");
+          resetDockedPreview();
+          if (state.results.length > 0) {
+            const safeIndex = Math.max(
+              0,
+              Math.min(state.currentIndex, state.results.length - 1)
+            );
+            const entry = state.results[safeIndex];
+            if (entry) {
+              if (typeof entry.previewText === "string" && entry.previewText.trim()) {
+                showPlainTextPreview(entry.previewText, entry.textOrigin || "");
+              } else {
+                setDockedPreviewMessage("No hay contenido disponible.");
+              }
+            }
+          }
+        } else {
+          previewPanel.hidden = true;
+          previewPanel.setAttribute("aria-hidden", "true");
+          resetDockedPreview();
+        }
+      }
+
       function collapseInputPanel() {
         if (workspace.classList.contains("workspace--input-hidden")) {
           return;
@@ -2653,6 +2758,7 @@
         inputPanel.setAttribute("aria-hidden", "true");
         inputPanelBody.setAttribute("aria-hidden", "true");
         setShowPanelButtonVisibility(true);
+        setPreviewDocked(true);
         hideInputPanelButton.setAttribute("aria-pressed", "true");
         showInputPanelButton.focus({ preventScroll: true });
       }
@@ -2665,6 +2771,7 @@
         inputPanel.removeAttribute("aria-hidden");
         inputPanelBody.removeAttribute("aria-hidden");
         setShowPanelButtonVisibility(false);
+        setPreviewDocked(false);
         hideInputPanelButton.setAttribute("aria-pressed", "false");
         hideInputPanelButton.focus({ preventScroll: true });
       }
@@ -3151,8 +3258,28 @@
           URL.revokeObjectURL(state.modalPreviewUrl);
           state.modalPreviewUrl = null;
         }
-        previewModalContent.innerHTML = "";
         const normalized = typeof text === "string" ? text : "";
+        const hint = getTextOriginDescription(origin);
+        if (isPreviewDocked && dockedPreviewContent) {
+          if (!normalized.trim()) {
+            setDockedPreviewMessage("No hay contenido disponible.");
+            return;
+          }
+          if (dockedPreviewHint) {
+            if (hint) {
+              dockedPreviewHint.hidden = false;
+              dockedPreviewHint.textContent = hint;
+            } else {
+              dockedPreviewHint.hidden = true;
+              dockedPreviewHint.textContent = "";
+            }
+          }
+          const pre = document.createElement("pre");
+          pre.textContent = normalized;
+          dockedPreviewContent.replaceChildren(pre);
+          return;
+        }
+        previewModalContent.innerHTML = "";
         if (!normalized.trim()) {
           const message = document.createElement("p");
           message.style.padding = "1.25rem";
@@ -3161,7 +3288,6 @@
           openPreviewModal();
           return;
         }
-        const hint = getTextOriginDescription(origin);
         if (hint) {
           const hintElement = document.createElement("p");
           hintElement.className = "preview-hint";
@@ -3175,6 +3301,9 @@
       }
 
       function renderResult(index) {
+        if (isPreviewDocked) {
+          resetDockedPreview();
+        }
         if (state.results.length === 0) {
           resultsContainer.classList.add("empty");
           resultsContainer.innerHTML =
@@ -3255,6 +3384,15 @@
         }
         downloadJson.disabled = false;
         downloadCsv.disabled = false;
+        if (isPreviewDocked) {
+          const hasPreview =
+            typeof entry.previewText === "string" && entry.previewText.trim().length > 0;
+          if (hasPreview) {
+            showPlainTextPreview(entry.previewText, entry.textOrigin || "");
+          } else {
+            setDockedPreviewMessage("No hay contenido disponible.");
+          }
+        }
       }
 
       function addResultEntry(data, source, options = {}) {
