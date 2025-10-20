@@ -143,7 +143,7 @@ async def extract_from_text_endpoint(
             status_code=400,
             detail="El texto proporcionado está vacío.",
         )
-    return service.extract_from_text(
+    result = service.extract_from_text(
         text,
         provider=payload.llm_provider,
         model=payload.llm_model,
@@ -154,6 +154,7 @@ async def extract_from_text_endpoint(
         presence_penalty=payload.presence_penalty,
         openai_api_key=_normalize_api_key(payload.openai_api_key),
     )
+    return result.to_payload()
 
 
 @router.post(
@@ -244,7 +245,7 @@ async def extract_from_file_endpoint(
     if not data:
         raise HTTPException(status_code=400, detail="El archivo subido está vacío.")
     try:
-        return service.extract_from_file(
+        result = service.extract_from_file(
             file.filename or "archivo",
             data,
             file.content_type,
@@ -261,6 +262,7 @@ async def extract_from_file_endpoint(
             ocr_endpoint=_normalize_optional_string(azure_form_recognizer_endpoint),
             ocr_key=_normalize_optional_string(azure_form_recognizer_key),
         )
+        return result.to_payload()
     except RuntimeError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -357,7 +359,7 @@ async def extract_from_image_endpoint(
     if not data:
         raise HTTPException(status_code=400, detail="La imagen subida está vacía.")
     try:
-        return service.extract_from_image(
+        result = service.extract_from_image(
             image.filename or "imagen",
             data,
             image.content_type,
@@ -373,5 +375,6 @@ async def extract_from_image_endpoint(
             ocr_endpoint=_normalize_optional_string(azure_form_recognizer_endpoint),
             ocr_key=_normalize_optional_string(azure_form_recognizer_key),
         )
+        return result.to_payload()
     except RuntimeError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

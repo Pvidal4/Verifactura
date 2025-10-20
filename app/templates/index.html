@@ -33,6 +33,10 @@
         color: var(--text);
       }
 
+      body:not(.developer-mode) [data-developer-only] {
+        display: none !important;
+      }
+
       h1,
       h2,
       h3,
@@ -605,6 +609,13 @@
         font-size: 0.85rem;
         white-space: pre-wrap;
         line-height: 1.5;
+      }
+
+      .preview-hint {
+        margin: 0;
+        padding: 1.25rem 1.25rem 0.5rem;
+        color: var(--muted);
+        font-size: 0.9rem;
       }
 
       .preview-modal {
@@ -1699,9 +1710,7 @@
                 </div>
               </div>
 
-              <p class="helper-text" id="multiEmptyState">
-                Aún no has agregado archivos. Arrástralos o selecciónalos desde tu equipo.
-              </p>
+              <p class="helper-text" id="multiEmptyState" hidden></p>
             </div>
 
             <div id="textMode" role="tabpanel" aria-labelledby="textModeButton" hidden>
@@ -1727,6 +1736,9 @@
               <p id="resultsSummary">Procesa un documento para ver los campos extraídos.</p>
             </div>
             <div class="download-group">
+              <button id="viewContentButton" type="button" disabled>
+                Ver contenido
+              </button>
               <button id="downloadJson" disabled>Descargar JSON</button>
               <button id="downloadCsv" disabled>Descargar CSV</button>
             </div>
@@ -1947,6 +1959,7 @@
       const resultsNavigation = document.getElementById("resultsNavigation");
       const resultPosition = document.getElementById("resultPosition");
       const resultMeta = document.getElementById("resultMeta");
+      const viewContentButton = document.getElementById("viewContentButton");
       const downloadJson = document.getElementById("downloadJson");
       const downloadCsv = document.getElementById("downloadCsv");
       const prevResultBtn = document.getElementById("prevResult");
@@ -2557,6 +2570,7 @@
       }
 
       function applyDeveloperMode(enabled) {
+        document.body.classList.toggle("developer-mode", enabled);
         developerBadge.hidden = !enabled;
         if (llmProviderRow) {
           llmProviderRow.hidden = !enabled;
@@ -2854,7 +2868,7 @@
         state.multiUseOcr = false;
         multiFileInput.value = "";
         multiDetails.hidden = true;
-        multiEmptyState.hidden = false;
+        multiEmptyState.hidden = true;
         multiFileList.innerHTML = "";
         multiTypeLabel.textContent = "—";
         setMultiPdfToggleVisibility(false);
@@ -3092,6 +3106,74 @@
         return result;
       }
 
+      function normalizeExtractionResponse(payload, fallbackText = "") {
+        const response =
+          payload && typeof payload === "object" && !Array.isArray(payload) ? payload : {};
+        const hasStructuredFields =
+          response.fields &&
+          typeof response.fields === "object" &&
+          !Array.isArray(response.fields) &&
+          (Object.prototype.hasOwnProperty.call(response, "raw_text") ||
+            Object.prototype.hasOwnProperty.call(response, "text_origin"));
+        const fieldsCandidate = hasStructuredFields ? response.fields : response;
+        const fallback = typeof fallbackText === "string" ? fallbackText : "";
+        const rawText =
+          typeof response.raw_text === "string" && response.raw_text.trim()
+            ? response.raw_text
+            : fallback;
+        const normalizedOrigin =
+          typeof response.text_origin === "string"
+            ? response.text_origin.trim().toLowerCase()
+            : "";
+        const origin = normalizedOrigin ? normalizedOrigin : rawText ? "input" : "";
+        return {
+          fields: fieldsCandidate,
+          rawText,
+          textOrigin: origin,
+        };
+      }
+
+      function getTextOriginDescription(origin) {
+        switch (origin) {
+          case "ocr":
+            return "Contenido obtenido mediante OCR.";
+          case "file":
+            return "Texto extraído directamente del archivo.";
+          case "input":
+            return "Texto proporcionado manualmente.";
+          default:
+            return "";
+        }
+      }
+
+      function showPlainTextPreview(text, origin) {
+        if (state.modalPreviewUrl) {
+          URL.revokeObjectURL(state.modalPreviewUrl);
+          state.modalPreviewUrl = null;
+        }
+        previewModalContent.innerHTML = "";
+        const normalized = typeof text === "string" ? text : "";
+        if (!normalized.trim()) {
+          const message = document.createElement("p");
+          message.style.padding = "1.25rem";
+          message.textContent = "No hay contenido disponible.";
+          previewModalContent.appendChild(message);
+          openPreviewModal();
+          return;
+        }
+        const hint = getTextOriginDescription(origin);
+        if (hint) {
+          const hintElement = document.createElement("p");
+          hintElement.className = "preview-hint";
+          hintElement.textContent = hint;
+          previewModalContent.appendChild(hintElement);
+        }
+        const pre = document.createElement("pre");
+        pre.textContent = normalized;
+        previewModalContent.appendChild(pre);
+        openPreviewModal();
+      }
+
       function renderResult(index) {
         if (state.results.length === 0) {
           resultsContainer.classList.add("empty");
@@ -3100,6 +3182,11 @@
           resultsSummary.textContent = "Procesa un documento para ver los campos extraídos.";
           resultsNavigation.hidden = true;
           resultMeta.hidden = true;
+          if (viewContentButton) {
+            viewContentButton.disabled = true;
+            viewContentButton.removeAttribute("title");
+            viewContentButton.setAttribute("aria-label", "Ver contenido");
+          }
           downloadJson.disabled = true;
           downloadCsv.disabled = true;
           return;
@@ -3150,6 +3237,22 @@
         resultPosition.setAttribute("aria-live", "polite");
         prevResultBtn.disabled = index === 0;
         nextResultBtn.disabled = index === state.results.length - 1;
+        if (viewContentButton) {
+          const hasPreview =
+            typeof entry.previewText === "string" && entry.previewText.trim().length > 0;
+          viewContentButton.disabled = !hasPreview;
+          const description = getTextOriginDescription(entry.textOrigin || "");
+          if (hasPreview && description) {
+            viewContentButton.setAttribute(
+              "aria-label",
+              `Ver contenido. ${description}`
+            );
+            viewContentButton.setAttribute("title", description);
+          } else {
+            viewContentButton.setAttribute("aria-label", "Ver contenido");
+            viewContentButton.removeAttribute("title");
+          }
+        }
         downloadJson.disabled = false;
         downloadCsv.disabled = false;
       }
@@ -3164,6 +3267,10 @@
           data,
           source,
           timestamp,
+          previewText:
+            typeof options.previewText === "string" ? options.previewText : "",
+          textOrigin:
+            typeof options.textOrigin === "string" ? options.textOrigin : "",
           uploadedAt: options.uploadedAt || timestamp,
         };
         state.results.push(entry);
@@ -3255,6 +3362,16 @@
         downloadFile(csv, "resultados_verifactura.csv", "text/csv;charset=utf-8");
       });
 
+      if (viewContentButton) {
+        viewContentButton.addEventListener("click", () => {
+          const entry = state.results[state.currentIndex];
+          if (!entry || !entry.previewText || !entry.previewText.trim()) {
+            return;
+          }
+          showPlainTextPreview(entry.previewText, entry.textOrigin || "");
+        });
+      }
+
       function validateBeforeSend() {
         if (state.mode === "text") {
           const value = plainText.value.trim();
@@ -3342,7 +3459,8 @@
       async function sendFile(file, type, options = {}) {
         const { useOcr = false } = options;
         const formData = new FormData();
-        formData.append("file", file);
+        const fieldName = type === "image" ? "image" : "file";
+        formData.append(fieldName, file);
         let endpoint = "/api/v1/extract/file";
         if (type === "image") {
           endpoint = "/api/v1/extract/image";
@@ -3439,7 +3557,12 @@
           if (type === "text") {
             const now = Date.now();
             const result = await sendText(payload);
-            addResultEntry(result, "Ingreso manual", { uploadedAt: now });
+            const normalized = normalizeExtractionResponse(result, payload);
+            addResultEntry(normalized.fields, "Ingreso manual", {
+              uploadedAt: now,
+              previewText: normalized.rawText,
+              textOrigin: normalized.textOrigin || "input",
+            });
             if (state.settings.autoClear) {
               plainText.value = "";
             }
@@ -3461,8 +3584,11 @@
                   ? `${SUPPORTED_TYPES[category].label}${useOcr ? " (OCR)" : ""}`
                   : SUPPORTED_TYPES[category].label;
               const description = `${label} · ${currentEntry.file.name}`;
-              addResultEntry(currentResult, description, {
+              const normalized = normalizeExtractionResponse(currentResult);
+              addResultEntry(normalized.fields, description, {
                 uploadedAt: currentEntry.uploadedAt || Date.now(),
+                previewText: normalized.rawText,
+                textOrigin: normalized.textOrigin,
               });
               updateMultiProgress(index + 1, entries.length);
             }

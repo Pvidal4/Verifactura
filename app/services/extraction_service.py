@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import logging
 import mimetypes
+from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
-from typing import Callable, Dict, Optional, Tuple
+from typing import Callable, Dict, Literal, Optional, Tuple
 
 from app.config import Config
 from app.services.llm_service import LocalLLMService, OpenAILLMService
@@ -18,6 +19,20 @@ PDF_EXTENSIONS = {".pdf"}
 
 
 LOGGER = logging.getLogger(__name__)
+
+
+@dataclass
+class ExtractionResult:
+    fields: Dict[str, object]
+    raw_text: str
+    text_origin: Literal["input", "file", "ocr"]
+
+    def to_payload(self) -> Dict[str, object]:
+        return {
+            "fields": self.fields,
+            "raw_text": self.raw_text,
+            "text_origin": self.text_origin,
+        }
 
 
 class ExtractionService:
@@ -187,10 +202,11 @@ class ExtractionService:
         frequency_penalty: Optional[float] = None,
         presence_penalty: Optional[float] = None,
         openai_api_key: Optional[str] = None,
-    ) -> Dict[str, object]:
+        text_origin: Literal["input", "file", "ocr"] = "input",
+    ) -> ExtractionResult:
         sanitized_model = model.strip() if isinstance(model, str) else None
         llm = self._get_llm(provider)
-        return llm.extract(
+        extracted = llm.extract(
             text,
             model=sanitized_model,
             temperature=temperature,
@@ -200,6 +216,7 @@ class ExtractionService:
             presence_penalty=presence_penalty,
             api_key=openai_api_key,
         )
+        return ExtractionResult(fields=extracted, raw_text=text, text_origin=text_origin)
 
     def extract_from_image(
         self,
@@ -218,7 +235,7 @@ class ExtractionService:
         ocr_provider: Optional[str] = None,
         ocr_endpoint: Optional[str] = None,
         ocr_key: Optional[str] = None,
-    ) -> Dict[str, object]:
+    ) -> ExtractionResult:
         ocr_service = self._resolve_ocr_service(
             ocr_provider,
             endpoint=ocr_endpoint,
@@ -250,6 +267,7 @@ class ExtractionService:
             frequency_penalty=frequency_penalty,
             presence_penalty=presence_penalty,
             openai_api_key=openai_api_key,
+            text_origin="ocr",
         )
 
     def extract_from_file(
@@ -270,7 +288,7 @@ class ExtractionService:
         ocr_provider: Optional[str] = None,
         ocr_endpoint: Optional[str] = None,
         ocr_key: Optional[str] = None,
-    ) -> Dict[str, object]:
+    ) -> ExtractionResult:
         suffix = Path(filename).suffix.lower()
         if suffix in IMAGE_EXTENSIONS:
             return self.extract_from_image(
@@ -303,6 +321,8 @@ class ExtractionService:
                 )
             return ocr_service_instance
 
+        text_origin: Literal["file", "ocr"] = "file"
+
         if not force_ocr:
             if suffix in PDF_EXTENSIONS:
                 text = self._pdf.read_text(data)
@@ -316,6 +336,7 @@ class ExtractionService:
                 force_ocr=force_ocr,
                 ocr_service=require_ocr_service(),
             )
+            text_origin = "ocr"
         return self.extract_from_text(
             text,
             provider=provider,
@@ -326,4 +347,5 @@ class ExtractionService:
             frequency_penalty=frequency_penalty,
             presence_penalty=presence_penalty,
             openai_api_key=openai_api_key,
+            text_origin=text_origin,
         )
