@@ -634,7 +634,8 @@
         content: attr(data-field);
         position: absolute;
         left: 50%;
-        transform: translate(-50%, -120%);
+        top: calc(100% + 0.35rem);
+        transform: translateX(-50%);
         background: var(--accent);
         color: var(--surface);
         font-size: 0.7rem;
@@ -643,14 +644,14 @@
         white-space: nowrap;
         pointer-events: none;
         opacity: 0;
-        box-shadow: 0 10px 25px -12px rgba(15, 23, 42, 0.45);
-        z-index: 2;
+        box-shadow: 0 12px 28px -18px rgba(15, 23, 42, 0.5);
+        z-index: 3;
         transition: opacity 0.2s ease, transform 0.2s ease;
       }
 
       .preview-highlight[data-field]:hover::after {
         opacity: 1;
-        transform: translate(-50%, -160%);
+        transform: translate(-50%, 0);
       }
 
       .preview-hint {
@@ -1015,6 +1016,34 @@
         max-height: 60vh;
         overflow: auto;
         padding-right: 0.25rem;
+      }
+
+      .results-section {
+        grid-column: 1 / -1;
+        border: 1px solid var(--border);
+        border-radius: 1.25rem;
+        background: var(--surface);
+        padding: 1.1rem 1.25rem 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+      }
+
+      .results-section__title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text);
+        letter-spacing: 0.02em;
+      }
+
+      .results-section__grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 0.75rem;
+      }
+
+      .results-section__grid .result-field {
+        background: var(--surface-subtle);
       }
 
       .results-grid.empty {
@@ -3514,27 +3543,124 @@
         const flat = flattenData(entry.data);
         const highlights = getEntryHighlights(entry, flat);
         state.currentHighlights = Array.isArray(highlights) ? highlights : [];
-        Object.keys(flat)
+        const flatKeys = Object.keys(flat);
+        const usedKeys = new Set();
+
+        const resolveFieldKey = (target) => {
+          if (flatKeys.includes(target)) {
+            return target;
+          }
+          const normalized = target.toLowerCase();
+          let candidate = flatKeys.find((key) => key.toLowerCase() === normalized);
+          if (candidate) {
+            return candidate;
+          }
+          candidate = flatKeys.find((key) => key.toLowerCase().endsWith(`.${normalized}`));
+          if (candidate) {
+            return candidate;
+          }
+          return target;
+        };
+
+        const createFieldElement = (key, labelOverride) => {
+          const field = document.createElement("div");
+          field.className = "result-field";
+          const label = document.createElement("label");
+          label.textContent = labelOverride || key || "(valor)";
+          const valueElement = document.createElement("div");
+          valueElement.className = "value";
+          const hasValue = Object.prototype.hasOwnProperty.call(flat, key);
+          const value = hasValue ? flat[key] : undefined;
+          if (
+            !hasValue ||
+            value === null ||
+            value === undefined ||
+            value === "" ||
+            (Array.isArray(value) && value.length === 0)
+          ) {
+            valueElement.classList.add("missing");
+            valueElement.textContent = "Sin valor";
+          } else if (typeof value === "object") {
+            valueElement.textContent = JSON.stringify(value);
+          } else {
+            valueElement.textContent = String(value);
+          }
+          field.appendChild(label);
+          field.appendChild(valueElement);
+          usedKeys.add(key);
+          return field;
+        };
+
+        const prioritizedGroups = [
+          {
+            title: "DETALLES GENERALES",
+            fields: [
+              "NUMERO_FACTURA",
+              "NOMBRE_CLIENTE",
+              "RUC",
+              "CONCESIONARIA",
+              "FECHA_DOCUMENTO",
+              "AÑO",
+              "PAIS_ORIGEN",
+            ],
+          },
+          {
+            title: "VEHICULO",
+            fields: [
+              "MARCA",
+              "MODELO",
+              "MODELO_HOMOLOGADO_ANT",
+              "MODELO_REGISTRADO_SRI",
+              "TIPO",
+              "CLASE",
+              "COLOR",
+              "MOTOR",
+              "RAMV_CPN",
+              "VIN_CHASIS",
+              "CILINDRAJE",
+              "CAPACIDAD",
+              "RUEDAS",
+              "EJES",
+              "TONELAJE",
+            ],
+          },
+          {
+            title: "FACTURA",
+            fields: ["SUBTOTAL", "SUBSIDIO", "DESCUENTO", "IVA", "TOTAL"],
+          },
+        ];
+
+        prioritizedGroups.forEach(({ title, fields }) => {
+          if (!Array.isArray(fields) || !fields.length) {
+            return;
+          }
+          const section = document.createElement("section");
+          section.className = "results-section";
+          const heading = document.createElement("h4");
+          heading.className = "results-section__title";
+          heading.textContent = title;
+          section.appendChild(heading);
+          const grid = document.createElement("div");
+          grid.className = "results-section__grid";
+          fields.forEach((key) => {
+            const resolvedKey = resolveFieldKey(key);
+            if (usedKeys.has(resolvedKey)) {
+              return;
+            }
+            grid.appendChild(createFieldElement(resolvedKey, key));
+          });
+          if (!grid.children.length) {
+            return;
+          }
+          section.appendChild(grid);
+          resultsContainer.appendChild(section);
+        });
+
+        flatKeys
+          .filter((key) => !usedKeys.has(key))
           .sort((a, b) => a.localeCompare(b))
           .forEach((key) => {
-            const value = flat[key];
-            const field = document.createElement("div");
-            field.className = "result-field";
-            const label = document.createElement("label");
-            label.textContent = key || "(valor)";
-            const valueElement = document.createElement("div");
-            valueElement.className = "value";
-            if (value === null || value === undefined || value === "" || (Array.isArray(value) && value.length === 0)) {
-              valueElement.classList.add("missing");
-              valueElement.textContent = "Sin valor";
-            } else if (typeof value === "object") {
-              valueElement.textContent = JSON.stringify(value);
-            } else {
-              valueElement.textContent = String(value);
-            }
-            field.appendChild(label);
-            field.appendChild(valueElement);
-            resultsContainer.appendChild(field);
+            resultsContainer.appendChild(createFieldElement(key));
           });
 
         resultMeta.hidden = false;
