@@ -618,6 +618,41 @@
         line-height: 1.5;
       }
 
+      .preview-highlight {
+        background: rgba(37, 99, 235, 0.24);
+        border-radius: 0.35rem;
+        padding: 0.05rem 0.2rem;
+        transition: background-color 0.2s ease;
+        position: relative;
+      }
+
+      .preview-highlight:hover {
+        background: rgba(37, 99, 235, 0.35);
+      }
+
+      .preview-highlight[data-field]::after {
+        content: attr(data-field);
+        position: absolute;
+        left: 50%;
+        transform: translate(-50%, -120%);
+        background: var(--accent);
+        color: var(--surface);
+        font-size: 0.7rem;
+        padding: 0.15rem 0.45rem;
+        border-radius: 0.35rem;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        box-shadow: 0 10px 25px -12px rgba(15, 23, 42, 0.45);
+        z-index: 2;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+      }
+
+      .preview-highlight[data-field]:hover::after {
+        opacity: 1;
+        transform: translate(-50%, -160%);
+      }
+
       .preview-hint {
         margin: 0;
         padding: 1.25rem 1.25rem 0.5rem;
@@ -1955,6 +1990,7 @@
         multiUseOcr: false,
         results: [],
         currentIndex: -1,
+        currentHighlights: [],
         llmProvider: "api",
         llmParameters: {
           api: {
@@ -2736,6 +2772,7 @@
             );
             const entry = state.results[safeIndex];
             if (entry) {
+              state.currentHighlights = getEntryHighlights(entry);
               if (typeof entry.previewText === "string" && entry.previewText.trim()) {
                 showPlainTextPreview(entry.previewText, entry.textOrigin || "");
               } else {
@@ -3213,6 +3250,150 @@
         return result;
       }
 
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+
+      function escapeAttribute(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function escapeRegExp(value) {
+        return String(value).replace(/[\\^$*+?.()|{}\[\]-]/g, "\\$&");
+      }
+
+      function computePreviewHighlights(flatData) {
+        if (!flatData || typeof flatData !== "object") {
+          return [];
+        }
+        return Object.entries(flatData).reduce((list, [key, value]) => {
+          if (value === null || value === undefined) {
+            return list;
+          }
+          const label = key || "(valor)";
+          if (typeof value === "string") {
+            const trimmed = value.trim();
+            if (!trimmed) {
+              return list;
+            }
+            const isNumericLike = /^-?\d+(?:[.,]\d+)?$/.test(trimmed);
+            if (trimmed.length < 2 && !isNumericLike) {
+              return list;
+            }
+            list.push({ field: label, value: trimmed });
+            return list;
+          }
+          if (typeof value === "number") {
+            const text = String(value);
+            if (text) {
+              list.push({ field: label, value: text });
+            }
+            return list;
+          }
+          if (typeof value === "boolean") {
+            list.push({ field: label, value: value ? "true" : "false" });
+            return list;
+          }
+          return list;
+        }, []);
+      }
+
+      function buildHighlightMatches(text, highlights) {
+        if (!text || !Array.isArray(highlights) || highlights.length === 0) {
+          return [];
+        }
+        const matches = [];
+        highlights.forEach(({ field, value }) => {
+          if (!value) {
+            return;
+          }
+          const pattern = new RegExp(escapeRegExp(value), "gi");
+          let match;
+          while ((match = pattern.exec(text)) !== null) {
+            matches.push({
+              start: match.index,
+              end: match.index + match[0].length,
+              field: field || "(valor)",
+            });
+            if (match.index === pattern.lastIndex) {
+              pattern.lastIndex += 1;
+            }
+          }
+        });
+        if (!matches.length) {
+          return [];
+        }
+        matches.sort((a, b) => {
+          if (a.start === b.start) {
+            return b.end - a.end;
+          }
+          return a.start - b.start;
+        });
+        const filtered = [];
+        let lastEnd = -1;
+        matches.forEach((match) => {
+          if (match.start >= lastEnd) {
+            filtered.push(match);
+            lastEnd = match.end;
+          }
+        });
+        return filtered;
+      }
+
+      function applyPreviewHighlights(target, text, highlights) {
+        if (!target) {
+          return;
+        }
+        const source = typeof text === "string" ? text : "";
+        const matches = buildHighlightMatches(source, highlights);
+        if (!matches.length) {
+          target.textContent = source;
+          return;
+        }
+        const fragments = [];
+        let cursor = 0;
+        matches.forEach((match) => {
+          if (match.start > cursor) {
+            fragments.push(escapeHtml(source.slice(cursor, match.start)));
+          }
+          const label = match.field || "(valor)";
+          const attrLabel = escapeAttribute(label);
+          const highlighted = escapeHtml(source.slice(match.start, match.end));
+          fragments.push(
+            `<span class="preview-highlight" data-field="${attrLabel}" title="${attrLabel}">${highlighted}</span>`
+          );
+          cursor = match.end;
+        });
+        if (cursor < source.length) {
+          fragments.push(escapeHtml(source.slice(cursor)));
+        }
+        target.innerHTML = fragments.join("");
+      }
+
+      function getEntryHighlights(entry, precomputedFlat) {
+        if (!entry) {
+          return [];
+        }
+        if (Array.isArray(entry.previewHighlights)) {
+          return entry.previewHighlights;
+        }
+        const flatData =
+          precomputedFlat && typeof precomputedFlat === "object"
+            ? precomputedFlat
+            : flattenData(entry.data || {});
+        const highlights = computePreviewHighlights(flatData);
+        entry.previewHighlights = highlights;
+        return highlights;
+      }
+
       function normalizeExtractionResponse(payload, fallbackText = "") {
         const response =
           payload && typeof payload === "object" && !Array.isArray(payload) ? payload : {};
@@ -3275,7 +3456,7 @@
             }
           }
           const pre = document.createElement("pre");
-          pre.textContent = normalized;
+          applyPreviewHighlights(pre, normalized, state.currentHighlights);
           dockedPreviewContent.replaceChildren(pre);
           return;
         }
@@ -3295,7 +3476,7 @@
           previewModalContent.appendChild(hintElement);
         }
         const pre = document.createElement("pre");
-        pre.textContent = normalized;
+        applyPreviewHighlights(pre, normalized, state.currentHighlights);
         previewModalContent.appendChild(pre);
         openPreviewModal();
       }
@@ -3305,6 +3486,7 @@
           resetDockedPreview();
         }
         if (state.results.length === 0) {
+          state.currentHighlights = [];
           resultsContainer.classList.add("empty");
           resultsContainer.innerHTML =
             "Aún no hay resultados. Procesa un documento para comenzar.";
@@ -3330,6 +3512,8 @@
         ).toLocaleString()}`;
 
         const flat = flattenData(entry.data);
+        const highlights = getEntryHighlights(entry, flat);
+        state.currentHighlights = Array.isArray(highlights) ? highlights : [];
         Object.keys(flat)
           .sort((a, b) => a.localeCompare(b))
           .forEach((key) => {
@@ -3506,6 +3690,7 @@
           if (!entry || !entry.previewText || !entry.previewText.trim()) {
             return;
           }
+          state.currentHighlights = getEntryHighlights(entry);
           showPlainTextPreview(entry.previewText, entry.textOrigin || "");
         });
       }
