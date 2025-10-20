@@ -1274,6 +1274,14 @@
         display: flex;
         flex-direction: column;
         gap: 0.65rem;
+        cursor: pointer;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease,
+          opacity 0.2s ease;
+      }
+
+      .result-field:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--accent-soft);
       }
 
       .result-field__header {
@@ -1290,71 +1298,20 @@
         min-width: 0;
       }
 
-      .result-field__actions {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.35rem;
-        flex-shrink: 0;
+      .result-field--highlighted {
+        border-color: rgba(37, 99, 235, 0.45);
+        box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25);
+        background: rgba(37, 99, 235, 0.05);
       }
 
-      .result-field__icon-button {
-        border: 1px solid transparent;
-        background: transparent;
-        color: var(--muted);
-        border-radius: 0.75rem;
-        width: 1.75rem;
-        height: 1.75rem;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-        transition: color 0.2s ease, background-color 0.2s ease,
-          border-color 0.2s ease, box-shadow 0.2s ease;
+      .result-field--focused {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.35);
+        background: rgba(37, 99, 235, 0.08);
       }
 
-      .result-field__icon-button svg {
-        width: 1em;
-        height: 1em;
-        display: block;
-      }
-
-      .result-field__action--edit:hover,
-      .result-field__action--edit:focus-visible {
-        color: var(--accent);
-        background: var(--accent-soft);
-        border-color: rgba(37, 99, 235, 0.25);
-        outline: none;
-      }
-
-      .result-field__action--edit:focus-visible {
-        box-shadow: 0 0 0 3px var(--accent-soft);
-      }
-
-      .result-field__indicator {
-        background: var(--accent-soft);
-        color: var(--accent);
-        border: 1px solid rgba(37, 99, 235, 0.35);
-        border-radius: 999px;
-        cursor: pointer;
-      }
-
-      .result-field__indicator.is-muted {
-        background: transparent;
-        border-color: var(--border);
-        color: var(--muted);
-        opacity: 0.7;
-      }
-
-      .result-field__indicator.is-focused {
-        background: var(--accent);
-        color: #ffffff;
-        border-color: var(--accent-dark);
-        box-shadow: 0 0 0 3px var(--accent-soft);
-      }
-
-      .result-field__indicator:focus-visible {
-        outline: none;
-        box-shadow: 0 0 0 3px var(--accent-soft);
+      .result-field--muted {
+        opacity: 0.6;
       }
 
       .result-field .value {
@@ -2181,22 +2138,6 @@
       const textModeButton = document.getElementById("textModeButton");
       const multiModeButton = document.getElementById("multiModeButton");
 
-      const ICON_EDIT = `
-        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-          <path
-            d="M17.707 5.293 14.707 2.293a1 1 0 0 0-1.414 0L4 11.586V15h3.414l9.293-9.293a1 1 0 0 0 0-1.414z"
-          />
-          <path d="M3 17a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2H3z" />
-        </svg>
-      `;
-
-      const ICON_CHECK = `
-        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-          <path
-            d="M16.704 5.29a1 1 0 0 1 0 1.414l-7.071 7.071a1 1 0 0 1-1.414 0L3.296 8.852a1 1 0 1 1 1.414-1.414l3.223 3.223 6.364-6.364a1 1 0 0 1 1.414 0z"
-          />
-        </svg>
-      `;
       const multiDropZone = document.getElementById("multiDropZone");
       const multiBrowseButton = document.getElementById("multiBrowseButton");
       const multiFileInput = document.getElementById("multiFileInput");
@@ -3558,13 +3499,15 @@
         if (!resultsContainer) {
           return;
         }
-        const indicators = resultsContainer.querySelectorAll(".result-field__indicator");
-        indicators.forEach((indicator) => {
-          const key = indicator.dataset.highlightKey || "";
+        const fields = resultsContainer.querySelectorAll(".result-field[data-highlight-key]");
+        fields.forEach((field) => {
+          const key = field.dataset.highlightKey || "";
           if (!key) {
-            indicator.hidden = true;
-            indicator.setAttribute("aria-hidden", "true");
-            indicator.classList.remove("is-muted", "is-focused");
+            field.classList.remove(
+              "result-field--highlighted",
+              "result-field--muted",
+              "result-field--focused"
+            );
             return;
           }
           const entries =
@@ -3572,23 +3515,23 @@
               ? state.highlightIndex[key]
               : null;
           const hasHighlight = Array.isArray(entries) && entries.length > 0;
-          indicator.hidden = !hasHighlight;
-          indicator.setAttribute("aria-hidden", hasHighlight ? "false" : "true");
           if (!hasHighlight) {
-            indicator.classList.remove("is-muted", "is-focused");
+            field.classList.remove(
+              "result-field--highlighted",
+              "result-field--muted",
+              "result-field--focused"
+            );
+            field.removeAttribute("data-highlight-key");
             return;
           }
           const suppressed =
             !state.highlightFocusKey &&
             state.highlightVisibility &&
             state.highlightVisibility[key] === false;
-          indicator.classList.toggle("is-muted", suppressed);
-          indicator.classList.toggle("is-focused", state.highlightFocusKey === key);
-          const labelText = suppressed
-            ? "Coincidencia oculta en vista previa"
-            : "Coincidencia en vista previa";
-          indicator.setAttribute("aria-label", labelText);
-          indicator.title = labelText;
+          const isFocused = state.highlightFocusKey === key;
+          field.classList.toggle("result-field--highlighted", !suppressed || isFocused);
+          field.classList.toggle("result-field--muted", suppressed && !isFocused);
+          field.classList.toggle("result-field--focused", isFocused);
         });
       }
 
@@ -3683,6 +3626,19 @@
           return;
         }
         setValueForFlatKey(entry, key, nextValue);
+        const normalizedKey = normalizeHighlightKey(key);
+        if (!entry.editedFields || typeof entry.editedFields !== "object") {
+          entry.editedFields = Object.create(null);
+        }
+        if (normalizedKey) {
+          entry.editedFields[normalizedKey] = true;
+          if (state.highlightVisibility && state.highlightVisibility[normalizedKey] === false) {
+            delete state.highlightVisibility[normalizedKey];
+          }
+          if (state.highlightFocusKey === normalizedKey) {
+            setHighlightFocusKey(null);
+          }
+        }
         delete entry.previewHighlights;
         renderResult(state.currentIndex, { preserveHighlightVisibility: true });
       }
@@ -3768,7 +3724,14 @@
           precomputedFlat && typeof precomputedFlat === "object"
             ? precomputedFlat
             : flattenData(entry.data || {});
-        const highlights = computePreviewHighlights(flatData);
+        let highlights = computePreviewHighlights(flatData);
+        if (entry.editedFields && typeof entry.editedFields === "object") {
+          const editedKeys = entry.editedFields;
+          highlights = highlights.filter(({ field }) => {
+            const key = normalizeHighlightKey(field);
+            return !key || !editedKeys[key];
+          });
+        }
         entry.previewHighlights = highlights;
         return highlights;
       }
@@ -3954,58 +3917,18 @@
           const field = document.createElement("div");
           field.className = "result-field";
           field.dataset.fieldKey = key;
+          field.setAttribute("role", "button");
+          field.tabIndex = 0;
+          const labelText = labelOverride || key || "(valor)";
+          field.setAttribute("aria-label", `Editar ${labelText}`);
+          field.title = `Editar ${labelText}`;
           const header = document.createElement("div");
           header.className = "result-field__header";
-          const labelText = labelOverride || key || "(valor)";
           const label = document.createElement("span");
           label.className = "result-field__label";
           label.textContent = labelText;
-          const actions = document.createElement("div");
-          actions.className = "result-field__actions";
-          const editButton = document.createElement("button");
-          editButton.type = "button";
-          editButton.className = "result-field__icon-button result-field__action--edit";
-          editButton.innerHTML = ICON_EDIT;
-          editButton.setAttribute("aria-label", `Editar ${labelText}`);
-          editButton.title = `Editar ${labelText}`;
-          editButton.addEventListener("click", () => {
-            const currentValue = Object.prototype.hasOwnProperty.call(flat, key)
-              ? flat[key]
-              : undefined;
-            handleEditField(entry, key, labelText, currentValue);
-          });
-          actions.appendChild(editButton);
-          const highlightKey = normalizeHighlightKey(key);
-          const highlightEntries =
-            highlightKey && state.highlightIndex ? state.highlightIndex[highlightKey] : null;
-          if (highlightEntries && highlightEntries.length) {
-            const indicator = document.createElement("button");
-            indicator.type = "button";
-            indicator.className = "result-field__icon-button result-field__indicator";
-            indicator.innerHTML = ICON_CHECK;
-            indicator.dataset.highlightKey = highlightKey;
-            indicator.setAttribute("aria-label", "Coincidencia en vista previa");
-            indicator.title = "Coincidencia en vista previa";
-            const activate = () => {
-              if (setHighlightFocusKey(highlightKey)) {
-                refreshPreviewHighlights();
-              }
-            };
-            const clear = () => {
-              if (setHighlightFocusKey(null)) {
-                refreshPreviewHighlights();
-              }
-            };
-            indicator.addEventListener("pointerenter", activate);
-            indicator.addEventListener("pointerleave", clear);
-            indicator.addEventListener("mouseenter", activate);
-            indicator.addEventListener("mouseleave", clear);
-            indicator.addEventListener("focus", activate);
-            indicator.addEventListener("blur", clear);
-            actions.appendChild(indicator);
-          }
           header.appendChild(label);
-          header.appendChild(actions);
+          field.appendChild(header);
           const valueElement = document.createElement("div");
           valueElement.className = "value";
           const hasValue = Object.prototype.hasOwnProperty.call(flat, key);
@@ -4024,8 +3947,65 @@
           } else {
             valueElement.textContent = String(value);
           }
-          field.appendChild(header);
           field.appendChild(valueElement);
+          const highlightKey = normalizeHighlightKey(key);
+          const highlightEntries =
+            highlightKey && state.highlightIndex ? state.highlightIndex[highlightKey] : null;
+          if (highlightEntries && highlightEntries.length) {
+            field.dataset.highlightKey = highlightKey;
+            const isSuppressed = () =>
+              !!(
+                state.highlightVisibility &&
+                Object.prototype.hasOwnProperty.call(state.highlightVisibility, highlightKey) &&
+                state.highlightVisibility[highlightKey] === false
+              );
+            if (isSuppressed()) {
+              field.classList.add("result-field--muted");
+            } else {
+              field.classList.add("result-field--highlighted");
+            }
+            const activate = () => {
+              if (isSuppressed()) {
+                return;
+              }
+              if (setHighlightFocusKey(highlightKey)) {
+                refreshPreviewHighlights();
+              }
+            };
+            const clear = () => {
+              if (state.highlightFocusKey === highlightKey && setHighlightFocusKey(null)) {
+                refreshPreviewHighlights();
+              }
+            };
+            field.addEventListener("pointerenter", activate);
+            field.addEventListener("pointerleave", clear);
+            field.addEventListener("mouseenter", activate);
+            field.addEventListener("mouseleave", clear);
+            field.addEventListener("focus", activate);
+            field.addEventListener("blur", clear);
+          }
+
+          const triggerEdit = () => {
+            const currentValue = Object.prototype.hasOwnProperty.call(flat, key)
+              ? flat[key]
+              : undefined;
+            handleEditField(entry, key, labelText, currentValue);
+          };
+
+          field.addEventListener("click", (event) => {
+            if (event.defaultPrevented) {
+              return;
+            }
+            triggerEdit();
+          });
+
+          field.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              triggerEdit();
+            }
+          });
+
           usedKeys.add(key);
           return field;
         };
@@ -4199,6 +4179,7 @@
           textOrigin:
             typeof options.textOrigin === "string" ? options.textOrigin : "",
           uploadedAt: options.uploadedAt || timestamp,
+          editedFields: Object.create(null),
         };
         state.results.push(entry);
         state.currentIndex = state.results.length - 1;
