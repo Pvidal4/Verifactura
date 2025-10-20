@@ -227,6 +227,53 @@
         gap: 0.5rem;
       }
 
+      .panel-header__actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .preview-mode-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 0.25rem;
+      }
+
+      .preview-mode-toggle[aria-disabled="true"] {
+        opacity: 0.6;
+      }
+
+      .preview-mode-button {
+        border: none;
+        background: transparent;
+        color: var(--muted);
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 0.35rem 0.85rem;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: background-color 0.2s ease, color 0.2s ease;
+      }
+
+      .preview-mode-button.is-active {
+        background: var(--accent-soft);
+        color: var(--accent-dark);
+      }
+
+      .preview-mode-button:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+
+      .preview-mode-button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
       .panel-body {
         display: flex;
         flex-direction: column;
@@ -588,6 +635,13 @@
         border: 1px solid var(--border);
       }
 
+      .preview-placeholder {
+        margin: 0;
+        padding: 1.25rem;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
       .preview-content iframe,
       .preview-content embed {
         width: 100%;
@@ -609,6 +663,43 @@
         font-size: 0.85rem;
         white-space: pre-wrap;
         line-height: 1.5;
+      }
+
+      .preview-content--missing {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .preview-missing-highlight {
+        padding: 0.85rem 1rem;
+        border-radius: 0.75rem;
+        background: rgba(148, 163, 184, 0.18);
+        border: 1px dashed rgba(100, 116, 139, 0.4);
+        color: var(--muted);
+        font-size: 0.85rem;
+        line-height: 1.4;
+      }
+
+      .preview-missing-highlight strong {
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .preview-highlight {
+        background: rgba(37, 99, 235, 0.24);
+        border-radius: 0.35rem;
+        padding: 0.05rem 0.2rem;
+        transition: background-color 0.2s ease;
+        position: relative;
+      }
+
+      .preview-highlight:hover {
+        background: rgba(37, 99, 235, 0.35);
+      }
+
+      .preview-highlight[data-field]::after {
+        display: none;
       }
 
       .preview-hint {
@@ -975,6 +1066,68 @@
         padding-right: 0.25rem;
       }
 
+      .results-section {
+        grid-column: 1 / -1;
+        border: 1px solid var(--border);
+        border-radius: 1.25rem;
+        background: var(--surface);
+        padding: 1.1rem 1.25rem 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+      }
+
+      .results-section__title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text);
+        letter-spacing: 0.02em;
+      }
+
+      .results-section__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+      }
+
+      .results-section__toggle {
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--muted);
+        border-radius: 999px;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.8rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease,
+          background-color 0.2s ease;
+      }
+
+      .results-section__toggle.is-active {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+        color: var(--accent-dark);
+        box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.12);
+      }
+
+      .results-section__toggle:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+
+      .results-section__grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 0.75rem;
+      }
+
+      .results-section__grid .result-field {
+        background: var(--surface-subtle);
+      }
+
       .results-grid.empty {
         display: flex;
         align-items: center;
@@ -990,6 +1143,28 @@
 
       .workspace--input-hidden .panel--input {
         display: none;
+      }
+
+      .panel--preview {
+        display: none;
+      }
+
+      .workspace--input-hidden.workspace--with-preview {
+        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      }
+
+      .workspace--input-hidden.workspace--with-preview .panel--preview {
+        display: flex;
+      }
+
+      .panel-body--preview {
+        gap: 1rem;
+        flex: 1;
+      }
+
+      .panel-body--preview .preview-content {
+        max-height: 60vh;
+        flex: 1;
       }
 
       .settings-backdrop {
@@ -1166,13 +1341,45 @@
         background: var(--surface-subtle);
         display: flex;
         flex-direction: column;
-        gap: 0.45rem;
+        gap: 0.65rem;
+        cursor: pointer;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease,
+          opacity 0.2s ease;
       }
 
-      .result-field label {
+      .result-field:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+
+      .result-field__header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .result-field__label {
         font-weight: 600;
         font-size: 0.92rem;
         color: var(--text);
+        flex: 1;
+        min-width: 0;
+      }
+
+      .result-field--highlighted {
+        border-color: rgba(37, 99, 235, 0.45);
+        box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25);
+        background: rgba(37, 99, 235, 0.05);
+      }
+
+      .result-field--focused {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.35);
+        background: rgba(37, 99, 235, 0.08);
+      }
+
+      .result-field--muted {
+        opacity: 0.6;
       }
 
       .result-field .value {
@@ -1266,7 +1473,7 @@
               hidden
               aria-hidden="true"
             >
-              Mostrar carga de facturas
+              Cargar más facturas
             </button>
           </div>
           <div class="header-extra">
@@ -1756,6 +1963,55 @@
             Aún no hay resultados. Procesa un documento para comenzar.
           </div>
         </section>
+
+        <section
+          class="panel panel--preview"
+          aria-labelledby="previewHeading"
+          id="previewPanel"
+          hidden
+          aria-hidden="true"
+        >
+          <div class="panel-header">
+            <div class="panel-header__text">
+              <h2 id="previewHeading">Vista previa</h2>
+              <p class="helper-text">Consulta el contenido original del documento seleccionado.</p>
+            </div>
+            <div class="panel-header__actions">
+              <div
+                class="preview-mode-toggle"
+                id="previewModeToggle"
+                role="group"
+                aria-label="Modo de vista previa"
+              >
+                <button
+                  type="button"
+                  class="preview-mode-button is-active"
+                  data-mode="text"
+                  aria-pressed="true"
+                >
+                  Texto
+                </button>
+                <button
+                  type="button"
+                  class="preview-mode-button"
+                  data-mode="file"
+                  aria-pressed="false"
+                  disabled
+                >
+                  Archivo
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="panel-body panel-body--preview">
+            <p class="preview-hint" id="dockedPreviewHint" hidden></p>
+            <div class="preview-content" id="dockedPreviewContent">
+              <p class="preview-placeholder">
+                Selecciona “Ver contenido” para mostrarlo aquí.
+              </p>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
 
@@ -1898,11 +2154,18 @@
       const state = {
         mode: "multi",
         modalPreviewUrl: null,
+        dockedPreviewUrl: null,
+        previewMode: "text",
         multiFiles: [],
         multiCategory: null,
         multiUseOcr: false,
         results: [],
         currentIndex: -1,
+        currentHighlights: [],
+        highlightVisibility: {},
+        highlightFocusKey: null,
+        missingHighlight: null,
+        highlightIndex: Object.create(null),
         llmProvider: "api",
         llmParameters: {
           api: {
@@ -1950,6 +2213,19 @@
       const previewModal = document.getElementById("previewModal");
       const previewModalContent = document.getElementById("previewModalContent");
       const previewModalClose = document.getElementById("previewModalClose");
+      const previewPanel = document.getElementById("previewPanel");
+      const dockedPreviewContent = document.getElementById("dockedPreviewContent");
+      const dockedPreviewHint = document.getElementById("dockedPreviewHint");
+      const previewModeToggle = document.getElementById("previewModeToggle");
+      const previewModeButtons = previewModeToggle
+        ? Array.from(previewModeToggle.querySelectorAll(".preview-mode-button"))
+        : [];
+      const previewModeTextButton = previewModeToggle
+        ? previewModeToggle.querySelector('[data-mode="text"]')
+        : null;
+      const previewModeFileButton = previewModeToggle
+        ? previewModeToggle.querySelector('[data-mode="file"]')
+        : null;
       const submitButton = document.getElementById("submitButton");
       const clearButton = document.getElementById("clearButton");
       const statusMessage = document.getElementById("statusMessage");
@@ -1968,6 +2244,7 @@
       const multiMode = document.getElementById("multiMode");
       const textModeButton = document.getElementById("textModeButton");
       const multiModeButton = document.getElementById("multiModeButton");
+
       const multiDropZone = document.getElementById("multiDropZone");
       const multiBrowseButton = document.getElementById("multiBrowseButton");
       const multiFileInput = document.getElementById("multiFileInput");
@@ -2059,6 +2336,8 @@
 
       let lastFocusedElement = null;
       let lastSettingsTrigger = null;
+      let isPreviewDocked = false;
+      let dockedFileReadToken = 0;
 
       function setMultiPdfToggleVisibility(visible) {
         multiPdfToggleRow.hidden = !visible;
@@ -2645,6 +2924,121 @@
         showInputPanelButton.setAttribute("aria-hidden", String(!visible));
       }
 
+      function clearDockedPreviewUrl() {
+        if (state.dockedPreviewUrl) {
+          URL.revokeObjectURL(state.dockedPreviewUrl);
+          state.dockedPreviewUrl = null;
+        }
+      }
+
+      function setDockedPreviewMessage(message) {
+        if (!dockedPreviewContent) {
+          return;
+        }
+        clearDockedPreviewUrl();
+        const placeholder = document.createElement("p");
+        placeholder.className = "preview-placeholder";
+        placeholder.textContent = message;
+        dockedPreviewContent.replaceChildren(placeholder);
+        clearMissingHighlightNotice(dockedPreviewContent);
+        if (dockedPreviewHint) {
+          dockedPreviewHint.hidden = true;
+          dockedPreviewHint.textContent = "";
+        }
+      }
+
+      function clearMissingHighlightNotice(container) {
+        if (!container) {
+          return;
+        }
+        container.classList.remove("preview-content--missing");
+        const existing = container.querySelector(".preview-missing-highlight");
+        if (existing) {
+          existing.remove();
+        }
+      }
+
+      function updateMissingHighlightNotice(container, visibleHighlights, options = {}) {
+        if (!container) {
+          return;
+        }
+        const mode = options.mode || "text";
+        if (mode !== "text") {
+          clearMissingHighlightNotice(container);
+          return;
+        }
+        const missing = state.missingHighlight;
+        const hasVisible = Array.isArray(visibleHighlights) && visibleHighlights.length > 0;
+        if (!missing || hasVisible) {
+          clearMissingHighlightNotice(container);
+          return;
+        }
+        let notice = container.querySelector(".preview-missing-highlight");
+        if (!notice) {
+          notice = document.createElement("div");
+          notice.className = "preview-missing-highlight";
+        }
+        const label = missing.label || missing.key || "este campo";
+        notice.replaceChildren();
+        notice.append("No se encontraron coincidencias exactas para ");
+        const emphasis = document.createElement("strong");
+        emphasis.textContent = `“${label}”`;
+        notice.appendChild(emphasis);
+        notice.append(".");
+        const hint = container.querySelector(".preview-hint");
+        if (hint && hint.parentElement === container) {
+          container.insertBefore(notice, hint.nextSibling);
+        } else {
+          container.prepend(notice);
+        }
+        container.classList.add("preview-content--missing");
+      }
+
+      function resetDockedPreview() {
+        setDockedPreviewMessage("Selecciona “Ver contenido” para mostrarlo aquí.");
+      }
+
+      function isFilePreviewAvailable(entry) {
+        if (!entry) {
+          return false;
+        }
+        const hasFile = entry.file && typeof entry.file === "object";
+        const hasCategory = typeof entry.category === "string" && entry.category.trim() !== "";
+        return Boolean(hasFile && hasCategory);
+      }
+
+      function setPreviewDocked(enabled) {
+        isPreviewDocked = enabled;
+        workspace.classList.toggle("workspace--with-preview", enabled);
+        if (!previewPanel) {
+          return;
+        }
+        if (enabled) {
+          previewPanel.hidden = false;
+          previewPanel.setAttribute("aria-hidden", "false");
+          resetDockedPreview();
+          if (state.results.length > 0) {
+            const safeIndex = Math.max(
+              0,
+              Math.min(state.currentIndex, state.results.length - 1)
+            );
+            const entry = state.results[safeIndex];
+            if (entry) {
+              state.currentHighlights = getEntryHighlights(entry);
+              updatePreviewModeControls(entry);
+              updateViewContentButton(entry);
+              renderCurrentPreview(entry);
+            } else {
+              setDockedPreviewMessage("No hay contenido disponible.");
+            }
+          }
+        } else {
+          previewPanel.hidden = true;
+          previewPanel.setAttribute("aria-hidden", "true");
+          resetDockedPreview();
+        }
+      }
+
       function collapseInputPanel() {
         if (workspace.classList.contains("workspace--input-hidden")) {
           return;
@@ -2653,6 +3047,7 @@
         inputPanel.setAttribute("aria-hidden", "true");
         inputPanelBody.setAttribute("aria-hidden", "true");
         setShowPanelButtonVisibility(true);
+        setPreviewDocked(true);
         hideInputPanelButton.setAttribute("aria-pressed", "true");
         showInputPanelButton.focus({ preventScroll: true });
       }
@@ -2665,6 +3060,7 @@
         inputPanel.removeAttribute("aria-hidden");
         inputPanelBody.removeAttribute("aria-hidden");
         setShowPanelButtonVisibility(false);
+        setPreviewDocked(false);
         hideInputPanelButton.setAttribute("aria-pressed", "false");
         hideInputPanelButton.focus({ preventScroll: true });
       }
@@ -2708,6 +3104,7 @@
           state.modalPreviewUrl = null;
         }
         previewModalContent.innerHTML = "";
+        clearMissingHighlightNotice(previewModalContent);
         document.body.classList.remove("modal-open");
         if (focusTarget && typeof focusTarget.focus === "function") {
           focusTarget.focus();
@@ -2717,6 +3114,7 @@
 
       function renderModalPreview(file, category) {
         previewModalContent.innerHTML = "";
+        clearMissingHighlightNotice(previewModalContent);
         if (!file || !category) {
           const message = document.createElement("p");
           message.style.padding = "1.25rem";
@@ -3106,6 +3504,479 @@
         return result;
       }
 
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+
+      function escapeAttribute(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function escapeRegExp(value) {
+        return String(value).replace(/[\\^$*+?.()|{}\[\]-]/g, "\\$&");
+      }
+
+      function computePreviewHighlights(flatData) {
+        if (!flatData || typeof flatData !== "object") {
+          return [];
+        }
+        return Object.entries(flatData).reduce((list, [key, value]) => {
+          if (value === null || value === undefined) {
+            return list;
+          }
+          const label = key || "(valor)";
+          if (typeof value === "string") {
+            const trimmed = value.trim();
+            if (!trimmed) {
+              return list;
+            }
+            const isNumericLike = /^-?\d+(?:[.,]\d+)?$/.test(trimmed);
+            if (trimmed.length < 2 && !isNumericLike) {
+              return list;
+            }
+            list.push({ field: label, value: trimmed });
+            return list;
+          }
+          if (typeof value === "number") {
+            const text = String(value);
+            if (text) {
+              list.push({ field: label, value: text });
+            }
+            return list;
+          }
+          if (typeof value === "boolean") {
+            list.push({ field: label, value: value ? "true" : "false" });
+            return list;
+          }
+          return list;
+        }, []);
+      }
+
+      function buildHighlightMatches(text, highlights) {
+        if (!text || !Array.isArray(highlights) || highlights.length === 0) {
+          return [];
+        }
+        const matches = [];
+        highlights.forEach(({ field, value }) => {
+          if (!value) {
+            return;
+          }
+          const pattern = new RegExp(escapeRegExp(value), "gi");
+          let match;
+          while ((match = pattern.exec(text)) !== null) {
+            matches.push({
+              start: match.index,
+              end: match.index + match[0].length,
+              field: field || "(valor)",
+            });
+            if (match.index === pattern.lastIndex) {
+              pattern.lastIndex += 1;
+            }
+          }
+        });
+        if (!matches.length) {
+          return [];
+        }
+        matches.sort((a, b) => {
+          if (a.start === b.start) {
+            return b.end - a.end;
+          }
+          return a.start - b.start;
+        });
+        const filtered = [];
+        let lastEnd = -1;
+        matches.forEach((match) => {
+          if (match.start >= lastEnd) {
+            filtered.push(match);
+            lastEnd = match.end;
+          }
+        });
+        return filtered;
+      }
+
+      function normalizeHighlightKey(field) {
+        if (field === null || field === undefined) {
+          return "";
+        }
+        return String(field).toLowerCase();
+      }
+
+      function setMissingHighlight(field, label) {
+        const normalized = field ? normalizeHighlightKey(field) : "";
+        const key = normalized || null;
+        if (!key) {
+          if (state.missingHighlight) {
+            state.missingHighlight = null;
+            return true;
+          }
+          return false;
+        }
+        const safeLabel = typeof label === "string" ? label : "";
+        if (
+          state.missingHighlight &&
+          state.missingHighlight.key === key &&
+          state.missingHighlight.label === safeLabel
+        ) {
+          return false;
+        }
+        state.missingHighlight = { key, label: safeLabel };
+        return true;
+      }
+
+      function clearMissingHighlight(field) {
+        if (!state.missingHighlight) {
+          return false;
+        }
+        if (!field) {
+          state.missingHighlight = null;
+          return true;
+        }
+        const normalized = normalizeHighlightKey(field);
+        if (state.missingHighlight.key === normalized) {
+          state.missingHighlight = null;
+          return true;
+        }
+        return false;
+      }
+
+      function getVisibleHighlights() {
+        if (!Array.isArray(state.currentHighlights) || !state.currentHighlights.length) {
+          return [];
+        }
+        const focusKey = state.highlightFocusKey;
+        if (focusKey) {
+          return state.currentHighlights.filter(
+            ({ field }) => normalizeHighlightKey(field) === focusKey
+          );
+        }
+        const visibility = state.highlightVisibility || {};
+        const hasRules = Object.keys(visibility).length > 0;
+        if (!hasRules) {
+          return state.currentHighlights;
+        }
+        return state.currentHighlights.filter(({ field }) => {
+          const key = normalizeHighlightKey(field);
+          if (!key) {
+            return true;
+          }
+          if (Object.prototype.hasOwnProperty.call(visibility, key)) {
+            return visibility[key] !== false;
+          }
+          return true;
+        });
+      }
+
+      function setGroupHighlightVisibility(fields, visible) {
+        if (!Array.isArray(fields) || !fields.length) {
+          return;
+        }
+        if (!state.highlightVisibility || typeof state.highlightVisibility !== "object") {
+          state.highlightVisibility = {};
+        }
+        const visibility = state.highlightVisibility;
+        fields.forEach((field) => {
+          const key = normalizeHighlightKey(field);
+          if (!key) {
+            return;
+          }
+          if (visible) {
+            delete visibility[key];
+          } else {
+            visibility[key] = false;
+          }
+        });
+      }
+
+      function setHighlightFocusKey(field, options = {}) {
+        const normalized = field ? normalizeHighlightKey(field) : "";
+        const key = normalized || null;
+        const allowMissing = Boolean(options.allowMissing);
+        if (key && !allowMissing && (!state.highlightIndex || !state.highlightIndex[key])) {
+          return false;
+        }
+        const previousKey = state.highlightFocusKey;
+        if (previousKey === key) {
+          if (!key && state.missingHighlight) {
+            state.missingHighlight = null;
+            return true;
+          }
+          if (!allowMissing) {
+            state.missingHighlight = null;
+          }
+          return false;
+        }
+        state.highlightFocusKey = key;
+        if (!key || !allowMissing) {
+          state.missingHighlight = null;
+        }
+        return true;
+      }
+
+      function updateHighlightIndicators() {
+        if (!resultsContainer) {
+          return;
+        }
+        const fields = resultsContainer.querySelectorAll(".result-field[data-highlight-key]");
+        fields.forEach((field) => {
+          const key = field.dataset.highlightKey || "";
+          if (!key) {
+            field.classList.remove(
+              "result-field--highlighted",
+              "result-field--muted",
+              "result-field--focused"
+            );
+            return;
+          }
+          const entries =
+            state.highlightIndex && state.highlightIndex[key]
+              ? state.highlightIndex[key]
+              : null;
+          const hasHighlight = Array.isArray(entries) && entries.length > 0;
+          if (!hasHighlight) {
+            field.classList.remove(
+              "result-field--highlighted",
+              "result-field--muted",
+              "result-field--focused"
+            );
+            field.removeAttribute("data-highlight-key");
+            return;
+          }
+          const hasFocus = Boolean(state.highlightFocusKey);
+          const suppressedByVisibility =
+            !hasFocus && state.highlightVisibility && state.highlightVisibility[key] === false;
+          const isFocused = state.highlightFocusKey === key;
+          const suppressedByFocus = hasFocus && !isFocused;
+          const shouldHighlight = !suppressedByVisibility && !suppressedByFocus;
+          field.classList.toggle("result-field--highlighted", shouldHighlight);
+          field.classList.toggle(
+            "result-field--muted",
+            (suppressedByVisibility || suppressedByFocus) && !isFocused
+          );
+          field.classList.toggle("result-field--focused", isFocused);
+        });
+      }
+
+      function setValueForFlatKey(entry, key, value) {
+        if (!entry || typeof entry !== "object") {
+          return;
+        }
+        if (!entry.data || typeof entry.data !== "object") {
+          entry.data = {};
+        }
+        const rawPath = typeof key === "string" ? key : String(key || "");
+        const segments = rawPath.split(".").filter(Boolean);
+        if (!segments.length) {
+          return;
+        }
+        let current = entry.data;
+        for (let index = 0; index < segments.length; index += 1) {
+          const segment = segments[index];
+          const isIndex = /^\d+$/.test(segment);
+          const isLast = index === segments.length - 1;
+          if (isLast) {
+            if (isIndex) {
+              const targetIndex = Number(segment);
+              if (Array.isArray(current)) {
+                current[targetIndex] = value;
+              } else if (current && typeof current === "object") {
+                current[segment] = value;
+              }
+            } else {
+              current[segment] = value;
+            }
+            return;
+          }
+          const nextSegment = segments[index + 1];
+          const nextIsIndex = /^\d+$/.test(nextSegment);
+          if (isIndex) {
+            const targetIndex = Number(segment);
+            if (!Array.isArray(current)) {
+              if (current && typeof current === "object") {
+                if (!Object.prototype.hasOwnProperty.call(current, segment)) {
+                  current[segment] = nextIsIndex ? [] : {};
+                }
+                current = current[segment];
+              } else {
+                return;
+              }
+            } else {
+              if (
+                !Object.prototype.hasOwnProperty.call(current, targetIndex) ||
+                current[targetIndex] === null ||
+                typeof current[targetIndex] !== "object"
+              ) {
+                current[targetIndex] = nextIsIndex ? [] : {};
+              }
+              current = current[targetIndex];
+            }
+          } else {
+            if (
+              !Object.prototype.hasOwnProperty.call(current, segment) ||
+              current[segment] === null ||
+              typeof current[segment] !== "object"
+            ) {
+              current[segment] = nextIsIndex ? [] : {};
+            }
+            current = current[segment];
+          }
+        }
+      }
+
+      function handleEditField(entry, key, label, currentValue) {
+        if (!entry || !key) {
+          return;
+        }
+        const fieldLabel = label || key || "Campo";
+        let defaultValue = "";
+        if (typeof currentValue === "string") {
+          defaultValue = currentValue;
+        } else if (
+          typeof currentValue === "number" ||
+          typeof currentValue === "boolean"
+        ) {
+          defaultValue = String(currentValue);
+        } else if (currentValue && typeof currentValue === "object") {
+          try {
+            defaultValue = JSON.stringify(currentValue);
+          } catch (error) {
+            defaultValue = String(currentValue);
+          }
+        }
+        const nextValue = window.prompt(`Editar valor de ${fieldLabel}`, defaultValue);
+        if (nextValue === null) {
+          return;
+        }
+        setValueForFlatKey(entry, key, nextValue);
+        const normalizedKey = normalizeHighlightKey(key);
+        if (!entry.editedFields || typeof entry.editedFields !== "object") {
+          entry.editedFields = Object.create(null);
+        }
+        if (normalizedKey) {
+          entry.editedFields[normalizedKey] = true;
+          if (state.highlightVisibility && state.highlightVisibility[normalizedKey] === false) {
+            delete state.highlightVisibility[normalizedKey];
+          }
+          if (state.highlightFocusKey === normalizedKey) {
+            setHighlightFocusKey(null);
+          }
+          clearMissingHighlight(normalizedKey);
+        }
+        delete entry.previewHighlights;
+        renderResult(state.currentIndex, { preserveHighlightVisibility: true });
+      }
+
+      function updateGroupToggleButton(button, active, title) {
+        if (!button) {
+          return;
+        }
+        button.classList.toggle("is-active", active);
+        button.setAttribute("aria-pressed", active ? "true" : "false");
+        button.textContent = active ? "Ocultar" : "Ver";
+        const action = active ? "Ocultar" : "Ver";
+        const target = title ? ` resaltados de ${title}` : " resaltados";
+        button.setAttribute("aria-label", `${action}${target}`.trim());
+        button.dataset.state = active ? "visible" : "oculto";
+      }
+
+      function refreshPreviewHighlights() {
+        if (!state.results.length) {
+          updateHighlightIndicators();
+          return;
+        }
+        const entry = state.results[state.currentIndex];
+        if (!entry) {
+          updateHighlightIndicators();
+          return;
+        }
+        const previewText = typeof entry.previewText === "string" ? entry.previewText : "";
+        const origin = entry.textOrigin || "";
+        const mode = resolveActivePreviewMode(entry);
+        if (isPreviewDocked) {
+          if (mode === "text") {
+            if (previewText && previewText.trim()) {
+              showPlainTextPreview(previewText, origin);
+            } else {
+              setDockedPreviewMessage("No hay contenido disponible.");
+            }
+          } else if (mode === "file") {
+            renderCurrentPreview(entry);
+          } else {
+            setDockedPreviewMessage("No hay contenido disponible.");
+          }
+          updateHighlightIndicators();
+          return;
+        }
+        if (!previewModal.hidden) {
+          if (mode === "file") {
+            showFilePreview(entry.file, entry.category, { entry });
+          } else if (mode === "text") {
+            showPlainTextPreview(previewText, origin);
+          }
+        }
+        updateHighlightIndicators();
+      }
+
+      function applyPreviewHighlights(target, text, highlights) {
+        if (!target) {
+          return;
+        }
+        const source = typeof text === "string" ? text : "";
+        const matches = buildHighlightMatches(source, highlights);
+        if (!matches.length) {
+          target.textContent = source;
+          return;
+        }
+        const fragments = [];
+        let cursor = 0;
+        matches.forEach((match) => {
+          if (match.start > cursor) {
+            fragments.push(escapeHtml(source.slice(cursor, match.start)));
+          }
+          const label = match.field || "(valor)";
+          const attrLabel = escapeAttribute(label);
+          const highlighted = escapeHtml(source.slice(match.start, match.end));
+          fragments.push(
+            `<span class="preview-highlight" data-field="${attrLabel}">${highlighted}</span>`
+          );
+          cursor = match.end;
+        });
+        if (cursor < source.length) {
+          fragments.push(escapeHtml(source.slice(cursor)));
+        }
+        target.innerHTML = fragments.join("");
+      }
+
+      function getEntryHighlights(entry, precomputedFlat) {
+        if (!entry) {
+          return [];
+        }
+        if (Array.isArray(entry.previewHighlights)) {
+          return entry.previewHighlights;
+        }
+        const flatData =
+          precomputedFlat && typeof precomputedFlat === "object"
+            ? precomputedFlat
+            : flattenData(entry.data || {});
+        let highlights = computePreviewHighlights(flatData);
+        if (entry.editedFields && typeof entry.editedFields === "object") {
+          const editedKeys = entry.editedFields;
+          highlights = highlights.filter(({ field }) => {
+            const key = normalizeHighlightKey(field);
+            return !key || !editedKeys[key];
+          });
+        }
+        entry.previewHighlights = highlights;
+        return highlights;
+      }
+
       function normalizeExtractionResponse(payload, fallbackText = "") {
         const response =
           payload && typeof payload === "object" && !Array.isArray(payload) ? payload : {};
@@ -3146,22 +4017,276 @@
         }
       }
 
+      function resolveActivePreviewMode(entry) {
+        if (!entry) {
+          return null;
+        }
+        const hasFile = isFilePreviewAvailable(entry);
+        const hasText =
+          typeof entry.previewText === "string" && entry.previewText.trim().length > 0;
+        if (state.previewMode === "file") {
+          if (hasFile) {
+            return "file";
+          }
+          return hasText ? "text" : null;
+        }
+        if (state.previewMode === "text") {
+          if (hasText) {
+            return "text";
+          }
+          return hasFile ? "file" : null;
+        }
+        if (hasText) {
+          return "text";
+        }
+        if (hasFile) {
+          return "file";
+        }
+        return null;
+      }
+
+      function updatePreviewModeControls(entry) {
+        if (!previewModeToggle) {
+          return;
+        }
+        const hasEntry = Boolean(entry);
+        const hasFile = isFilePreviewAvailable(entry);
+        const hasText =
+          hasEntry &&
+          typeof entry.previewText === "string" &&
+          entry.previewText.trim().length > 0;
+        if (!hasEntry) {
+          state.previewMode = "text";
+        } else if (state.previewMode === "file" && !hasFile) {
+          state.previewMode = "text";
+        } else if (state.previewMode !== "file" && !hasText && hasFile) {
+          state.previewMode = "file";
+        }
+        if (previewModeTextButton) {
+          previewModeTextButton.disabled = !hasEntry || !hasText;
+        }
+        if (previewModeFileButton) {
+          previewModeFileButton.disabled = !hasFile;
+        }
+        if (previewModeButtons.length) {
+          previewModeButtons.forEach((button) => {
+            const mode = button.dataset.mode || "";
+            const isActive = state.previewMode === mode;
+            button.classList.toggle("is-active", isActive);
+            button.setAttribute("aria-pressed", isActive ? "true" : "false");
+          });
+        }
+        previewModeToggle.setAttribute("aria-disabled", hasEntry ? "false" : "true");
+      }
+
+      function renderDockedFilePreview(file, category, entry) {
+        if (!dockedPreviewContent || !file) {
+          setDockedPreviewMessage("No hay vista previa disponible.");
+          return;
+        }
+        clearMissingHighlightNotice(dockedPreviewContent);
+        const label =
+          (entry && typeof entry.source === "string" && entry.source.trim()) ||
+          (typeof file.name === "string" && file.name.trim()) ||
+          "";
+        if (dockedPreviewHint) {
+          if (label) {
+            dockedPreviewHint.hidden = false;
+            dockedPreviewHint.textContent = `Vista del archivo original (${label}).`;
+          } else {
+            dockedPreviewHint.hidden = false;
+            dockedPreviewHint.textContent = "Vista del archivo original.";
+          }
+        }
+        clearDockedPreviewUrl();
+        const normalizedCategory = String(category || "").toLowerCase();
+        if (normalizedCategory === "image") {
+          const url = URL.createObjectURL(file);
+          state.dockedPreviewUrl = url;
+          const img = document.createElement("img");
+          img.src = url;
+          img.alt = "Vista previa del archivo original";
+          dockedPreviewContent.replaceChildren(img);
+          return;
+        }
+        if (normalizedCategory === "pdf") {
+          const url = URL.createObjectURL(file);
+          state.dockedPreviewUrl = url;
+          const iframe = document.createElement("iframe");
+          iframe.src = url;
+          iframe.title = "Vista previa del archivo original";
+          dockedPreviewContent.replaceChildren(iframe);
+          return;
+        }
+        const placeholder = document.createElement("p");
+        placeholder.className = "preview-placeholder";
+        placeholder.textContent = "Cargando vista previa del archivo...";
+        dockedPreviewContent.replaceChildren(placeholder);
+        const reader = new FileReader();
+        const token = ++dockedFileReadToken;
+        reader.onload = () => {
+          if (token !== dockedFileReadToken) {
+            return;
+          }
+          const pre = document.createElement("pre");
+          pre.textContent = String(reader.result || "").slice(0, 20000);
+          dockedPreviewContent.replaceChildren(pre);
+        };
+        reader.onerror = () => {
+          if (token !== dockedFileReadToken) {
+            return;
+          }
+          setDockedPreviewMessage("No se pudo cargar la vista del archivo.");
+        };
+        reader.readAsText(file, "utf-8");
+      }
+
+      function showFilePreview(file, category, options = {}) {
+        if (!file || !category) {
+          if (isPreviewDocked) {
+            setDockedPreviewMessage("No hay vista previa disponible.");
+          } else {
+            previewModalContent.innerHTML = "";
+            const message = document.createElement("p");
+            message.style.padding = "1.25rem";
+            message.textContent = "No hay vista previa disponible.";
+            previewModalContent.appendChild(message);
+            if (previewModal.hidden) {
+              openPreviewModal();
+            }
+          }
+          return;
+        }
+        if (isPreviewDocked) {
+          renderDockedFilePreview(file, category, options.entry || null);
+          return;
+        }
+        renderModalPreview(file, category);
+        if (previewModal.hidden) {
+          openPreviewModal();
+        }
+      }
+
+      function renderCurrentPreview(entry) {
+        if (!isPreviewDocked) {
+          return;
+        }
+        const targetEntry = entry || state.results[state.currentIndex];
+        if (!targetEntry) {
+          resetDockedPreview();
+          return;
+        }
+        const mode = resolveActivePreviewMode(targetEntry);
+        if (mode === "file") {
+          showFilePreview(targetEntry.file, targetEntry.category, { entry: targetEntry });
+          return;
+        }
+        if (mode === "text") {
+          showPlainTextPreview(targetEntry.previewText, targetEntry.textOrigin || "");
+          return;
+        }
+        setDockedPreviewMessage("No hay contenido disponible.");
+      }
+
+      function updateViewContentButton(entry) {
+        if (!viewContentButton) {
+          return;
+        }
+        if (!entry) {
+          viewContentButton.disabled = true;
+          viewContentButton.setAttribute("aria-label", "Ver contenido");
+          viewContentButton.removeAttribute("title");
+          return;
+        }
+        const mode = resolveActivePreviewMode(entry);
+        viewContentButton.disabled = !mode;
+        if (!mode) {
+          viewContentButton.setAttribute("aria-label", "Ver contenido");
+          viewContentButton.removeAttribute("title");
+          return;
+        }
+        if (mode === "file") {
+          viewContentButton.setAttribute("aria-label", "Ver archivo original");
+          const fileLabel =
+            (entry.file && typeof entry.file.name === "string" && entry.file.name) ||
+            (typeof entry.source === "string" && entry.source) ||
+            "";
+          if (fileLabel) {
+            viewContentButton.setAttribute("title", fileLabel);
+          } else {
+            viewContentButton.removeAttribute("title");
+          }
+          return;
+        }
+        const description = getTextOriginDescription(entry.textOrigin || "");
+        if (description) {
+          viewContentButton.setAttribute(
+            "aria-label",
+            `Ver contenido. ${description}`
+          );
+          viewContentButton.setAttribute("title", description);
+        } else {
+          viewContentButton.setAttribute("aria-label", "Ver contenido");
+          viewContentButton.removeAttribute("title");
+        }
+      }
+
+      function openActivePreview() {
+        const entry = state.results[state.currentIndex];
+        const mode = resolveActivePreviewMode(entry);
+        if (!entry || !mode) {
+          return;
+        }
+        state.currentHighlights = getEntryHighlights(entry);
+        if (mode === "file") {
+          showFilePreview(entry.file, entry.category, { entry });
+        } else {
+          showPlainTextPreview(entry.previewText, entry.textOrigin || "");
+        }
+      }
+
       function showPlainTextPreview(text, origin) {
         if (state.modalPreviewUrl) {
           URL.revokeObjectURL(state.modalPreviewUrl);
           state.modalPreviewUrl = null;
         }
-        previewModalContent.innerHTML = "";
+        clearDockedPreviewUrl();
         const normalized = typeof text === "string" ? text : "";
+        const hint = getTextOriginDescription(origin);
+        const visibleHighlights = getVisibleHighlights();
+        if (isPreviewDocked && dockedPreviewContent) {
+          if (!normalized.trim()) {
+            setDockedPreviewMessage("No hay contenido disponible.");
+            return;
+          }
+          if (dockedPreviewHint) {
+            if (hint) {
+              dockedPreviewHint.hidden = false;
+              dockedPreviewHint.textContent = hint;
+            } else {
+              dockedPreviewHint.hidden = true;
+              dockedPreviewHint.textContent = "";
+            }
+          }
+          const pre = document.createElement("pre");
+          applyPreviewHighlights(pre, normalized, visibleHighlights);
+          dockedPreviewContent.replaceChildren(pre);
+          updateMissingHighlightNotice(dockedPreviewContent, visibleHighlights, {
+            mode: "text",
+          });
+          return;
+        }
+        previewModalContent.innerHTML = "";
         if (!normalized.trim()) {
           const message = document.createElement("p");
           message.style.padding = "1.25rem";
           message.textContent = "No hay contenido disponible.";
           previewModalContent.appendChild(message);
-          openPreviewModal();
+          if (previewModal.hidden) {
+            openPreviewModal();
+          }
           return;
         }
-        const hint = getTextOriginDescription(origin);
         if (hint) {
           const hintElement = document.createElement("p");
           hintElement.className = "preview-hint";
@@ -3169,30 +4294,63 @@
           previewModalContent.appendChild(hintElement);
         }
         const pre = document.createElement("pre");
-        pre.textContent = normalized;
+        applyPreviewHighlights(pre, normalized, visibleHighlights);
         previewModalContent.appendChild(pre);
-        openPreviewModal();
+        updateMissingHighlightNotice(previewModalContent, visibleHighlights, {
+          mode: "text",
+        });
+        if (previewModal.hidden) {
+          openPreviewModal();
+        }
       }
 
-      function renderResult(index) {
+      function renderResult(index, options = {}) {
+        if (isPreviewDocked) {
+          resetDockedPreview();
+        }
+        const preserveHighlightVisibility = Boolean(
+          options && options.preserveHighlightVisibility
+        );
+        const visibilitySnapshot =
+          preserveHighlightVisibility && state.highlightVisibility
+            ? Object.assign(Object.create(null), state.highlightVisibility)
+            : null;
+        state.highlightFocusKey = null;
+        state.highlightIndex = Object.create(null);
         if (state.results.length === 0) {
+          state.currentHighlights = [];
+          state.highlightVisibility = visibilitySnapshot || {};
           resultsContainer.classList.add("empty");
           resultsContainer.innerHTML =
             "Aún no hay resultados. Procesa un documento para comenzar.";
           resultsSummary.textContent = "Procesa un documento para ver los campos extraídos.";
           resultsNavigation.hidden = true;
           resultMeta.hidden = true;
-          if (viewContentButton) {
-            viewContentButton.disabled = true;
-            viewContentButton.removeAttribute("title");
-            viewContentButton.setAttribute("aria-label", "Ver contenido");
-          }
+          updatePreviewModeControls(null);
+          updateViewContentButton(null);
           downloadJson.disabled = true;
           downloadCsv.disabled = true;
+          updateHighlightIndicators();
           return;
         }
 
-        const entry = state.results[index];
+        const safeIndex = Math.min(
+          Math.max(typeof index === "number" ? index : 0, 0),
+          state.results.length - 1
+        );
+        state.currentIndex = safeIndex;
+        const entry = state.results[safeIndex];
+        if (!entry) {
+          state.currentHighlights = [];
+          state.highlightVisibility = visibilitySnapshot || {};
+          state.missingHighlight = null;
+          updatePreviewModeControls(null);
+          updateViewContentButton(null);
+          updateHighlightIndicators();
+          return;
+        }
+        updatePreviewModeControls(entry);
+        updateViewContentButton(entry);
         const uploadedAt = entry.uploadedAt || entry.timestamp;
         resultsContainer.classList.remove("empty");
         resultsContainer.innerHTML = "";
@@ -3201,27 +4359,277 @@
         ).toLocaleString()}`;
 
         const flat = flattenData(entry.data);
-        Object.keys(flat)
+        const highlights = getEntryHighlights(entry, flat);
+        state.currentHighlights = Array.isArray(highlights) ? highlights : [];
+        state.missingHighlight = null;
+        state.highlightIndex = state.currentHighlights.reduce((acc, highlight) => {
+          const key = normalizeHighlightKey(highlight.field);
+          if (!key) {
+            return acc;
+          }
+          if (!acc[key]) {
+            acc[key] = [];
+          }
+          acc[key].push(highlight);
+          return acc;
+        }, Object.create(null));
+        state.highlightVisibility = visibilitySnapshot || {};
+        const flatKeys = Object.keys(flat);
+        const usedKeys = new Set();
+
+        const resolveFieldKey = (target) => {
+          if (flatKeys.includes(target)) {
+            return target;
+          }
+          const normalized = target.toLowerCase();
+          let candidate = flatKeys.find((key) => key.toLowerCase() === normalized);
+          if (candidate) {
+            return candidate;
+          }
+          candidate = flatKeys.find((key) => key.toLowerCase().endsWith(`.${normalized}`));
+          if (candidate) {
+            return candidate;
+          }
+          return target;
+        };
+
+        const createFieldElement = (key, labelOverride) => {
+          const field = document.createElement("div");
+          field.className = "result-field";
+          field.dataset.fieldKey = key;
+          field.setAttribute("role", "button");
+          field.tabIndex = 0;
+          const labelText = labelOverride || key || "(valor)";
+          field.setAttribute("aria-label", `Editar ${labelText}`);
+          field.title = `Editar ${labelText}`;
+          const header = document.createElement("div");
+          header.className = "result-field__header";
+          const label = document.createElement("span");
+          label.className = "result-field__label";
+          label.textContent = labelText;
+          header.appendChild(label);
+          field.appendChild(header);
+          const valueElement = document.createElement("div");
+          valueElement.className = "value";
+          const hasValue = Object.prototype.hasOwnProperty.call(flat, key);
+          const value = hasValue ? flat[key] : undefined;
+          if (
+            !hasValue ||
+            value === null ||
+            value === undefined ||
+            value === "" ||
+            (Array.isArray(value) && value.length === 0)
+          ) {
+            valueElement.classList.add("missing");
+            valueElement.textContent = "Sin valor";
+          } else if (typeof value === "object") {
+            valueElement.textContent = JSON.stringify(value);
+          } else {
+            valueElement.textContent = String(value);
+          }
+          field.appendChild(valueElement);
+          const highlightKey = normalizeHighlightKey(key);
+          const highlightEntries =
+            highlightKey && state.highlightIndex ? state.highlightIndex[highlightKey] : null;
+          if (highlightEntries && highlightEntries.length) {
+            field.dataset.highlightKey = highlightKey;
+            const isSuppressed = () =>
+              !!(
+                state.highlightVisibility &&
+                Object.prototype.hasOwnProperty.call(state.highlightVisibility, highlightKey) &&
+                state.highlightVisibility[highlightKey] === false
+              );
+            if (isSuppressed()) {
+              field.classList.add("result-field--muted");
+            } else {
+              field.classList.add("result-field--highlighted");
+            }
+            const activate = () => {
+              if (isSuppressed()) {
+                return;
+              }
+              const focusChanged = setHighlightFocusKey(highlightKey);
+              const missingCleared = clearMissingHighlight();
+              if (focusChanged || missingCleared) {
+                refreshPreviewHighlights();
+              }
+            };
+            const clear = () => {
+              let shouldRefresh = false;
+              if (state.highlightFocusKey === highlightKey) {
+                shouldRefresh = setHighlightFocusKey(null) || shouldRefresh;
+              }
+              shouldRefresh = clearMissingHighlight(highlightKey) || shouldRefresh;
+              if (shouldRefresh) {
+                refreshPreviewHighlights();
+              }
+            };
+            field.addEventListener("pointerenter", activate);
+            field.addEventListener("pointerleave", clear);
+            field.addEventListener("mouseenter", activate);
+            field.addEventListener("mouseleave", clear);
+            field.addEventListener("focus", activate);
+            field.addEventListener("blur", clear);
+          } else if (highlightKey) {
+            const activateMissing = () => {
+              const focusChanged = setHighlightFocusKey(highlightKey, { allowMissing: true });
+              const missingChanged = setMissingHighlight(highlightKey, labelText);
+              if (focusChanged || missingChanged) {
+                refreshPreviewHighlights();
+              }
+            };
+            const clearMissing = () => {
+              let shouldRefresh = false;
+              if (state.highlightFocusKey === highlightKey) {
+                shouldRefresh = setHighlightFocusKey(null) || shouldRefresh;
+              }
+              shouldRefresh = clearMissingHighlight(highlightKey) || shouldRefresh;
+              if (shouldRefresh) {
+                refreshPreviewHighlights();
+              }
+            };
+            field.addEventListener("pointerenter", activateMissing);
+            field.addEventListener("pointerleave", clearMissing);
+            field.addEventListener("mouseenter", activateMissing);
+            field.addEventListener("mouseleave", clearMissing);
+            field.addEventListener("focus", activateMissing);
+            field.addEventListener("blur", clearMissing);
+          }
+
+          const triggerEdit = () => {
+            const currentValue = Object.prototype.hasOwnProperty.call(flat, key)
+              ? flat[key]
+              : undefined;
+            handleEditField(entry, key, labelText, currentValue);
+          };
+
+          field.addEventListener("click", (event) => {
+            if (event.defaultPrevented) {
+              return;
+            }
+            triggerEdit();
+          });
+
+          field.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              triggerEdit();
+            }
+          });
+
+          usedKeys.add(key);
+          return field;
+        };
+
+        const prioritizedGroups = [
+          {
+            title: "DETALLES GENERALES",
+            fields: [
+              "NUMERO_FACTURA",
+              "NOMBRE_CLIENTE",
+              "RUC",
+              "CONCESIONARIA",
+              "DIRECCION",
+              "FECHA_DOCUMENTO",
+              "AÑO",
+              "PAIS_ORIGEN",
+            ],
+          },
+          {
+            title: "VEHICULO",
+            fields: [
+              "MARCA",
+              "MODELO",
+              "MODELO_HOMOLOGADO_ANT",
+              "MODELO_REGISTRADO_SRI",
+              "TIPO",
+              "CLASE",
+              "COLOR",
+              "MOTOR",
+              "RAMV_CPN",
+              "VIN_CHASIS",
+              "CILINDRAJE",
+              "CAPACIDAD",
+              "RUEDAS",
+              "EJES",
+              "TONELAJE",
+              "COMBUSTIBLE",
+            ],
+          },
+          {
+            title: "FACTURA",
+            fields: ["SUBTOTAL", "SUBSIDIO", "DESCUENTO", "IVA", "TOTAL"],
+          },
+        ];
+
+        prioritizedGroups.forEach(({ title, fields }) => {
+          if (!Array.isArray(fields) || !fields.length) {
+            return;
+          }
+          const section = document.createElement("section");
+          section.className = "results-section";
+          const header = document.createElement("div");
+          header.className = "results-section__header";
+          const heading = document.createElement("h4");
+          heading.className = "results-section__title";
+          heading.textContent = title;
+          header.appendChild(heading);
+          const toggle = document.createElement("button");
+          toggle.type = "button";
+          toggle.className = "results-section__toggle";
+          header.appendChild(toggle);
+          section.appendChild(header);
+          const grid = document.createElement("div");
+          grid.className = "results-section__grid";
+          const resolvedGroupFields = [];
+          fields.forEach((key) => {
+            const resolvedKey = resolveFieldKey(key);
+            if (usedKeys.has(resolvedKey)) {
+              return;
+            }
+            resolvedGroupFields.push(resolvedKey);
+            grid.appendChild(createFieldElement(resolvedKey, key));
+          });
+          if (!grid.children.length) {
+            return;
+          }
+          section.appendChild(grid);
+          const groupFields = resolvedGroupFields.slice();
+          const normalizedGroupKeys = groupFields
+            .map((fieldKey) => normalizeHighlightKey(fieldKey))
+            .filter(Boolean);
+          const allHidden =
+            normalizedGroupKeys.length > 0 &&
+            normalizedGroupKeys.every((fieldKey) => {
+              if (!state.highlightVisibility) {
+                return false;
+              }
+              return state.highlightVisibility[fieldKey] === false;
+            });
+          let isActive = !allHidden;
+          updateGroupToggleButton(toggle, isActive, title);
+          toggle.addEventListener("click", () => {
+            isActive = !isActive;
+            setGroupHighlightVisibility(groupFields, isActive);
+            updateGroupToggleButton(toggle, isActive, title);
+            if (!isActive) {
+              setHighlightFocusKey(null);
+            }
+            refreshPreviewHighlights();
+          });
+          if (!preserveHighlightVisibility) {
+            setGroupHighlightVisibility(groupFields, true);
+            isActive = true;
+            updateGroupToggleButton(toggle, isActive, title);
+          }
+          resultsContainer.appendChild(section);
+        });
+
+        flatKeys
+          .filter((key) => !usedKeys.has(key))
           .sort((a, b) => a.localeCompare(b))
           .forEach((key) => {
-            const value = flat[key];
-            const field = document.createElement("div");
-            field.className = "result-field";
-            const label = document.createElement("label");
-            label.textContent = key || "(valor)";
-            const valueElement = document.createElement("div");
-            valueElement.className = "value";
-            if (value === null || value === undefined || value === "" || (Array.isArray(value) && value.length === 0)) {
-              valueElement.classList.add("missing");
-              valueElement.textContent = "Sin valor";
-            } else if (typeof value === "object") {
-              valueElement.textContent = JSON.stringify(value);
-            } else {
-              valueElement.textContent = String(value);
-            }
-            field.appendChild(label);
-            field.appendChild(valueElement);
-            resultsContainer.appendChild(field);
+            resultsContainer.appendChild(createFieldElement(key));
           });
 
         resultMeta.hidden = false;
@@ -3233,28 +4641,16 @@
         resultMeta.innerHTML = metaParts.join("");
 
         resultsNavigation.hidden = state.results.length <= 1;
-        resultPosition.textContent = `Documento ${index + 1} de ${state.results.length}`;
+        resultPosition.textContent = `Documento ${safeIndex + 1} de ${state.results.length}`;
         resultPosition.setAttribute("aria-live", "polite");
-        prevResultBtn.disabled = index === 0;
-        nextResultBtn.disabled = index === state.results.length - 1;
-        if (viewContentButton) {
-          const hasPreview =
-            typeof entry.previewText === "string" && entry.previewText.trim().length > 0;
-          viewContentButton.disabled = !hasPreview;
-          const description = getTextOriginDescription(entry.textOrigin || "");
-          if (hasPreview && description) {
-            viewContentButton.setAttribute(
-              "aria-label",
-              `Ver contenido. ${description}`
-            );
-            viewContentButton.setAttribute("title", description);
-          } else {
-            viewContentButton.setAttribute("aria-label", "Ver contenido");
-            viewContentButton.removeAttribute("title");
-          }
-        }
+        prevResultBtn.disabled = safeIndex === 0;
+        nextResultBtn.disabled = safeIndex === state.results.length - 1;
         downloadJson.disabled = false;
         downloadCsv.disabled = false;
+        if (isPreviewDocked) {
+          renderCurrentPreview(entry);
+        }
+        updateHighlightIndicators();
       }
 
       function addResultEntry(data, source, options = {}) {
@@ -3272,10 +4668,43 @@
           textOrigin:
             typeof options.textOrigin === "string" ? options.textOrigin : "",
           uploadedAt: options.uploadedAt || timestamp,
+          editedFields: Object.create(null),
+          file:
+            options.file && typeof options.file === "object" ? options.file : null,
+          category:
+            typeof options.category === "string" ? options.category : null,
         };
         state.results.push(entry);
         state.currentIndex = state.results.length - 1;
         renderResult(state.currentIndex);
+      }
+
+      if (previewModeButtons.length) {
+        previewModeButtons.forEach((button) => {
+          button.addEventListener("click", () => {
+            if (button.disabled) {
+              return;
+            }
+            const mode = button.dataset.mode;
+            if (!mode || state.previewMode === mode) {
+              return;
+            }
+            state.previewMode = mode;
+            const entry = state.results[state.currentIndex] || null;
+            updatePreviewModeControls(entry);
+            updateViewContentButton(entry);
+            if (isPreviewDocked) {
+              renderCurrentPreview(entry);
+            } else if (!previewModal.hidden) {
+              const resolved = resolveActivePreviewMode(entry);
+              if (resolved === "file" && entry) {
+                showFilePreview(entry.file, entry.category, { entry });
+              } else if (resolved === "text" && entry) {
+                showPlainTextPreview(entry.previewText, entry.textOrigin || "");
+              }
+            }
+          });
+        });
       }
 
       prevResultBtn.addEventListener("click", () => {
@@ -3364,11 +4793,7 @@
 
       if (viewContentButton) {
         viewContentButton.addEventListener("click", () => {
-          const entry = state.results[state.currentIndex];
-          if (!entry || !entry.previewText || !entry.previewText.trim()) {
-            return;
-          }
-          showPlainTextPreview(entry.previewText, entry.textOrigin || "");
+          openActivePreview();
         });
       }
 
@@ -3589,6 +5014,8 @@
                 uploadedAt: currentEntry.uploadedAt || Date.now(),
                 previewText: normalized.rawText,
                 textOrigin: normalized.textOrigin,
+                file: currentEntry.file,
+                category,
               });
               updateMultiProgress(index + 1, entries.length);
             }
