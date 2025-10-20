@@ -113,7 +113,10 @@ class ExtractionService:
             LOGGER.warning(
                 "No fue posible renderizar el PDF a imágenes, se enviará el PDF directo a Azure OCR."
             )
-            text = ocr_service.extract_text(data)
+            text = ocr_service.extract_text(
+                data,
+                content_type="application/pdf",
+            )
             if not text:
                 raise RuntimeError(
                     "No se pudo extraer texto del PDF mediante OCR."
@@ -139,12 +142,14 @@ class ExtractionService:
         ocr_service: Optional[AzureOCRService] = None,
     ) -> str:
         suffix = Path(filename).suffix.lower()
-        if suffix in PDF_EXTENSIONS:
+        normalized_content_type = (content_type or "").lower()
+        if suffix in PDF_EXTENSIONS or normalized_content_type == "application/pdf":
             if force_ocr:
                 return self._extract_text_from_pdf_with_ocr(data, ocr_service)
             text = self._pdf.read_text(data)
             if text:
                 return text
+            return self._extract_text_from_pdf_with_ocr(data, ocr_service)
         elif suffix in TEXT_EXTENSIONS:
             return data.decode("utf-8", errors="replace")
         elif suffix in XML_EXTENSIONS:
@@ -155,11 +160,13 @@ class ExtractionService:
             )
         if suffix in PDF_EXTENSIONS:
             return self._extract_text_from_pdf_with_ocr(data, ocr_service)
-        if content_type is None:
-            content_type = mimetypes.guess_type(filename)[0]
-        if content_type and content_type.lower() == "application/pdf":
-            content_type = None
-        return ocr_service.extract_text(data, content_type=content_type)
+        if not normalized_content_type:
+            guessed = mimetypes.guess_type(filename)[0]
+            normalized_content_type = guessed.lower() if guessed else None
+        return ocr_service.extract_text(
+            data,
+            content_type=normalized_content_type,
+        )
 
     def extract_from_text(
         self,
@@ -218,8 +225,8 @@ class ExtractionService:
             guessed = mimetypes.guess_type(filename)[0]
             content_type = guessed.lower() if guessed else None
         if suffix in PDF_EXTENSIONS or content_type == "application/pdf":
-            content_type = None
-        elif suffix and suffix not in IMAGE_EXTENSIONS and not (
+            return self._extract_text_from_pdf_with_ocr(data, ocr_service)
+        if suffix and suffix not in IMAGE_EXTENSIONS and not (
             (content_type or "").startswith("image/")
         ):
             raise RuntimeError("Formato de imagen no admitido")

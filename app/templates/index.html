@@ -1305,6 +1305,7 @@
               id="llmProviderRow"
               hidden
               aria-hidden="true"
+              data-developer-only
             >
               <label for="llmProviderSelect">
                 Proveedor LLM
@@ -1317,7 +1318,13 @@
                 <option value="local">Servicio local (GPT OSS 20B)</option>
               </select>
             </div>
-            <div class="llm-settings" id="llmSettings" hidden aria-hidden="true">
+            <div
+              class="llm-settings"
+              id="llmSettings"
+              hidden
+              aria-hidden="true"
+              data-developer-only
+            >
               <div
                 class="llm-settings__section"
                 data-llm-provider-settings="api"
@@ -1361,7 +1368,6 @@
                         <input
                           type="checkbox"
                           id="llmApiTemperatureEnabled"
-                          checked
                         />
                         <span>Activado</span>
                       </label>
@@ -1384,7 +1390,7 @@
                         </label>
                       </div>
                       <label class="llm-toggle" for="llmApiTopPEnabled">
-                        <input type="checkbox" id="llmApiTopPEnabled" checked />
+                        <input type="checkbox" id="llmApiTopPEnabled" />
                         <span>Activado</span>
                       </label>
                     </div>
@@ -1406,7 +1412,7 @@
                         </label>
                       </div>
                       <label class="llm-toggle" for="llmApiReasoningEnabled">
-                        <input type="checkbox" id="llmApiReasoningEnabled" checked />
+                        <input type="checkbox" id="llmApiReasoningEnabled" />
                         <span>Activado</span>
                       </label>
                     </div>
@@ -1431,7 +1437,6 @@
                         <input
                           type="checkbox"
                           id="llmApiFrequencyEnabled"
-                          checked
                         />
                         <span>Activado</span>
                       </label>
@@ -1457,7 +1462,6 @@
                         <input
                           type="checkbox"
                           id="llmApiPresenceEnabled"
-                          checked
                         />
                         <span>Activado</span>
                       </label>
@@ -1537,7 +1541,6 @@
                         <input
                           type="checkbox"
                           id="llmLocalTemperatureEnabled"
-                          checked
                         />
                         <span>Activado</span>
                       </label>
@@ -1562,7 +1565,7 @@
                         </label>
                       </div>
                       <label class="llm-toggle" for="llmLocalTopPEnabled">
-                        <input type="checkbox" id="llmLocalTopPEnabled" checked />
+                        <input type="checkbox" id="llmLocalTopPEnabled" />
                         <span>Activado</span>
                       </label>
                     </div>
@@ -1578,7 +1581,7 @@
                 </div>
               </div>
             </div>
-            <div class="ocr-settings" id="ocrSettings">
+            <div class="ocr-settings" id="ocrSettings" data-developer-only hidden aria-hidden="true">
               <div class="ocr-provider-row">
                 <label for="ocrProviderSelect">
                   Proveedor OCR
@@ -1893,29 +1896,29 @@
           api: {
             model: llmDefaults.api.model,
             temperature: 1,
-            temperature_enabled: true,
+            temperature_enabled: false,
             top_p: 1,
-            top_p_enabled: true,
+            top_p_enabled: false,
             reasoning_effort: "minimal",
-            reasoning_effort_enabled: true,
+            reasoning_effort_enabled: false,
             frequency_penalty: 0,
-            frequency_penalty_enabled: true,
+            frequency_penalty_enabled: false,
             presence_penalty: 0,
-            presence_penalty_enabled: true,
+            presence_penalty_enabled: false,
             api_key: "",
           },
           local: {
             model: llmDefaults.local.model,
             temperature: 1,
-            temperature_enabled: true,
+            temperature_enabled: false,
             top_p: 1,
-            top_p_enabled: true,
+            top_p_enabled: false,
             reasoning_effort: "minimal",
-            reasoning_effort_enabled: true,
+            reasoning_effort_enabled: false,
             frequency_penalty: 0,
-            frequency_penalty_enabled: true,
+            frequency_penalty_enabled: false,
             presence_penalty: 0,
-            presence_penalty_enabled: true,
+            presence_penalty_enabled: false,
           },
         },
         ocrProvider: "azure-vision",
@@ -2059,7 +2062,22 @@
       }
 
       function getActiveLlmSettings() {
-        return ensureLlmParameters(state.llmProvider);
+        const params = ensureLlmParameters(state.llmProvider);
+        if (state.settings.developerMode) {
+          return params;
+        }
+        const sanitized = {
+          ...params,
+          temperature_enabled: false,
+          top_p_enabled: false,
+          reasoning_effort_enabled: false,
+          frequency_penalty_enabled: false,
+          presence_penalty_enabled: false,
+        };
+        if (state.llmProvider === "api") {
+          sanitized.api_key = "";
+        }
+        return sanitized;
       }
 
       function getActiveOcrSettings() {
@@ -2067,6 +2085,9 @@
           return { provider: "", endpoint: "", key: "" };
         }
         const params = ensureOcrParameters(state.ocrProvider);
+        if (!state.settings.developerMode) {
+          return { provider: state.ocrProvider, endpoint: "", key: "" };
+        }
         return {
           provider: state.ocrProvider,
           endpoint: (params.endpoint || "").trim(),
@@ -2092,29 +2113,29 @@
               ? {
                   model: "",
                   temperature: 1,
-                  temperature_enabled: true,
+                  temperature_enabled: false,
                   top_p: 1,
-                  top_p_enabled: true,
+                  top_p_enabled: false,
                   reasoning_effort: "minimal",
-                  reasoning_effort_enabled: true,
+                  reasoning_effort_enabled: false,
                   frequency_penalty: 0,
-                  frequency_penalty_enabled: true,
+                  frequency_penalty_enabled: false,
                   presence_penalty: 0,
-                  presence_penalty_enabled: true,
+                  presence_penalty_enabled: false,
                   api_key: "",
                 }
               : {
                   model: "",
                   temperature: 1,
-                  temperature_enabled: true,
+                  temperature_enabled: false,
                   top_p: 1,
-                  top_p_enabled: true,
+                  top_p_enabled: false,
                   reasoning_effort: "minimal",
-                  reasoning_effort_enabled: true,
+                  reasoning_effort_enabled: false,
                   frequency_penalty: 0,
-                  frequency_penalty_enabled: true,
+                  frequency_penalty_enabled: false,
                   presence_penalty: 0,
-                  presence_penalty_enabled: true,
+                  presence_penalty_enabled: false,
                 };
         }
         const params = state.llmParameters[provider];
@@ -2122,31 +2143,31 @@
           params.temperature = 1;
         }
         if (typeof params.temperature_enabled !== "boolean") {
-          params.temperature_enabled = true;
+          params.temperature_enabled = false;
         }
         if (!Number.isFinite(params.top_p)) {
           params.top_p = 1;
         }
         if (typeof params.top_p_enabled !== "boolean") {
-          params.top_p_enabled = true;
+          params.top_p_enabled = false;
         }
         if (typeof params.reasoning_effort !== "string") {
           params.reasoning_effort = "minimal";
         }
         if (typeof params.reasoning_effort_enabled !== "boolean") {
-          params.reasoning_effort_enabled = true;
+          params.reasoning_effort_enabled = false;
         }
         if (!Number.isFinite(params.frequency_penalty)) {
           params.frequency_penalty = 0;
         }
         if (typeof params.frequency_penalty_enabled !== "boolean") {
-          params.frequency_penalty_enabled = true;
+          params.frequency_penalty_enabled = false;
         }
         if (!Number.isFinite(params.presence_penalty)) {
           params.presence_penalty = 0;
         }
         if (typeof params.presence_penalty_enabled !== "boolean") {
-          params.presence_penalty_enabled = true;
+          params.presence_penalty_enabled = false;
         }
         if (provider === "api" && typeof params.api_key !== "string") {
           params.api_key = "";
@@ -2218,7 +2239,7 @@
         setNumericFieldState(
           temperatureInput,
           temperatureToggle,
-          params.temperature_enabled !== false
+          params.temperature_enabled === true
         );
         const topPInput = llmTopPInputs[targetProvider];
         const topPToggle = llmTopPToggles[targetProvider];
@@ -2229,7 +2250,7 @@
         setNumericFieldState(
           topPInput,
           topPToggle,
-          params.top_p_enabled !== false
+          params.top_p_enabled === true
         );
         const reasoningInput = llmReasoningInputs[targetProvider];
         const reasoningToggle = llmReasoningToggles[targetProvider];
@@ -2240,7 +2261,7 @@
         setNumericFieldState(
           reasoningInput,
           reasoningToggle,
-          params.reasoning_effort_enabled !== false
+          params.reasoning_effort_enabled === true
         );
         const frequencyInput = llmFrequencyInputs[targetProvider];
         const frequencyToggle = llmFrequencyToggles[targetProvider];
@@ -2253,7 +2274,7 @@
         setNumericFieldState(
           frequencyInput,
           frequencyToggle,
-          params.frequency_penalty_enabled !== false
+          params.frequency_penalty_enabled === true
         );
         const presenceInput = llmPresenceInputs[targetProvider];
         const presenceToggle = llmPresenceToggles[targetProvider];
@@ -2266,7 +2287,7 @@
         setNumericFieldState(
           presenceInput,
           presenceToggle,
-          params.presence_penalty_enabled !== false
+          params.presence_penalty_enabled === true
         );
         if (targetProvider === "api" && llmApiKeyInput) {
           llmApiKeyInput.value = params.api_key ?? "";
@@ -2549,7 +2570,6 @@
             if (llmProviderSelect) {
               llmProviderSelect.value = "api";
             }
-            refreshLlmSettings(state.llmProvider);
           }
         }
         developerOnlyElements.forEach((element) => {
@@ -2560,9 +2580,18 @@
           element.setAttribute("aria-hidden", String(!enabled));
         });
         if (llmSettingsContainer) {
-          llmSettingsContainer.hidden = false;
-          llmSettingsContainer.setAttribute("aria-hidden", "false");
-          refreshLlmSettings(state.llmProvider);
+          llmSettingsContainer.hidden = !enabled;
+          llmSettingsContainer.setAttribute("aria-hidden", String(!enabled));
+          if (enabled) {
+            refreshLlmSettings(state.llmProvider);
+          }
+        }
+        if (ocrSettingsContainer) {
+          ocrSettingsContainer.hidden = !enabled;
+          ocrSettingsContainer.setAttribute("aria-hidden", String(!enabled));
+          if (enabled) {
+            refreshOcrSettings(state.ocrProvider);
+          }
         }
       }
 
@@ -3260,19 +3289,19 @@
           payload.llm_model = activeSettings.model;
         }
         if (
-          activeSettings.temperature_enabled !== false &&
+          activeSettings.temperature_enabled === true &&
           Number.isFinite(activeSettings.temperature)
         ) {
           payload.temperature = activeSettings.temperature;
         }
         if (
-          activeSettings.top_p_enabled !== false &&
+          activeSettings.top_p_enabled === true &&
           Number.isFinite(activeSettings.top_p)
         ) {
           payload.top_p = activeSettings.top_p;
         }
         if (
-          activeSettings.reasoning_effort_enabled !== false &&
+          activeSettings.reasoning_effort_enabled === true &&
           typeof activeSettings.reasoning_effort === "string"
         ) {
           const value = activeSettings.reasoning_effort.trim();
@@ -3281,13 +3310,13 @@
           }
         }
         if (
-          activeSettings.frequency_penalty_enabled !== false &&
+          activeSettings.frequency_penalty_enabled === true &&
           Number.isFinite(activeSettings.frequency_penalty)
         ) {
           payload.frequency_penalty = activeSettings.frequency_penalty;
         }
         if (
-          activeSettings.presence_penalty_enabled !== false &&
+          activeSettings.presence_penalty_enabled === true &&
           Number.isFinite(activeSettings.presence_penalty)
         ) {
           payload.presence_penalty = activeSettings.presence_penalty;
@@ -3328,7 +3357,7 @@
           url.searchParams.set("llm_model", activeSettings.model);
         }
         if (
-          activeSettings.temperature_enabled !== false &&
+          activeSettings.temperature_enabled === true &&
           Number.isFinite(activeSettings.temperature)
         ) {
           url.searchParams.set(
@@ -3337,13 +3366,13 @@
           );
         }
         if (
-          activeSettings.top_p_enabled !== false &&
+          activeSettings.top_p_enabled === true &&
           Number.isFinite(activeSettings.top_p)
         ) {
           url.searchParams.set("top_p", String(activeSettings.top_p));
         }
         if (
-          activeSettings.reasoning_effort_enabled !== false &&
+          activeSettings.reasoning_effort_enabled === true &&
           typeof activeSettings.reasoning_effort === "string"
         ) {
           const value = activeSettings.reasoning_effort.trim();
@@ -3352,7 +3381,7 @@
           }
         }
         if (
-          activeSettings.frequency_penalty_enabled !== false &&
+          activeSettings.frequency_penalty_enabled === true &&
           Number.isFinite(activeSettings.frequency_penalty)
         ) {
           url.searchParams.set(
@@ -3361,7 +3390,7 @@
           );
         }
         if (
-          activeSettings.presence_penalty_enabled !== false &&
+          activeSettings.presence_penalty_enabled === true &&
           Number.isFinite(activeSettings.presence_penalty)
         ) {
           url.searchParams.set(
