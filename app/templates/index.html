@@ -1273,13 +1273,88 @@
         background: var(--surface-subtle);
         display: flex;
         flex-direction: column;
-        gap: 0.45rem;
+        gap: 0.65rem;
       }
 
-      .result-field label {
+      .result-field__header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .result-field__label {
         font-weight: 600;
         font-size: 0.92rem;
         color: var(--text);
+        flex: 1;
+        min-width: 0;
+      }
+
+      .result-field__actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        flex-shrink: 0;
+      }
+
+      .result-field__icon-button {
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--muted);
+        border-radius: 0.75rem;
+        width: 1.75rem;
+        height: 1.75rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        transition: color 0.2s ease, background-color 0.2s ease,
+          border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .result-field__icon-button svg {
+        width: 1em;
+        height: 1em;
+        display: block;
+      }
+
+      .result-field__action--edit:hover,
+      .result-field__action--edit:focus-visible {
+        color: var(--accent);
+        background: var(--accent-soft);
+        border-color: rgba(37, 99, 235, 0.25);
+        outline: none;
+      }
+
+      .result-field__action--edit:focus-visible {
+        box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+
+      .result-field__indicator {
+        background: var(--accent-soft);
+        color: var(--accent);
+        border: 1px solid rgba(37, 99, 235, 0.35);
+        border-radius: 999px;
+        cursor: pointer;
+      }
+
+      .result-field__indicator.is-muted {
+        background: transparent;
+        border-color: var(--border);
+        color: var(--muted);
+        opacity: 0.7;
+      }
+
+      .result-field__indicator.is-focused {
+        background: var(--accent);
+        color: #ffffff;
+        border-color: var(--accent-dark);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+
+      .result-field__indicator:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--accent-soft);
       }
 
       .result-field .value {
@@ -2035,6 +2110,8 @@
         currentIndex: -1,
         currentHighlights: [],
         highlightVisibility: {},
+        highlightFocusKey: null,
+        highlightIndex: Object.create(null),
         llmProvider: "api",
         llmParameters: {
           api: {
@@ -2103,6 +2180,23 @@
       const multiMode = document.getElementById("multiMode");
       const textModeButton = document.getElementById("textModeButton");
       const multiModeButton = document.getElementById("multiModeButton");
+
+      const ICON_EDIT = `
+        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path
+            d="M17.707 5.293 14.707 2.293a1 1 0 0 0-1.414 0L4 11.586V15h3.414l9.293-9.293a1 1 0 0 0 0-1.414z"
+          />
+          <path d="M3 17a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2H3z" />
+        </svg>
+      `;
+
+      const ICON_CHECK = `
+        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path
+            d="M16.704 5.29a1 1 0 0 1 0 1.414l-7.071 7.071a1 1 0 0 1-1.414 0L3.296 8.852a1 1 0 1 1 1.414-1.414l3.223 3.223 6.364-6.364a1 1 0 0 1 1.414 0z"
+          />
+        </svg>
+      `;
       const multiDropZone = document.getElementById("multiDropZone");
       const multiBrowseButton = document.getElementById("multiBrowseButton");
       const multiFileInput = document.getElementById("multiFileInput");
@@ -3403,6 +3497,12 @@
         if (!Array.isArray(state.currentHighlights) || !state.currentHighlights.length) {
           return [];
         }
+        const focusKey = state.highlightFocusKey;
+        if (focusKey) {
+          return state.currentHighlights.filter(
+            ({ field }) => normalizeHighlightKey(field) === focusKey
+          );
+        }
         const visibility = state.highlightVisibility || {};
         const hasRules = Object.keys(visibility).length > 0;
         if (!hasRules) {
@@ -3441,12 +3541,159 @@
         });
       }
 
+      function setHighlightFocusKey(field) {
+        const normalized = field ? normalizeHighlightKey(field) : "";
+        const key = normalized || null;
+        if (key && (!state.highlightIndex || !state.highlightIndex[key])) {
+          return false;
+        }
+        if (state.highlightFocusKey === key) {
+          return false;
+        }
+        state.highlightFocusKey = key;
+        return true;
+      }
+
+      function updateHighlightIndicators() {
+        if (!resultsContainer) {
+          return;
+        }
+        const indicators = resultsContainer.querySelectorAll(".result-field__indicator");
+        indicators.forEach((indicator) => {
+          const key = indicator.dataset.highlightKey || "";
+          if (!key) {
+            indicator.hidden = true;
+            indicator.setAttribute("aria-hidden", "true");
+            indicator.classList.remove("is-muted", "is-focused");
+            return;
+          }
+          const entries =
+            state.highlightIndex && state.highlightIndex[key]
+              ? state.highlightIndex[key]
+              : null;
+          const hasHighlight = Array.isArray(entries) && entries.length > 0;
+          indicator.hidden = !hasHighlight;
+          indicator.setAttribute("aria-hidden", hasHighlight ? "false" : "true");
+          if (!hasHighlight) {
+            indicator.classList.remove("is-muted", "is-focused");
+            return;
+          }
+          const suppressed =
+            !state.highlightFocusKey &&
+            state.highlightVisibility &&
+            state.highlightVisibility[key] === false;
+          indicator.classList.toggle("is-muted", suppressed);
+          indicator.classList.toggle("is-focused", state.highlightFocusKey === key);
+          const labelText = suppressed
+            ? "Coincidencia oculta en vista previa"
+            : "Coincidencia en vista previa";
+          indicator.setAttribute("aria-label", labelText);
+          indicator.title = labelText;
+        });
+      }
+
+      function setValueForFlatKey(entry, key, value) {
+        if (!entry || typeof entry !== "object") {
+          return;
+        }
+        if (!entry.data || typeof entry.data !== "object") {
+          entry.data = {};
+        }
+        const rawPath = typeof key === "string" ? key : String(key || "");
+        const segments = rawPath.split(".").filter(Boolean);
+        if (!segments.length) {
+          return;
+        }
+        let current = entry.data;
+        for (let index = 0; index < segments.length; index += 1) {
+          const segment = segments[index];
+          const isIndex = /^\d+$/.test(segment);
+          const isLast = index === segments.length - 1;
+          if (isLast) {
+            if (isIndex) {
+              const targetIndex = Number(segment);
+              if (Array.isArray(current)) {
+                current[targetIndex] = value;
+              } else if (current && typeof current === "object") {
+                current[segment] = value;
+              }
+            } else {
+              current[segment] = value;
+            }
+            return;
+          }
+          const nextSegment = segments[index + 1];
+          const nextIsIndex = /^\d+$/.test(nextSegment);
+          if (isIndex) {
+            const targetIndex = Number(segment);
+            if (!Array.isArray(current)) {
+              if (current && typeof current === "object") {
+                if (!Object.prototype.hasOwnProperty.call(current, segment)) {
+                  current[segment] = nextIsIndex ? [] : {};
+                }
+                current = current[segment];
+              } else {
+                return;
+              }
+            } else {
+              if (
+                !Object.prototype.hasOwnProperty.call(current, targetIndex) ||
+                current[targetIndex] === null ||
+                typeof current[targetIndex] !== "object"
+              ) {
+                current[targetIndex] = nextIsIndex ? [] : {};
+              }
+              current = current[targetIndex];
+            }
+          } else {
+            if (
+              !Object.prototype.hasOwnProperty.call(current, segment) ||
+              current[segment] === null ||
+              typeof current[segment] !== "object"
+            ) {
+              current[segment] = nextIsIndex ? [] : {};
+            }
+            current = current[segment];
+          }
+        }
+      }
+
+      function handleEditField(entry, key, label, currentValue) {
+        if (!entry || !key) {
+          return;
+        }
+        const fieldLabel = label || key || "Campo";
+        let defaultValue = "";
+        if (typeof currentValue === "string") {
+          defaultValue = currentValue;
+        } else if (
+          typeof currentValue === "number" ||
+          typeof currentValue === "boolean"
+        ) {
+          defaultValue = String(currentValue);
+        } else if (currentValue && typeof currentValue === "object") {
+          try {
+            defaultValue = JSON.stringify(currentValue);
+          } catch (error) {
+            defaultValue = String(currentValue);
+          }
+        }
+        const nextValue = window.prompt(`Editar valor de ${fieldLabel}`, defaultValue);
+        if (nextValue === null) {
+          return;
+        }
+        setValueForFlatKey(entry, key, nextValue);
+        delete entry.previewHighlights;
+        renderResult(state.currentIndex, { preserveHighlightVisibility: true });
+      }
+
       function updateGroupToggleButton(button, active, title) {
         if (!button) {
           return;
         }
         button.classList.toggle("is-active", active);
         button.setAttribute("aria-pressed", active ? "true" : "false");
+        button.textContent = active ? "Ocultar" : "Ver";
         const action = active ? "Ocultar" : "Ver";
         const target = title ? ` resaltados de ${title}` : " resaltados";
         button.setAttribute("aria-label", `${action}${target}`.trim());
@@ -3455,10 +3702,12 @@
 
       function refreshPreviewHighlights() {
         if (!state.results.length) {
+          updateHighlightIndicators();
           return;
         }
         const entry = state.results[state.currentIndex];
         if (!entry) {
+          updateHighlightIndicators();
           return;
         }
         const previewText = typeof entry.previewText === "string" ? entry.previewText : "";
@@ -3469,11 +3718,13 @@
           } else {
             setDockedPreviewMessage("No hay contenido disponible.");
           }
+          updateHighlightIndicators();
           return;
         }
         if (!previewModal.hidden) {
           showPlainTextPreview(previewText, origin);
         }
+        updateHighlightIndicators();
       }
 
       function applyPreviewHighlights(target, text, highlights) {
@@ -3613,12 +3864,22 @@
         }
       }
 
-      function renderResult(index) {
+      function renderResult(index, options = {}) {
         if (isPreviewDocked) {
           resetDockedPreview();
         }
+        const preserveHighlightVisibility = Boolean(
+          options && options.preserveHighlightVisibility
+        );
+        const visibilitySnapshot =
+          preserveHighlightVisibility && state.highlightVisibility
+            ? Object.assign(Object.create(null), state.highlightVisibility)
+            : null;
+        state.highlightFocusKey = null;
+        state.highlightIndex = Object.create(null);
         if (state.results.length === 0) {
           state.currentHighlights = [];
+          state.highlightVisibility = visibilitySnapshot || {};
           resultsContainer.classList.add("empty");
           resultsContainer.innerHTML =
             "Aún no hay resultados. Procesa un documento para comenzar.";
@@ -3632,10 +3893,22 @@
           }
           downloadJson.disabled = true;
           downloadCsv.disabled = true;
+          updateHighlightIndicators();
           return;
         }
 
-        const entry = state.results[index];
+        const safeIndex = Math.min(
+          Math.max(typeof index === "number" ? index : 0, 0),
+          state.results.length - 1
+        );
+        state.currentIndex = safeIndex;
+        const entry = state.results[safeIndex];
+        if (!entry) {
+          state.currentHighlights = [];
+          state.highlightVisibility = visibilitySnapshot || {};
+          updateHighlightIndicators();
+          return;
+        }
         const uploadedAt = entry.uploadedAt || entry.timestamp;
         resultsContainer.classList.remove("empty");
         resultsContainer.innerHTML = "";
@@ -3646,7 +3919,18 @@
         const flat = flattenData(entry.data);
         const highlights = getEntryHighlights(entry, flat);
         state.currentHighlights = Array.isArray(highlights) ? highlights : [];
-        state.highlightVisibility = {};
+        state.highlightIndex = state.currentHighlights.reduce((acc, highlight) => {
+          const key = normalizeHighlightKey(highlight.field);
+          if (!key) {
+            return acc;
+          }
+          if (!acc[key]) {
+            acc[key] = [];
+          }
+          acc[key].push(highlight);
+          return acc;
+        }, Object.create(null));
+        state.highlightVisibility = visibilitySnapshot || {};
         const flatKeys = Object.keys(flat);
         const usedKeys = new Set();
 
@@ -3669,8 +3953,59 @@
         const createFieldElement = (key, labelOverride) => {
           const field = document.createElement("div");
           field.className = "result-field";
-          const label = document.createElement("label");
-          label.textContent = labelOverride || key || "(valor)";
+          field.dataset.fieldKey = key;
+          const header = document.createElement("div");
+          header.className = "result-field__header";
+          const labelText = labelOverride || key || "(valor)";
+          const label = document.createElement("span");
+          label.className = "result-field__label";
+          label.textContent = labelText;
+          const actions = document.createElement("div");
+          actions.className = "result-field__actions";
+          const editButton = document.createElement("button");
+          editButton.type = "button";
+          editButton.className = "result-field__icon-button result-field__action--edit";
+          editButton.innerHTML = ICON_EDIT;
+          editButton.setAttribute("aria-label", `Editar ${labelText}`);
+          editButton.title = `Editar ${labelText}`;
+          editButton.addEventListener("click", () => {
+            const currentValue = Object.prototype.hasOwnProperty.call(flat, key)
+              ? flat[key]
+              : undefined;
+            handleEditField(entry, key, labelText, currentValue);
+          });
+          actions.appendChild(editButton);
+          const highlightKey = normalizeHighlightKey(key);
+          const highlightEntries =
+            highlightKey && state.highlightIndex ? state.highlightIndex[highlightKey] : null;
+          if (highlightEntries && highlightEntries.length) {
+            const indicator = document.createElement("button");
+            indicator.type = "button";
+            indicator.className = "result-field__icon-button result-field__indicator";
+            indicator.innerHTML = ICON_CHECK;
+            indicator.dataset.highlightKey = highlightKey;
+            indicator.setAttribute("aria-label", "Coincidencia en vista previa");
+            indicator.title = "Coincidencia en vista previa";
+            const activate = () => {
+              if (setHighlightFocusKey(highlightKey)) {
+                refreshPreviewHighlights();
+              }
+            };
+            const clear = () => {
+              if (setHighlightFocusKey(null)) {
+                refreshPreviewHighlights();
+              }
+            };
+            indicator.addEventListener("pointerenter", activate);
+            indicator.addEventListener("pointerleave", clear);
+            indicator.addEventListener("mouseenter", activate);
+            indicator.addEventListener("mouseleave", clear);
+            indicator.addEventListener("focus", activate);
+            indicator.addEventListener("blur", clear);
+            actions.appendChild(indicator);
+          }
+          header.appendChild(label);
+          header.appendChild(actions);
           const valueElement = document.createElement("div");
           valueElement.className = "value";
           const hasValue = Object.prototype.hasOwnProperty.call(flat, key);
@@ -3689,7 +4024,7 @@
           } else {
             valueElement.textContent = String(value);
           }
-          field.appendChild(label);
+          field.appendChild(header);
           field.appendChild(valueElement);
           usedKeys.add(key);
           return field;
@@ -3751,8 +4086,6 @@
           const toggle = document.createElement("button");
           toggle.type = "button";
           toggle.className = "results-section__toggle";
-          toggle.textContent = "Ver";
-          updateGroupToggleButton(toggle, true, title);
           header.appendChild(toggle);
           section.appendChild(header);
           const grid = document.createElement("div");
@@ -3771,14 +4104,33 @@
           }
           section.appendChild(grid);
           const groupFields = resolvedGroupFields.slice();
-          let isActive = true;
+          const normalizedGroupKeys = groupFields
+            .map((fieldKey) => normalizeHighlightKey(fieldKey))
+            .filter(Boolean);
+          const allHidden =
+            normalizedGroupKeys.length > 0 &&
+            normalizedGroupKeys.every((fieldKey) => {
+              if (!state.highlightVisibility) {
+                return false;
+              }
+              return state.highlightVisibility[fieldKey] === false;
+            });
+          let isActive = !allHidden;
+          updateGroupToggleButton(toggle, isActive, title);
           toggle.addEventListener("click", () => {
             isActive = !isActive;
             setGroupHighlightVisibility(groupFields, isActive);
             updateGroupToggleButton(toggle, isActive, title);
+            if (!isActive) {
+              setHighlightFocusKey(null);
+            }
             refreshPreviewHighlights();
           });
-          setGroupHighlightVisibility(groupFields, true);
+          if (!preserveHighlightVisibility) {
+            setGroupHighlightVisibility(groupFields, true);
+            isActive = true;
+            updateGroupToggleButton(toggle, isActive, title);
+          }
           resultsContainer.appendChild(section);
         });
 
@@ -3798,10 +4150,10 @@
         resultMeta.innerHTML = metaParts.join("");
 
         resultsNavigation.hidden = state.results.length <= 1;
-        resultPosition.textContent = `Documento ${index + 1} de ${state.results.length}`;
+        resultPosition.textContent = `Documento ${safeIndex + 1} de ${state.results.length}`;
         resultPosition.setAttribute("aria-live", "polite");
-        prevResultBtn.disabled = index === 0;
-        nextResultBtn.disabled = index === state.results.length - 1;
+        prevResultBtn.disabled = safeIndex === 0;
+        nextResultBtn.disabled = safeIndex === state.results.length - 1;
         if (viewContentButton) {
           const hasPreview =
             typeof entry.previewText === "string" && entry.previewText.trim().length > 0;
@@ -3829,6 +4181,7 @@
             setDockedPreviewMessage("No hay contenido disponible.");
           }
         }
+        updateHighlightIndicators();
       }
 
       function addResultEntry(data, source, options = {}) {
