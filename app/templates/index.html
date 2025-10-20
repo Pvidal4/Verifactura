@@ -227,6 +227,53 @@
         gap: 0.5rem;
       }
 
+      .panel-header__actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .preview-mode-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 0.25rem;
+      }
+
+      .preview-mode-toggle[aria-disabled="true"] {
+        opacity: 0.6;
+      }
+
+      .preview-mode-button {
+        border: none;
+        background: transparent;
+        color: var(--muted);
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 0.35rem 0.85rem;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: background-color 0.2s ease, color 0.2s ease;
+      }
+
+      .preview-mode-button.is-active {
+        background: var(--accent-soft);
+        color: var(--accent-dark);
+      }
+
+      .preview-mode-button:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+
+      .preview-mode-button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
       .panel-body {
         display: flex;
         flex-direction: column;
@@ -1405,7 +1452,7 @@
               hidden
               aria-hidden="true"
             >
-              Mostrar carga de facturas
+              Cargar más facturas
             </button>
           </div>
           <div class="header-extra">
@@ -1908,6 +1955,32 @@
               <h2 id="previewHeading">Vista previa</h2>
               <p class="helper-text">Consulta el contenido original del documento seleccionado.</p>
             </div>
+            <div class="panel-header__actions">
+              <div
+                class="preview-mode-toggle"
+                id="previewModeToggle"
+                role="group"
+                aria-label="Modo de vista previa"
+              >
+                <button
+                  type="button"
+                  class="preview-mode-button is-active"
+                  data-mode="text"
+                  aria-pressed="true"
+                >
+                  Texto
+                </button>
+                <button
+                  type="button"
+                  class="preview-mode-button"
+                  data-mode="file"
+                  aria-pressed="false"
+                  disabled
+                >
+                  Archivo
+                </button>
+              </div>
+            </div>
           </div>
           <div class="panel-body panel-body--preview">
             <p class="preview-hint" id="dockedPreviewHint" hidden></p>
@@ -2060,6 +2133,8 @@
       const state = {
         mode: "multi",
         modalPreviewUrl: null,
+        dockedPreviewUrl: null,
+        previewMode: "text",
         multiFiles: [],
         multiCategory: null,
         multiUseOcr: false,
@@ -2119,6 +2194,16 @@
       const previewPanel = document.getElementById("previewPanel");
       const dockedPreviewContent = document.getElementById("dockedPreviewContent");
       const dockedPreviewHint = document.getElementById("dockedPreviewHint");
+      const previewModeToggle = document.getElementById("previewModeToggle");
+      const previewModeButtons = previewModeToggle
+        ? Array.from(previewModeToggle.querySelectorAll(".preview-mode-button"))
+        : [];
+      const previewModeTextButton = previewModeToggle
+        ? previewModeToggle.querySelector('[data-mode="text"]')
+        : null;
+      const previewModeFileButton = previewModeToggle
+        ? previewModeToggle.querySelector('[data-mode="file"]')
+        : null;
       const submitButton = document.getElementById("submitButton");
       const clearButton = document.getElementById("clearButton");
       const statusMessage = document.getElementById("statusMessage");
@@ -2230,6 +2315,7 @@
       let lastFocusedElement = null;
       let lastSettingsTrigger = null;
       let isPreviewDocked = false;
+      let dockedFileReadToken = 0;
 
       function setMultiPdfToggleVisibility(visible) {
         multiPdfToggleRow.hidden = !visible;
@@ -2816,10 +2902,18 @@
         showInputPanelButton.setAttribute("aria-hidden", String(!visible));
       }
 
+      function clearDockedPreviewUrl() {
+        if (state.dockedPreviewUrl) {
+          URL.revokeObjectURL(state.dockedPreviewUrl);
+          state.dockedPreviewUrl = null;
+        }
+      }
+
       function setDockedPreviewMessage(message) {
         if (!dockedPreviewContent) {
           return;
         }
+        clearDockedPreviewUrl();
         const placeholder = document.createElement("p");
         placeholder.className = "preview-placeholder";
         placeholder.textContent = message;
@@ -2832,6 +2926,15 @@
 
       function resetDockedPreview() {
         setDockedPreviewMessage("Selecciona “Ver contenido” para mostrarlo aquí.");
+      }
+
+      function isFilePreviewAvailable(entry) {
+        if (!entry) {
+          return false;
+        }
+        const hasFile = entry.file && typeof entry.file === "object";
+        const hasCategory = typeof entry.category === "string" && entry.category.trim() !== "";
+        return Boolean(hasFile && hasCategory);
       }
 
       function setPreviewDocked(enabled) {
@@ -2852,11 +2955,11 @@
             const entry = state.results[safeIndex];
             if (entry) {
               state.currentHighlights = getEntryHighlights(entry);
-              if (typeof entry.previewText === "string" && entry.previewText.trim()) {
-                showPlainTextPreview(entry.previewText, entry.textOrigin || "");
-              } else {
-                setDockedPreviewMessage("No hay contenido disponible.");
-              }
+              updatePreviewModeControls(entry);
+              updateViewContentButton(entry);
+              renderCurrentPreview(entry);
+            } else {
+              setDockedPreviewMessage("No hay contenido disponible.");
             }
           }
         } else {
@@ -3668,9 +3771,16 @@
         }
         const previewText = typeof entry.previewText === "string" ? entry.previewText : "";
         const origin = entry.textOrigin || "";
+        const mode = resolveActivePreviewMode(entry);
         if (isPreviewDocked) {
-          if (previewText && previewText.trim()) {
-            showPlainTextPreview(previewText, origin);
+          if (mode === "text") {
+            if (previewText && previewText.trim()) {
+              showPlainTextPreview(previewText, origin);
+            } else {
+              setDockedPreviewMessage("No hay contenido disponible.");
+            }
+          } else if (mode === "file") {
+            renderCurrentPreview(entry);
           } else {
             setDockedPreviewMessage("No hay contenido disponible.");
           }
@@ -3678,7 +3788,11 @@
           return;
         }
         if (!previewModal.hidden) {
-          showPlainTextPreview(previewText, origin);
+          if (mode === "file") {
+            showFilePreview(entry.file, entry.category, { entry });
+          } else if (mode === "text") {
+            showPlainTextPreview(previewText, origin);
+          }
         }
         updateHighlightIndicators();
       }
@@ -3776,11 +3890,239 @@
         }
       }
 
+      function resolveActivePreviewMode(entry) {
+        if (!entry) {
+          return null;
+        }
+        const hasFile = isFilePreviewAvailable(entry);
+        const hasText =
+          typeof entry.previewText === "string" && entry.previewText.trim().length > 0;
+        if (state.previewMode === "file") {
+          if (hasFile) {
+            return "file";
+          }
+          return hasText ? "text" : null;
+        }
+        if (state.previewMode === "text") {
+          if (hasText) {
+            return "text";
+          }
+          return hasFile ? "file" : null;
+        }
+        if (hasText) {
+          return "text";
+        }
+        if (hasFile) {
+          return "file";
+        }
+        return null;
+      }
+
+      function updatePreviewModeControls(entry) {
+        if (!previewModeToggle) {
+          return;
+        }
+        const hasEntry = Boolean(entry);
+        const hasFile = isFilePreviewAvailable(entry);
+        const hasText =
+          hasEntry &&
+          typeof entry.previewText === "string" &&
+          entry.previewText.trim().length > 0;
+        if (!hasEntry) {
+          state.previewMode = "text";
+        } else if (state.previewMode === "file" && !hasFile) {
+          state.previewMode = "text";
+        } else if (state.previewMode !== "file" && !hasText && hasFile) {
+          state.previewMode = "file";
+        }
+        if (previewModeTextButton) {
+          previewModeTextButton.disabled = !hasEntry || !hasText;
+        }
+        if (previewModeFileButton) {
+          previewModeFileButton.disabled = !hasFile;
+        }
+        if (previewModeButtons.length) {
+          previewModeButtons.forEach((button) => {
+            const mode = button.dataset.mode || "";
+            const isActive = state.previewMode === mode;
+            button.classList.toggle("is-active", isActive);
+            button.setAttribute("aria-pressed", isActive ? "true" : "false");
+          });
+        }
+        previewModeToggle.setAttribute("aria-disabled", hasEntry ? "false" : "true");
+      }
+
+      function renderDockedFilePreview(file, category, entry) {
+        if (!dockedPreviewContent || !file) {
+          setDockedPreviewMessage("No hay vista previa disponible.");
+          return;
+        }
+        const label =
+          (entry && typeof entry.source === "string" && entry.source.trim()) ||
+          (typeof file.name === "string" && file.name.trim()) ||
+          "";
+        if (dockedPreviewHint) {
+          if (label) {
+            dockedPreviewHint.hidden = false;
+            dockedPreviewHint.textContent = `Vista del archivo original (${label}).`;
+          } else {
+            dockedPreviewHint.hidden = false;
+            dockedPreviewHint.textContent = "Vista del archivo original.";
+          }
+        }
+        clearDockedPreviewUrl();
+        const normalizedCategory = String(category || "").toLowerCase();
+        if (normalizedCategory === "image") {
+          const url = URL.createObjectURL(file);
+          state.dockedPreviewUrl = url;
+          const img = document.createElement("img");
+          img.src = url;
+          img.alt = "Vista previa del archivo original";
+          dockedPreviewContent.replaceChildren(img);
+          return;
+        }
+        if (normalizedCategory === "pdf") {
+          const url = URL.createObjectURL(file);
+          state.dockedPreviewUrl = url;
+          const iframe = document.createElement("iframe");
+          iframe.src = url;
+          iframe.title = "Vista previa del archivo original";
+          dockedPreviewContent.replaceChildren(iframe);
+          return;
+        }
+        const placeholder = document.createElement("p");
+        placeholder.className = "preview-placeholder";
+        placeholder.textContent = "Cargando vista previa del archivo...";
+        dockedPreviewContent.replaceChildren(placeholder);
+        const reader = new FileReader();
+        const token = ++dockedFileReadToken;
+        reader.onload = () => {
+          if (token !== dockedFileReadToken) {
+            return;
+          }
+          const pre = document.createElement("pre");
+          pre.textContent = String(reader.result || "").slice(0, 20000);
+          dockedPreviewContent.replaceChildren(pre);
+        };
+        reader.onerror = () => {
+          if (token !== dockedFileReadToken) {
+            return;
+          }
+          setDockedPreviewMessage("No se pudo cargar la vista del archivo.");
+        };
+        reader.readAsText(file, "utf-8");
+      }
+
+      function showFilePreview(file, category, options = {}) {
+        if (!file || !category) {
+          if (isPreviewDocked) {
+            setDockedPreviewMessage("No hay vista previa disponible.");
+          } else {
+            previewModalContent.innerHTML = "";
+            const message = document.createElement("p");
+            message.style.padding = "1.25rem";
+            message.textContent = "No hay vista previa disponible.";
+            previewModalContent.appendChild(message);
+            if (previewModal.hidden) {
+              openPreviewModal();
+            }
+          }
+          return;
+        }
+        if (isPreviewDocked) {
+          renderDockedFilePreview(file, category, options.entry || null);
+          return;
+        }
+        renderModalPreview(file, category);
+        if (previewModal.hidden) {
+          openPreviewModal();
+        }
+      }
+
+      function renderCurrentPreview(entry) {
+        if (!isPreviewDocked) {
+          return;
+        }
+        const targetEntry = entry || state.results[state.currentIndex];
+        if (!targetEntry) {
+          resetDockedPreview();
+          return;
+        }
+        const mode = resolveActivePreviewMode(targetEntry);
+        if (mode === "file") {
+          showFilePreview(targetEntry.file, targetEntry.category, { entry: targetEntry });
+          return;
+        }
+        if (mode === "text") {
+          showPlainTextPreview(targetEntry.previewText, targetEntry.textOrigin || "");
+          return;
+        }
+        setDockedPreviewMessage("No hay contenido disponible.");
+      }
+
+      function updateViewContentButton(entry) {
+        if (!viewContentButton) {
+          return;
+        }
+        if (!entry) {
+          viewContentButton.disabled = true;
+          viewContentButton.setAttribute("aria-label", "Ver contenido");
+          viewContentButton.removeAttribute("title");
+          return;
+        }
+        const mode = resolveActivePreviewMode(entry);
+        viewContentButton.disabled = !mode;
+        if (!mode) {
+          viewContentButton.setAttribute("aria-label", "Ver contenido");
+          viewContentButton.removeAttribute("title");
+          return;
+        }
+        if (mode === "file") {
+          viewContentButton.setAttribute("aria-label", "Ver archivo original");
+          const fileLabel =
+            (entry.file && typeof entry.file.name === "string" && entry.file.name) ||
+            (typeof entry.source === "string" && entry.source) ||
+            "";
+          if (fileLabel) {
+            viewContentButton.setAttribute("title", fileLabel);
+          } else {
+            viewContentButton.removeAttribute("title");
+          }
+          return;
+        }
+        const description = getTextOriginDescription(entry.textOrigin || "");
+        if (description) {
+          viewContentButton.setAttribute(
+            "aria-label",
+            `Ver contenido. ${description}`
+          );
+          viewContentButton.setAttribute("title", description);
+        } else {
+          viewContentButton.setAttribute("aria-label", "Ver contenido");
+          viewContentButton.removeAttribute("title");
+        }
+      }
+
+      function openActivePreview() {
+        const entry = state.results[state.currentIndex];
+        const mode = resolveActivePreviewMode(entry);
+        if (!entry || !mode) {
+          return;
+        }
+        state.currentHighlights = getEntryHighlights(entry);
+        if (mode === "file") {
+          showFilePreview(entry.file, entry.category, { entry });
+        } else {
+          showPlainTextPreview(entry.previewText, entry.textOrigin || "");
+        }
+      }
+
       function showPlainTextPreview(text, origin) {
         if (state.modalPreviewUrl) {
           URL.revokeObjectURL(state.modalPreviewUrl);
           state.modalPreviewUrl = null;
         }
+        clearDockedPreviewUrl();
         const normalized = typeof text === "string" ? text : "";
         const hint = getTextOriginDescription(origin);
         if (isPreviewDocked && dockedPreviewContent) {
@@ -3849,11 +4191,8 @@
           resultsSummary.textContent = "Procesa un documento para ver los campos extraídos.";
           resultsNavigation.hidden = true;
           resultMeta.hidden = true;
-          if (viewContentButton) {
-            viewContentButton.disabled = true;
-            viewContentButton.removeAttribute("title");
-            viewContentButton.setAttribute("aria-label", "Ver contenido");
-          }
+          updatePreviewModeControls(null);
+          updateViewContentButton(null);
           downloadJson.disabled = true;
           downloadCsv.disabled = true;
           updateHighlightIndicators();
@@ -3869,9 +4208,13 @@
         if (!entry) {
           state.currentHighlights = [];
           state.highlightVisibility = visibilitySnapshot || {};
+          updatePreviewModeControls(null);
+          updateViewContentButton(null);
           updateHighlightIndicators();
           return;
         }
+        updatePreviewModeControls(entry);
+        updateViewContentButton(entry);
         const uploadedAt = entry.uploadedAt || entry.timestamp;
         resultsContainer.classList.remove("empty");
         resultsContainer.innerHTML = "";
@@ -4134,32 +4477,10 @@
         resultPosition.setAttribute("aria-live", "polite");
         prevResultBtn.disabled = safeIndex === 0;
         nextResultBtn.disabled = safeIndex === state.results.length - 1;
-        if (viewContentButton) {
-          const hasPreview =
-            typeof entry.previewText === "string" && entry.previewText.trim().length > 0;
-          viewContentButton.disabled = !hasPreview;
-          const description = getTextOriginDescription(entry.textOrigin || "");
-          if (hasPreview && description) {
-            viewContentButton.setAttribute(
-              "aria-label",
-              `Ver contenido. ${description}`
-            );
-            viewContentButton.setAttribute("title", description);
-          } else {
-            viewContentButton.setAttribute("aria-label", "Ver contenido");
-            viewContentButton.removeAttribute("title");
-          }
-        }
         downloadJson.disabled = false;
         downloadCsv.disabled = false;
         if (isPreviewDocked) {
-          const hasPreview =
-            typeof entry.previewText === "string" && entry.previewText.trim().length > 0;
-          if (hasPreview) {
-            showPlainTextPreview(entry.previewText, entry.textOrigin || "");
-          } else {
-            setDockedPreviewMessage("No hay contenido disponible.");
-          }
+          renderCurrentPreview(entry);
         }
         updateHighlightIndicators();
       }
@@ -4180,10 +4501,42 @@
             typeof options.textOrigin === "string" ? options.textOrigin : "",
           uploadedAt: options.uploadedAt || timestamp,
           editedFields: Object.create(null),
+          file:
+            options.file && typeof options.file === "object" ? options.file : null,
+          category:
+            typeof options.category === "string" ? options.category : null,
         };
         state.results.push(entry);
         state.currentIndex = state.results.length - 1;
         renderResult(state.currentIndex);
+      }
+
+      if (previewModeButtons.length) {
+        previewModeButtons.forEach((button) => {
+          button.addEventListener("click", () => {
+            if (button.disabled) {
+              return;
+            }
+            const mode = button.dataset.mode;
+            if (!mode || state.previewMode === mode) {
+              return;
+            }
+            state.previewMode = mode;
+            const entry = state.results[state.currentIndex] || null;
+            updatePreviewModeControls(entry);
+            updateViewContentButton(entry);
+            if (isPreviewDocked) {
+              renderCurrentPreview(entry);
+            } else if (!previewModal.hidden) {
+              const resolved = resolveActivePreviewMode(entry);
+              if (resolved === "file" && entry) {
+                showFilePreview(entry.file, entry.category, { entry });
+              } else if (resolved === "text" && entry) {
+                showPlainTextPreview(entry.previewText, entry.textOrigin || "");
+              }
+            }
+          });
+        });
       }
 
       prevResultBtn.addEventListener("click", () => {
@@ -4272,12 +4625,7 @@
 
       if (viewContentButton) {
         viewContentButton.addEventListener("click", () => {
-          const entry = state.results[state.currentIndex];
-          if (!entry || !entry.previewText || !entry.previewText.trim()) {
-            return;
-          }
-          state.currentHighlights = getEntryHighlights(entry);
-          showPlainTextPreview(entry.previewText, entry.textOrigin || "");
+          openActivePreview();
         });
       }
 
@@ -4498,6 +4846,8 @@
                 uploadedAt: currentEntry.uploadedAt || Date.now(),
                 previewText: normalized.rawText,
                 textOrigin: normalized.textOrigin,
+                file: currentEntry.file,
+                category,
               });
               updateMultiProgress(index + 1, entries.length);
             }
