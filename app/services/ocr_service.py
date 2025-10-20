@@ -23,14 +23,30 @@ class AzureOCRService:
         )
     def extract_text(self, data: bytes, content_type: Optional[str] = None) -> str:
 
-        options = {}
         if content_type:
-            options["content_type"] = content_type
-        poller = self._client.begin_analyze_document(
-            model_id="prebuilt-read",
-            document=data,
-            **options,
-        )
+            try:
+                poller = self._client.begin_analyze_document(
+                    model_id="prebuilt-read",
+                    document=data,
+                    content_type=content_type,
+                )
+            except TypeError as exc:
+                if "content_type" not in str(exc):
+                    raise
+                LOGGER.warning(
+                    "Azure Form Recognizer rechazó content_type '%s'; "
+                    "reintentando sin especificarlo.",
+                    content_type,
+                )
+                poller = self._client.begin_analyze_document(
+                    model_id="prebuilt-read",
+                    document=data,
+                )
+        else:
+            poller = self._client.begin_analyze_document(
+                model_id="prebuilt-read",
+                document=data,
+            )
         result = poller.result()
         lines = []
         for page in result.pages:

@@ -75,13 +75,20 @@ def _parse_model_response(raw: str) -> Dict[str, Any]:
 class OpenAILLMService:
     def __init__(self, config: Config) -> None:
 
-        if not config.openai_configured:
-            raise RuntimeError("No existe: OPENAI_API_KEY")
-        self._client = OpenAI(api_key=config.OPENAI_API_KEY)
+        self._configured_api_key = (config.OPENAI_API_KEY or "").strip()
+        self._client = (
+            OpenAI(api_key=self._configured_api_key)
+            if self._configured_api_key
+            else None
+        )
+        self._runtime_api_key: Optional[str] = None
         self._model = config.OPENAI_MODEL
         self._schema_name = config.JSON_MODE_SCHEMA_NAME
         self._default_temperature = 1.0
         self._default_top_p = 1.0
+        self._default_reasoning_effort = "minimal"
+        self._default_frequency_penalty = 0.0
+        self._default_presence_penalty = 0.0
 
     def extract(
         self,
@@ -90,9 +97,45 @@ class OpenAILLMService:
         model: Optional[str] = None,
         temperature: Optional[float] = None,
         top_p: Optional[float] = None,
+        reasoning_effort: Optional[str] = None,
+        frequency_penalty: Optional[float] = None,
+        presence_penalty: Optional[float] = None,
+        api_key: Optional[str] = None,
     ) -> Dict[str, Any]:
         chosen_model = (model or self._model).strip()
-        response = self._client.chat.completions.create(
+        selected_reasoning_effort = (
+            self._default_reasoning_effort
+            if reasoning_effort is None
+            else reasoning_effort
+        )
+        openai_reasoning_effort = (
+            None if selected_reasoning_effort == "none" else selected_reasoning_effort
+        )
+        resolved_api_key = (api_key or self._configured_api_key or "").strip()
+        if not resolved_api_key:
+            raise RuntimeError(
+                "Proporciona una clave de API de OpenAI válida para completar la solicitud."
+            )
+        client = self._client
+        if client is None or (
+            resolved_api_key != self._configured_api_key
+            and resolved_api_key != self._runtime_api_key
+        ):
+            client = OpenAI(api_key=resolved_api_key)
+            if not self._configured_api_key:
+                self._client = client
+                self._runtime_api_key = resolved_api_key
+        selected_frequency_penalty = (
+            self._default_frequency_penalty
+            if frequency_penalty is None
+            else frequency_penalty
+        )
+        selected_presence_penalty = (
+            self._default_presence_penalty
+            if presence_penalty is None
+            else presence_penalty
+        )
+        response = client.chat.completions.create(
             model=chosen_model,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
@@ -108,7 +151,9 @@ class OpenAILLMService:
             },
             temperature=self._default_temperature if temperature is None else temperature,
             top_p=self._default_top_p if top_p is None else top_p,
-            reasoning_effort="minimal",
+            reasoning_effort=openai_reasoning_effort,
+            frequency_penalty=selected_frequency_penalty,
+            presence_penalty=selected_presence_penalty,
         )
         content = response.choices[0].message.content
         return _parse_model_response(content)
@@ -173,7 +218,12 @@ class LocalLLMService:
         model: Optional[str] = None,
         temperature: Optional[float] = None,
         top_p: Optional[float] = None,
+        reasoning_effort: Optional[str] = None,
+        frequency_penalty: Optional[float] = None,
+        presence_penalty: Optional[float] = None,
+        api_key: Optional[str] = None,
     ) -> Dict[str, Any]:
+        _ = api_key  # Compatibilidad con la interfaz API
         messages: List[Dict[str, str]] = [
             {
                 "role": "user",

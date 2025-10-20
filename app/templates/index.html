@@ -229,7 +229,8 @@
         gap: 1.5rem;
       }
 
-      .llm-provider-row {
+      .llm-provider-row,
+      .ocr-provider-row {
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
@@ -239,7 +240,8 @@
         background: var(--surface-subtle);
       }
 
-      .llm-provider-row label {
+      .llm-provider-row label,
+      .ocr-provider-row label {
         font-weight: 600;
         display: flex;
         flex-direction: column;
@@ -247,13 +249,15 @@
         color: var(--text);
       }
 
-      .llm-provider-row label span {
+      .llm-provider-row label span,
+      .ocr-provider-row label span {
         font-weight: 400;
         color: var(--muted);
         font-size: 0.85rem;
       }
 
-      .llm-provider-row select {
+      .llm-provider-row select,
+      .ocr-provider-row select {
         appearance: none;
         border: 1px solid var(--border);
         border-radius: 0.75rem;
@@ -263,7 +267,8 @@
         color: var(--text);
       }
 
-      .llm-provider-row select:focus-visible {
+      .llm-provider-row select:focus-visible,
+      .ocr-provider-row select:focus-visible {
         outline: none;
         border-color: var(--accent);
         box-shadow: 0 0 0 3px var(--accent-soft);
@@ -284,33 +289,105 @@
         gap: 1rem;
       }
 
+      .ocr-settings {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem;
+        border-radius: 1rem;
+        border: 1px dashed var(--border);
+        background: var(--surface-subtle);
+      }
+
+      .ocr-settings__fields {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .ocr-settings__fields[hidden] {
+        display: none !important;
+      }
+
       .llm-settings__section[hidden] {
         display: none !important;
       }
 
       .llm-settings__grid {
         display: grid;
-        gap: 0.75rem;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       }
 
-      .llm-settings label {
-        font-weight: 600;
+      .llm-settings__row {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .llm-field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0.85rem;
+        border-radius: 1rem;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .llm-field:focus-within {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+
+      .llm-field.is-disabled {
+        opacity: 0.6;
+      }
+
+      .llm-field__heading {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem;
+      }
+
+      .llm-field__text {
         display: flex;
         flex-direction: column;
         gap: 0.35rem;
+      }
+
+      .llm-field__text label {
+        font-weight: 600;
         color: var(--text);
         font-size: 0.95rem;
       }
 
-      .llm-settings label span {
+      .llm-field__text span {
         font-weight: 400;
         color: var(--muted);
         font-size: 0.8rem;
       }
 
-      .llm-settings input,
-      .llm-settings select {
+      .llm-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-weight: 500;
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+
+      .llm-toggle input {
+        width: 1.1rem;
+        height: 1.1rem;
+        accent-color: var(--accent);
+      }
+
+      .llm-settings select,
+      .llm-settings input[type="number"],
+      .llm-settings input[type="text"],
+      .llm-settings input[type="password"] {
         appearance: none;
         border: 1px solid var(--border);
         border-radius: 0.75rem;
@@ -320,8 +397,10 @@
         color: var(--text);
       }
 
-      .llm-settings input:focus-visible,
-      .llm-settings select:focus-visible {
+      .llm-settings select:focus-visible,
+      .llm-settings input[type="number"]:focus-visible,
+      .llm-settings input[type="text"]:focus-visible,
+      .llm-settings input[type="password"]:focus-visible {
         outline: none;
         border-color: var(--accent);
         box-shadow: 0 0 0 3px var(--accent-soft);
@@ -1226,6 +1305,7 @@
               id="llmProviderRow"
               hidden
               aria-hidden="true"
+              data-developer-only
             >
               <label for="llmProviderSelect">
                 Proveedor LLM
@@ -1238,7 +1318,13 @@
                 <option value="local">Servicio local (GPT OSS 20B)</option>
               </select>
             </div>
-            <div class="llm-settings" id="llmSettings" hidden aria-hidden="true">
+            <div
+              class="llm-settings"
+              id="llmSettings"
+              hidden
+              aria-hidden="true"
+              data-developer-only
+            >
               <div
                 class="llm-settings__section"
                 data-llm-provider-settings="api"
@@ -1246,11 +1332,18 @@
                 aria-hidden="true"
               >
                 <div class="llm-settings__grid">
-                  <label for="llmApiModel">
-                    Modelo (API)
-                    <span>
-                      Personaliza el identificador del modelo para el servicio API.
-                    </span>
+                  <div class="llm-field" data-developer-only>
+                    <div class="llm-field__heading">
+                      <div class="llm-field__text">
+                        <label for="llmApiModel">
+                          Modelo (API)
+                          <span>
+                            Personaliza el identificador del modelo para el servicio
+                            API.
+                          </span>
+                        </label>
+                      </div>
+                    </div>
                     <input
                       id="llmApiModel"
                       type="text"
@@ -1262,10 +1355,23 @@
                       <option value="{{ option }}"></option>
                       {% endfor %}
                     </datalist>
-                  </label>
-                  <label for="llmApiTemperature">
-                    Temperatura
-                    <span>Controla la aleatoriedad de las respuestas.</span>
+                  </div>
+                  <div class="llm-field">
+                    <div class="llm-field__heading">
+                      <div class="llm-field__text">
+                        <label for="llmApiTemperature">
+                          Temperatura
+                          <span>Controla la aleatoriedad de las respuestas.</span>
+                        </label>
+                      </div>
+                      <label class="llm-toggle" for="llmApiTemperatureEnabled">
+                        <input
+                          type="checkbox"
+                          id="llmApiTemperatureEnabled"
+                        />
+                        <span>Activado</span>
+                      </label>
+                    </div>
                     <input
                       id="llmApiTemperature"
                       type="number"
@@ -1274,10 +1380,20 @@
                       step="0.1"
                       value="1"
                     />
-                  </label>
-                  <label for="llmApiTopP">
-                    Top-p
-                    <span>Limita la probabilidad acumulada del muestreo.</span>
+                  </div>
+                  <div class="llm-field">
+                    <div class="llm-field__heading">
+                      <div class="llm-field__text">
+                        <label for="llmApiTopP">
+                          Top-p
+                          <span>Limita la probabilidad acumulada del muestreo.</span>
+                        </label>
+                      </div>
+                      <label class="llm-toggle" for="llmApiTopPEnabled">
+                        <input type="checkbox" id="llmApiTopPEnabled" />
+                        <span>Activado</span>
+                      </label>
+                    </div>
                     <input
                       id="llmApiTopP"
                       type="number"
@@ -1286,7 +1402,100 @@
                       step="0.05"
                       value="1"
                     />
-                  </label>
+                  </div>
+                  <div class="llm-field">
+                    <div class="llm-field__heading">
+                      <div class="llm-field__text">
+                        <label for="llmApiReasoningEffort">
+                          Razonamiento
+                          <span>Ajusta el esfuerzo de razonamiento solicitado.</span>
+                        </label>
+                      </div>
+                      <label class="llm-toggle" for="llmApiReasoningEnabled">
+                        <input type="checkbox" id="llmApiReasoningEnabled" />
+                        <span>Activado</span>
+                      </label>
+                    </div>
+                    <select id="llmApiReasoningEffort">
+                      <option value="minimal">Mínimo</option>
+                      <option value="low">Bajo</option>
+                      <option value="medium">Medio</option>
+                      <option value="high">Alto</option>
+                    </select>
+                  </div>
+                  <div class="llm-field">
+                    <div class="llm-field__heading">
+                      <div class="llm-field__text">
+                        <label for="llmApiFrequencyPenalty">
+                          Frecuencia
+                          <span>
+                            Penaliza repeticiones del modelo (-2 a 2).
+                          </span>
+                        </label>
+                      </div>
+                      <label class="llm-toggle" for="llmApiFrequencyEnabled">
+                        <input
+                          type="checkbox"
+                          id="llmApiFrequencyEnabled"
+                        />
+                        <span>Activado</span>
+                      </label>
+                    </div>
+                    <input
+                      id="llmApiFrequencyPenalty"
+                      type="number"
+                      min="-2"
+                      max="2"
+                      step="0.1"
+                      value="0"
+                    />
+                  </div>
+                  <div class="llm-field">
+                    <div class="llm-field__heading">
+                      <div class="llm-field__text">
+                        <label for="llmApiPresencePenalty">
+                          Presencia
+                          <span>Reduce repeticiones temáticas (-2 a 2).</span>
+                        </label>
+                      </div>
+                      <label class="llm-toggle" for="llmApiPresenceEnabled">
+                        <input
+                          type="checkbox"
+                          id="llmApiPresenceEnabled"
+                        />
+                        <span>Activado</span>
+                      </label>
+                    </div>
+                    <input
+                      id="llmApiPresencePenalty"
+                      type="number"
+                      min="-2"
+                      max="2"
+                      step="0.1"
+                      value="0"
+                    />
+                  </div>
+                </div>
+                <div class="llm-settings__row">
+                  <div class="llm-field">
+                    <div class="llm-field__heading">
+                      <div class="llm-field__text">
+                        <label for="llmApiKey">
+                          OpenAI API Key
+                          <span>
+                            Se usará para esta sesión cuando el servicio API esté
+                            activo.
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                    <input
+                      id="llmApiKey"
+                      type="password"
+                      placeholder="sk-..."
+                      autocomplete="off"
+                    />
+                  </div>
                 </div>
               </div>
               <div
@@ -1296,11 +1505,18 @@
                 aria-hidden="true"
               >
                 <div class="llm-settings__grid">
-                  <label for="llmLocalModel">
-                    Modelo local
-                    <span>
-                      Indica la ruta o identificador del modelo que deseas cargar.
-                    </span>
+                  <div class="llm-field">
+                    <div class="llm-field__heading">
+                      <div class="llm-field__text">
+                        <label for="llmLocalModel">
+                          Modelo local
+                          <span>
+                            Indica la ruta o identificador del modelo que deseas
+                            cargar.
+                          </span>
+                        </label>
+                      </div>
+                    </div>
                     <input
                       id="llmLocalModel"
                       type="text"
@@ -1312,10 +1528,23 @@
                       <option value="{{ option }}"></option>
                       {% endfor %}
                     </datalist>
-                  </label>
-                  <label for="llmLocalTemperature">
-                    Temperatura
-                    <span>Ajusta la creatividad del modelo local.</span>
+                  </div>
+                  <div class="llm-field">
+                    <div class="llm-field__heading">
+                      <div class="llm-field__text">
+                        <label for="llmLocalTemperature">
+                          Temperatura
+                          <span>Ajusta la creatividad del modelo local.</span>
+                        </label>
+                      </div>
+                      <label class="llm-toggle" for="llmLocalTemperatureEnabled">
+                        <input
+                          type="checkbox"
+                          id="llmLocalTemperatureEnabled"
+                        />
+                        <span>Activado</span>
+                      </label>
+                    </div>
                     <input
                       id="llmLocalTemperature"
                       type="number"
@@ -1324,10 +1553,22 @@
                       step="0.1"
                       value="1"
                     />
-                  </label>
-                  <label for="llmLocalTopP">
-                    Top-p
-                    <span>Configura el muestreo nucleus del modelo local.</span>
+                  </div>
+                  <div class="llm-field">
+                    <div class="llm-field__heading">
+                      <div class="llm-field__text">
+                        <label for="llmLocalTopP">
+                          Top-p
+                          <span>
+                            Configura el muestreo nucleus del modelo local.
+                          </span>
+                        </label>
+                      </div>
+                      <label class="llm-toggle" for="llmLocalTopPEnabled">
+                        <input type="checkbox" id="llmLocalTopPEnabled" />
+                        <span>Activado</span>
+                      </label>
+                    </div>
                     <input
                       id="llmLocalTopP"
                       type="number"
@@ -1336,7 +1577,62 @@
                       step="0.05"
                       value="1"
                     />
-                  </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="ocr-settings" id="ocrSettings" data-developer-only hidden aria-hidden="true">
+              <div class="ocr-provider-row">
+                <label for="ocrProviderSelect">
+                  Proveedor OCR
+                  <span>
+                    Selecciona el servicio para el reconocimiento óptico de
+                    caracteres.
+                  </span>
+                </label>
+                <select id="ocrProviderSelect">
+                  <option value="azure-vision" selected>Azure Vision</option>
+                </select>
+              </div>
+              <div
+                class="ocr-settings__fields"
+                data-ocr-provider="azure-vision"
+                hidden
+                aria-hidden="true"
+              >
+                <div class="llm-field">
+                  <div class="llm-field__heading">
+                    <div class="llm-field__text">
+                      <label for="ocrAzureEndpoint">
+                        AZURE_FORM_RECOGNIZER_ENDPOINT
+                        <span>
+                          Introduce el endpoint de Azure Form Recognizer.
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                  <input
+                    id="ocrAzureEndpoint"
+                    type="text"
+                    placeholder="https://<nombre>.cognitiveservices.azure.com/"
+                    autocomplete="off"
+                  />
+                </div>
+                <div class="llm-field">
+                  <div class="llm-field__heading">
+                    <div class="llm-field__text">
+                      <label for="ocrAzureKey">
+                        AZURE_FORM_RECOGNIZER_KEY
+                        <span>Clave del recurso que se usará para el OCR.</span>
+                      </label>
+                    </div>
+                  </div>
+                  <input
+                    id="ocrAzureKey"
+                    type="password"
+                    placeholder="Azure key"
+                    autocomplete="off"
+                  />
                 </div>
               </div>
             </div>
@@ -1546,6 +1842,14 @@
         },
       };
 
+      const REASONING_EFFORT_VALUES = new Set([
+        "minimal",
+        "low",
+        "medium",
+        "high",
+        "none",
+      ]);
+
       const llmDefaultsElement = document.getElementById("llmDefaultsData");
       let llmDefaults = {
         api: { model: "gpt-5-mini", options: ["gpt-5-mini"] },
@@ -1592,12 +1896,36 @@
           api: {
             model: llmDefaults.api.model,
             temperature: 1,
+            temperature_enabled: false,
             top_p: 1,
+            top_p_enabled: false,
+            reasoning_effort: "minimal",
+            reasoning_effort_enabled: true,
+            frequency_penalty: 0,
+            frequency_penalty_enabled: false,
+            presence_penalty: 0,
+            presence_penalty_enabled: false,
+            api_key: "",
           },
           local: {
             model: llmDefaults.local.model,
             temperature: 1,
+            temperature_enabled: false,
             top_p: 1,
+            top_p_enabled: false,
+            reasoning_effort: "minimal",
+            reasoning_effort_enabled: true,
+            frequency_penalty: 0,
+            frequency_penalty_enabled: false,
+            presence_penalty: 0,
+            presence_penalty_enabled: false,
+          },
+        },
+        ocrProvider: "azure-vision",
+        ocrParameters: {
+          "azure-vision": {
+            endpoint: "",
+            key: "",
           },
         },
         settings: {
@@ -1660,6 +1988,15 @@
       const llmSettingsSections = document.querySelectorAll(
         "[data-llm-provider-settings]"
       );
+      const ocrSettingsContainer = document.getElementById("ocrSettings");
+      const ocrProviderSelect = document.getElementById("ocrProviderSelect");
+      const ocrSettingsSections = document.querySelectorAll("[data-ocr-provider]");
+      const ocrInputs = {
+        "azure-vision": {
+          endpoint: document.getElementById("ocrAzureEndpoint"),
+          key: document.getElementById("ocrAzureKey"),
+        },
+      };
       const llmModelInputs = {
         api: document.getElementById("llmApiModel"),
         local: document.getElementById("llmLocalModel"),
@@ -1672,6 +2009,40 @@
         api: document.getElementById("llmApiTopP"),
         local: document.getElementById("llmLocalTopP"),
       };
+      const llmTemperatureToggles = {
+        api: document.getElementById("llmApiTemperatureEnabled"),
+        local: document.getElementById("llmLocalTemperatureEnabled"),
+      };
+      const llmTopPToggles = {
+        api: document.getElementById("llmApiTopPEnabled"),
+        local: document.getElementById("llmLocalTopPEnabled"),
+      };
+      const llmReasoningToggles = {
+        api: document.getElementById("llmApiReasoningEnabled"),
+        local: document.getElementById("llmLocalReasoningEnabled"),
+      };
+      const llmReasoningInputs = {
+        api: document.getElementById("llmApiReasoningEffort"),
+        local: document.getElementById("llmLocalReasoningEffort"),
+      };
+      const llmFrequencyInputs = {
+        api: document.getElementById("llmApiFrequencyPenalty"),
+        local: document.getElementById("llmLocalFrequencyPenalty"),
+      };
+      const llmPresenceInputs = {
+        api: document.getElementById("llmApiPresencePenalty"),
+        local: document.getElementById("llmLocalPresencePenalty"),
+      };
+      const llmFrequencyToggles = {
+        api: document.getElementById("llmApiFrequencyEnabled"),
+        local: document.getElementById("llmLocalFrequencyEnabled"),
+      };
+      const llmPresenceToggles = {
+        api: document.getElementById("llmApiPresenceEnabled"),
+        local: document.getElementById("llmLocalPresenceEnabled"),
+      };
+      const llmApiKeyInput = document.getElementById("llmApiKey");
+      const developerOnlyElements = document.querySelectorAll("[data-developer-only]");
 
       let lastFocusedElement = null;
       let lastSettingsTrigger = null;
@@ -1691,7 +2062,37 @@
       }
 
       function getActiveLlmSettings() {
-        return state.llmParameters[state.llmProvider] || {};
+        const params = ensureLlmParameters(state.llmProvider);
+        if (state.settings.developerMode) {
+          return params;
+        }
+        const sanitized = {
+          ...params,
+          temperature_enabled: false,
+          top_p_enabled: false,
+          reasoning_effort_enabled: false,
+          frequency_penalty_enabled: false,
+          presence_penalty_enabled: false,
+        };
+        if (state.llmProvider === "api") {
+          sanitized.api_key = "";
+        }
+        return sanitized;
+      }
+
+      function getActiveOcrSettings() {
+        if (!state.ocrProvider) {
+          return { provider: "", endpoint: "", key: "" };
+        }
+        const params = ensureOcrParameters(state.ocrProvider);
+        if (!state.settings.developerMode) {
+          return { provider: state.ocrProvider, endpoint: "", key: "" };
+        }
+        return {
+          provider: state.ocrProvider,
+          endpoint: (params.endpoint || "").trim(),
+          key: (params.key || "").trim(),
+        };
       }
 
       function parseNumeric(value) {
@@ -1700,6 +2101,113 @@
         }
         const parsed = Number.parseFloat(String(value));
         return Number.isNaN(parsed) ? null : parsed;
+      }
+
+      function ensureLlmParameters(provider) {
+        if (!provider) {
+          return state.llmParameters[state.llmProvider] || {};
+        }
+        if (!state.llmParameters[provider]) {
+          state.llmParameters[provider] =
+            provider === "api"
+              ? {
+                  model: "",
+                  temperature: 1,
+                  temperature_enabled: false,
+                  top_p: 1,
+                  top_p_enabled: false,
+                  reasoning_effort: "minimal",
+                  reasoning_effort_enabled: true,
+                  frequency_penalty: 0,
+                  frequency_penalty_enabled: false,
+                  presence_penalty: 0,
+                  presence_penalty_enabled: false,
+                  api_key: "",
+                }
+              : {
+                  model: "",
+                  temperature: 1,
+                  temperature_enabled: false,
+                  top_p: 1,
+                  top_p_enabled: false,
+                  reasoning_effort: "minimal",
+                  reasoning_effort_enabled: true,
+                  frequency_penalty: 0,
+                  frequency_penalty_enabled: false,
+                  presence_penalty: 0,
+                  presence_penalty_enabled: false,
+                };
+        }
+        const params = state.llmParameters[provider];
+        if (!Number.isFinite(params.temperature)) {
+          params.temperature = 1;
+        }
+        if (typeof params.temperature_enabled !== "boolean") {
+          params.temperature_enabled = false;
+        }
+        if (!Number.isFinite(params.top_p)) {
+          params.top_p = 1;
+        }
+        if (typeof params.top_p_enabled !== "boolean") {
+          params.top_p_enabled = false;
+        }
+        if (typeof params.reasoning_effort !== "string") {
+          params.reasoning_effort = "minimal";
+        }
+        if (typeof params.reasoning_effort_enabled !== "boolean") {
+          params.reasoning_effort_enabled = true;
+        }
+        if (!Number.isFinite(params.frequency_penalty)) {
+          params.frequency_penalty = 0;
+        }
+        if (typeof params.frequency_penalty_enabled !== "boolean") {
+          params.frequency_penalty_enabled = false;
+        }
+        if (!Number.isFinite(params.presence_penalty)) {
+          params.presence_penalty = 0;
+        }
+        if (typeof params.presence_penalty_enabled !== "boolean") {
+          params.presence_penalty_enabled = false;
+        }
+        if (provider === "api" && typeof params.api_key !== "string") {
+          params.api_key = "";
+        }
+        return params;
+      }
+
+      function ensureOcrParameters(provider) {
+        if (!provider) {
+          return { endpoint: "", key: "" };
+        }
+        if (!state.ocrParameters[provider]) {
+          state.ocrParameters[provider] = { endpoint: "", key: "" };
+        }
+        const params = state.ocrParameters[provider];
+        if (typeof params.endpoint !== "string") {
+          params.endpoint = "";
+        }
+        if (typeof params.key !== "string") {
+          params.key = "";
+        }
+        return params;
+      }
+
+      function setNumericFieldState(input, toggle, enabled) {
+        if (toggle) {
+          toggle.checked = !!enabled;
+        }
+        if (input) {
+          input.disabled = !enabled;
+          const field = input.closest(".llm-field");
+          if (field) {
+            field.classList.toggle("is-disabled", !enabled);
+          }
+        } else if (toggle) {
+          const field = toggle.closest(".llm-field");
+          if (field) {
+            field.classList.toggle("is-disabled", !enabled);
+          }
+        }
       }
 
       function refreshLlmSettings(provider) {
@@ -1715,45 +2223,124 @@
           section.hidden = !isActive;
           section.setAttribute("aria-hidden", String(!isActive));
         });
-        if (!state.llmParameters[targetProvider]) {
-          state.llmParameters[targetProvider] = {
-            model: "",
-            temperature: 1,
-            top_p: 1,
-          };
-        }
-        const params = state.llmParameters[targetProvider];
+        const params = ensureLlmParameters(targetProvider);
         const modelInput = llmModelInputs[targetProvider];
         if (modelInput && modelInput.value !== params.model) {
           modelInput.value = params.model ?? "";
         }
         const temperatureInput = llmTemperatureInputs[targetProvider];
+        const temperatureToggle = llmTemperatureToggles[targetProvider];
         if (temperatureInput) {
-          const value = params.temperature ?? 1;
+          const value = Number.isFinite(params.temperature)
+            ? params.temperature
+            : 1;
           temperatureInput.value = String(value);
         }
+        setNumericFieldState(
+          temperatureInput,
+          temperatureToggle,
+          params.temperature_enabled === true
+        );
         const topPInput = llmTopPInputs[targetProvider];
+        const topPToggle = llmTopPToggles[targetProvider];
         if (topPInput) {
-          const value = params.top_p ?? 1;
+          const value = Number.isFinite(params.top_p) ? params.top_p : 1;
           topPInput.value = String(value);
+        }
+        setNumericFieldState(
+          topPInput,
+          topPToggle,
+          params.top_p_enabled === true
+        );
+        const reasoningInput = llmReasoningInputs[targetProvider];
+        const reasoningToggle = llmReasoningToggles[targetProvider];
+        if (reasoningInput) {
+          const value = params.reasoning_effort ?? "minimal";
+          reasoningInput.value = value;
+        }
+        setNumericFieldState(
+          reasoningInput,
+          reasoningToggle,
+          params.reasoning_effort_enabled === true
+        );
+        const frequencyInput = llmFrequencyInputs[targetProvider];
+        const frequencyToggle = llmFrequencyToggles[targetProvider];
+        if (frequencyInput) {
+          const value = Number.isFinite(params.frequency_penalty)
+            ? params.frequency_penalty
+            : 0;
+          frequencyInput.value = String(value);
+        }
+        setNumericFieldState(
+          frequencyInput,
+          frequencyToggle,
+          params.frequency_penalty_enabled === true
+        );
+        const presenceInput = llmPresenceInputs[targetProvider];
+        const presenceToggle = llmPresenceToggles[targetProvider];
+        if (presenceInput) {
+          const value = Number.isFinite(params.presence_penalty)
+            ? params.presence_penalty
+            : 0;
+          presenceInput.value = String(value);
+        }
+        setNumericFieldState(
+          presenceInput,
+          presenceToggle,
+          params.presence_penalty_enabled === true
+        );
+        if (targetProvider === "api" && llmApiKeyInput) {
+          llmApiKeyInput.value = params.api_key ?? "";
         }
       }
 
+      function refreshOcrSettings(provider) {
+        if (!ocrSettingsContainer) {
+          return;
+        }
+        const targetProvider = provider ?? state.ocrProvider;
+        if (
+          ocrProviderSelect &&
+          ocrProviderSelect.value !== (targetProvider || "")
+        ) {
+          ocrProviderSelect.value = targetProvider || "";
+        }
+        ocrSettingsSections.forEach((section) => {
+          const sectionProvider = section.getAttribute("data-ocr-provider");
+          const isActive = sectionProvider === targetProvider && !!sectionProvider;
+          section.hidden = !isActive;
+          section.setAttribute("aria-hidden", String(!isActive));
+          if (!isActive || !sectionProvider) {
+            return;
+          }
+          const params = ensureOcrParameters(sectionProvider);
+          const inputs = ocrInputs[sectionProvider] || {};
+          if (inputs.endpoint) {
+            const nextValue = params.endpoint || "";
+            if (inputs.endpoint.value !== nextValue) {
+              inputs.endpoint.value = nextValue;
+            }
+          }
+          if (inputs.key) {
+            const nextValue = params.key || "";
+            if (inputs.key.value !== nextValue) {
+              inputs.key.value = nextValue;
+            }
+          }
+        });
+      }
+
       function bindLlmInputs() {
+        Object.keys(state.llmParameters).forEach((provider) =>
+          ensureLlmParameters(provider)
+        );
         Object.entries(llmModelInputs).forEach(([provider, input]) => {
           if (!input) {
             return;
           }
           input.addEventListener("change", () => {
-            const value = input.value.trim();
-            if (!state.llmParameters[provider]) {
-              state.llmParameters[provider] = {
-                model: value,
-                temperature: 1,
-                top_p: 1,
-              };
-            }
-            state.llmParameters[provider].model = value;
+            const params = ensureLlmParameters(provider);
+            params.model = input.value.trim();
           });
         });
 
@@ -1762,18 +2349,12 @@
             return;
           }
           input.addEventListener("change", () => {
+            const params = ensureLlmParameters(provider);
             const min = parseNumeric(input.min);
             const max = parseNumeric(input.max);
             let value = parseNumeric(input.value);
             if (value === null) {
-              if (!state.llmParameters[provider]) {
-                state.llmParameters[provider] = {
-                  model: "",
-                  temperature: 1,
-                  top_p: 1,
-                };
-              }
-              value = state.llmParameters[provider].temperature ?? 1;
+              value = params.temperature ?? 1;
             } else {
               if (min !== null) {
                 value = Math.max(min, value);
@@ -1782,7 +2363,7 @@
                 value = Math.min(max, value);
               }
             }
-            state.llmParameters[provider].temperature = value;
+            params.temperature = value;
             input.value = String(value);
           });
         });
@@ -1792,18 +2373,12 @@
             return;
           }
           input.addEventListener("change", () => {
+            const params = ensureLlmParameters(provider);
             const min = parseNumeric(input.min);
             const max = parseNumeric(input.max);
             let value = parseNumeric(input.value);
             if (value === null) {
-              if (!state.llmParameters[provider]) {
-                state.llmParameters[provider] = {
-                  model: "",
-                  temperature: 1,
-                  top_p: 1,
-                };
-              }
-              value = state.llmParameters[provider].top_p ?? 1;
+              value = params.top_p ?? 1;
             } else {
               if (min !== null) {
                 value = Math.max(min, value);
@@ -1812,9 +2387,172 @@
                 value = Math.min(max, value);
               }
             }
-            state.llmParameters[provider].top_p = value;
+            params.top_p = value;
             input.value = String(value);
           });
+        });
+
+        Object.entries(llmReasoningInputs).forEach(([provider, input]) => {
+          if (!input) {
+            return;
+          }
+          input.addEventListener("change", () => {
+            const params = ensureLlmParameters(provider);
+            const value = String(input.value || "").toLowerCase();
+            const normalized = REASONING_EFFORT_VALUES.has(value)
+              ? value
+              : "minimal";
+            if (!REASONING_EFFORT_VALUES.has(value)) {
+              input.value = "minimal";
+            }
+            params.reasoning_effort = normalized;
+          });
+        });
+
+        Object.entries(llmFrequencyInputs).forEach(([provider, input]) => {
+          if (!input) {
+            return;
+          }
+          input.addEventListener("change", () => {
+            const params = ensureLlmParameters(provider);
+            const min = parseNumeric(input.min);
+            const max = parseNumeric(input.max);
+            let value = parseNumeric(input.value);
+            if (value === null) {
+              value = params.frequency_penalty ?? 0;
+            } else {
+              if (min !== null) {
+                value = Math.max(min, value);
+              }
+              if (max !== null) {
+                value = Math.min(max, value);
+              }
+            }
+            params.frequency_penalty = value;
+            input.value = String(value);
+          });
+        });
+
+        Object.entries(llmPresenceInputs).forEach(([provider, input]) => {
+          if (!input) {
+            return;
+          }
+          input.addEventListener("change", () => {
+            const params = ensureLlmParameters(provider);
+            const min = parseNumeric(input.min);
+            const max = parseNumeric(input.max);
+            let value = parseNumeric(input.value);
+            if (value === null) {
+              value = params.presence_penalty ?? 0;
+            } else {
+              if (min !== null) {
+                value = Math.max(min, value);
+              }
+              if (max !== null) {
+                value = Math.min(max, value);
+              }
+            }
+            params.presence_penalty = value;
+            input.value = String(value);
+          });
+        });
+
+        Object.entries(llmTemperatureToggles).forEach(([provider, toggle]) => {
+          if (!toggle) {
+            return;
+          }
+          const input = llmTemperatureInputs[provider];
+          toggle.addEventListener("change", () => {
+            const params = ensureLlmParameters(provider);
+            params.temperature_enabled = toggle.checked;
+            setNumericFieldState(input, toggle, params.temperature_enabled);
+          });
+        });
+
+        Object.entries(llmTopPToggles).forEach(([provider, toggle]) => {
+          if (!toggle) {
+            return;
+          }
+          const input = llmTopPInputs[provider];
+          toggle.addEventListener("change", () => {
+            const params = ensureLlmParameters(provider);
+            params.top_p_enabled = toggle.checked;
+            setNumericFieldState(input, toggle, params.top_p_enabled);
+          });
+        });
+
+        Object.entries(llmReasoningToggles).forEach(([provider, toggle]) => {
+          if (!toggle) {
+            return;
+          }
+          const input = llmReasoningInputs[provider];
+          toggle.addEventListener("change", () => {
+            const params = ensureLlmParameters(provider);
+            params.reasoning_effort_enabled = toggle.checked;
+            setNumericFieldState(
+              input,
+              toggle,
+              params.reasoning_effort_enabled
+            );
+          });
+        });
+
+        Object.entries(llmFrequencyToggles).forEach(([provider, toggle]) => {
+          if (!toggle) {
+            return;
+          }
+          const input = llmFrequencyInputs[provider];
+          toggle.addEventListener("change", () => {
+            const params = ensureLlmParameters(provider);
+            params.frequency_penalty_enabled = toggle.checked;
+            setNumericFieldState(input, toggle, params.frequency_penalty_enabled);
+          });
+        });
+
+        Object.entries(llmPresenceToggles).forEach(([provider, toggle]) => {
+          if (!toggle) {
+            return;
+          }
+          const input = llmPresenceInputs[provider];
+          toggle.addEventListener("change", () => {
+            const params = ensureLlmParameters(provider);
+            params.presence_penalty_enabled = toggle.checked;
+            setNumericFieldState(input, toggle, params.presence_penalty_enabled);
+          });
+        });
+
+        if (llmApiKeyInput) {
+          llmApiKeyInput.addEventListener("input", () => {
+            const params = ensureLlmParameters("api");
+            params.api_key = llmApiKeyInput.value.trim();
+          });
+        }
+      }
+
+      function bindOcrInputs() {
+        if (ocrProviderSelect) {
+          ocrProviderSelect.addEventListener("change", (event) => {
+            state.ocrProvider = event.target.value;
+            refreshOcrSettings(state.ocrProvider);
+          });
+        }
+        Object.entries(ocrInputs).forEach(([provider, inputs]) => {
+          if (!inputs) {
+            return;
+          }
+          ensureOcrParameters(provider);
+          if (inputs.endpoint) {
+            inputs.endpoint.addEventListener("input", () => {
+              const params = ensureOcrParameters(provider);
+              params.endpoint = inputs.endpoint.value.trim();
+            });
+          }
+          if (inputs.key) {
+            inputs.key.addEventListener("input", () => {
+              const params = ensureOcrParameters(provider);
+              params.key = inputs.key.value.trim();
+            });
+          }
         });
       }
 
@@ -1832,14 +2570,27 @@
             if (llmProviderSelect) {
               llmProviderSelect.value = "api";
             }
-            refreshLlmSettings(state.llmProvider);
           }
         }
+        developerOnlyElements.forEach((element) => {
+          if (!element) {
+            return;
+          }
+          element.hidden = !enabled;
+          element.setAttribute("aria-hidden", String(!enabled));
+        });
         if (llmSettingsContainer) {
           llmSettingsContainer.hidden = !enabled;
           llmSettingsContainer.setAttribute("aria-hidden", String(!enabled));
           if (enabled) {
             refreshLlmSettings(state.llmProvider);
+          }
+        }
+        if (ocrSettingsContainer) {
+          ocrSettingsContainer.hidden = !enabled;
+          ocrSettingsContainer.setAttribute("aria-hidden", String(!enabled));
+          if (enabled) {
+            refreshOcrSettings(state.ocrProvider);
           }
         }
       }
@@ -2042,7 +2793,9 @@
       });
 
       bindLlmInputs();
+      bindOcrInputs();
       refreshLlmSettings(state.llmProvider);
+      refreshOcrSettings(state.ocrProvider);
 
       setMultiPdfToggleVisibility(false);
       resetMultiProgress();
@@ -2535,11 +3288,44 @@
         if (activeSettings.model) {
           payload.llm_model = activeSettings.model;
         }
-        if (Number.isFinite(activeSettings.temperature)) {
+        if (
+          activeSettings.temperature_enabled === true &&
+          Number.isFinite(activeSettings.temperature)
+        ) {
           payload.temperature = activeSettings.temperature;
         }
-        if (Number.isFinite(activeSettings.top_p)) {
+        if (
+          activeSettings.top_p_enabled === true &&
+          Number.isFinite(activeSettings.top_p)
+        ) {
           payload.top_p = activeSettings.top_p;
+        }
+        if (
+          activeSettings.reasoning_effort_enabled === true &&
+          typeof activeSettings.reasoning_effort === "string"
+        ) {
+          const value = activeSettings.reasoning_effort.trim();
+          if (value) {
+            payload.reasoning_effort = value;
+          }
+        }
+        if (
+          activeSettings.frequency_penalty_enabled === true &&
+          Number.isFinite(activeSettings.frequency_penalty)
+        ) {
+          payload.frequency_penalty = activeSettings.frequency_penalty;
+        }
+        if (
+          activeSettings.presence_penalty_enabled === true &&
+          Number.isFinite(activeSettings.presence_penalty)
+        ) {
+          payload.presence_penalty = activeSettings.presence_penalty;
+        }
+        if (state.llmProvider === "api") {
+          const apiKey = (activeSettings.api_key || "").trim();
+          if (apiKey) {
+            payload.openai_api_key = apiKey;
+          }
         }
         const response = await fetch("/api/v1/extract/text", {
           method: "POST",
@@ -2570,14 +3356,69 @@
         if (activeSettings.model) {
           url.searchParams.set("llm_model", activeSettings.model);
         }
-        if (Number.isFinite(activeSettings.temperature)) {
+        if (
+          activeSettings.temperature_enabled === true &&
+          Number.isFinite(activeSettings.temperature)
+        ) {
           url.searchParams.set(
             "temperature",
             String(activeSettings.temperature)
           );
         }
-        if (Number.isFinite(activeSettings.top_p)) {
+        if (
+          activeSettings.top_p_enabled === true &&
+          Number.isFinite(activeSettings.top_p)
+        ) {
           url.searchParams.set("top_p", String(activeSettings.top_p));
+        }
+        if (
+          activeSettings.reasoning_effort_enabled === true &&
+          typeof activeSettings.reasoning_effort === "string"
+        ) {
+          const value = activeSettings.reasoning_effort.trim();
+          if (value) {
+            url.searchParams.set("reasoning_effort", value);
+          }
+        }
+        if (
+          activeSettings.frequency_penalty_enabled === true &&
+          Number.isFinite(activeSettings.frequency_penalty)
+        ) {
+          url.searchParams.set(
+            "frequency_penalty",
+            String(activeSettings.frequency_penalty)
+          );
+        }
+        if (
+          activeSettings.presence_penalty_enabled === true &&
+          Number.isFinite(activeSettings.presence_penalty)
+        ) {
+          url.searchParams.set(
+            "presence_penalty",
+            String(activeSettings.presence_penalty)
+          );
+        }
+        if (state.llmProvider === "api") {
+          const apiKey = (activeSettings.api_key || "").trim();
+          if (apiKey) {
+            url.searchParams.set("openai_api_key", apiKey);
+          }
+        }
+        const ocrSettings = getActiveOcrSettings();
+        if (ocrSettings.provider) {
+          url.searchParams.set("ocr_provider", ocrSettings.provider);
+          if (ocrSettings.endpoint) {
+            url.searchParams.set(
+              "azure_form_recognizer_endpoint",
+              ocrSettings.endpoint
+            );
+          }
+          if (ocrSettings.key) {
+            url.searchParams.set(
+              "azure_form_recognizer_key",
+              ocrSettings.key
+            );
+          }
         }
         const response = await fetch(url, {
           method: "POST",
