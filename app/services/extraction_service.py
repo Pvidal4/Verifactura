@@ -108,10 +108,17 @@ class ExtractionService:
             raise RuntimeError(
                 "Azure OCR no está configurado pero es requirido para este tipo de archivo"
             )
+        text = ocr_service.extract_text(
+            data,
+            content_type="application/pdf",
+        )
+        if text:
+            return text
+
         images = self._pdf.render_page_images(data)
         if not images:
             LOGGER.warning(
-                "No fue posible renderizar el PDF a imágenes, se enviará el PDF directo a Azure OCR."
+                "No fue posible renderizar el PDF a imágenes, se reintentará el OCR directo sobre el PDF."
             )
             text = ocr_service.extract_text(
                 data,

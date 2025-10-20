@@ -1900,7 +1900,7 @@
             top_p: 1,
             top_p_enabled: false,
             reasoning_effort: "minimal",
-            reasoning_effort_enabled: false,
+            reasoning_effort_enabled: true,
             frequency_penalty: 0,
             frequency_penalty_enabled: false,
             presence_penalty: 0,
@@ -1914,7 +1914,7 @@
             top_p: 1,
             top_p_enabled: false,
             reasoning_effort: "minimal",
-            reasoning_effort_enabled: false,
+            reasoning_effort_enabled: true,
             frequency_penalty: 0,
             frequency_penalty_enabled: false,
             presence_penalty: 0,
@@ -2117,7 +2117,7 @@
                   top_p: 1,
                   top_p_enabled: false,
                   reasoning_effort: "minimal",
-                  reasoning_effort_enabled: false,
+                  reasoning_effort_enabled: true,
                   frequency_penalty: 0,
                   frequency_penalty_enabled: false,
                   presence_penalty: 0,
@@ -2131,7 +2131,7 @@
                   top_p: 1,
                   top_p_enabled: false,
                   reasoning_effort: "minimal",
-                  reasoning_effort_enabled: false,
+                  reasoning_effort_enabled: true,
                   frequency_penalty: 0,
                   frequency_penalty_enabled: false,
                   presence_penalty: 0,
@@ -2155,7 +2155,7 @@
           params.reasoning_effort = "minimal";
         }
         if (typeof params.reasoning_effort_enabled !== "boolean") {
-          params.reasoning_effort_enabled = false;
+          params.reasoning_effort_enabled = true;
         }
         if (!Number.isFinite(params.frequency_penalty)) {
           params.frequency_penalty = 0;
