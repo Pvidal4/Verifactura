@@ -665,6 +665,27 @@
         line-height: 1.5;
       }
 
+      .preview-content--missing {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .preview-missing-highlight {
+        padding: 0.85rem 1rem;
+        border-radius: 0.75rem;
+        background: rgba(148, 163, 184, 0.18);
+        border: 1px dashed rgba(100, 116, 139, 0.4);
+        color: var(--muted);
+        font-size: 0.85rem;
+        line-height: 1.4;
+      }
+
+      .preview-missing-highlight strong {
+        font-weight: 600;
+        color: var(--text);
+      }
+
       .preview-highlight {
         background: rgba(37, 99, 235, 0.24);
         border-radius: 0.35rem;
@@ -2143,6 +2164,7 @@
         currentHighlights: [],
         highlightVisibility: {},
         highlightFocusKey: null,
+        missingHighlight: null,
         highlightIndex: Object.create(null),
         llmProvider: "api",
         llmParameters: {
@@ -2918,10 +2940,58 @@
         placeholder.className = "preview-placeholder";
         placeholder.textContent = message;
         dockedPreviewContent.replaceChildren(placeholder);
+        clearMissingHighlightNotice(dockedPreviewContent);
         if (dockedPreviewHint) {
           dockedPreviewHint.hidden = true;
           dockedPreviewHint.textContent = "";
         }
+      }
+
+      function clearMissingHighlightNotice(container) {
+        if (!container) {
+          return;
+        }
+        container.classList.remove("preview-content--missing");
+        const existing = container.querySelector(".preview-missing-highlight");
+        if (existing) {
+          existing.remove();
+        }
+      }
+
+      function updateMissingHighlightNotice(container, visibleHighlights, options = {}) {
+        if (!container) {
+          return;
+        }
+        const mode = options.mode || "text";
+        if (mode !== "text") {
+          clearMissingHighlightNotice(container);
+          return;
+        }
+        const missing = state.missingHighlight;
+        const hasVisible = Array.isArray(visibleHighlights) && visibleHighlights.length > 0;
+        if (!missing || hasVisible) {
+          clearMissingHighlightNotice(container);
+          return;
+        }
+        let notice = container.querySelector(".preview-missing-highlight");
+        if (!notice) {
+          notice = document.createElement("div");
+          notice.className = "preview-missing-highlight";
+        }
+        const label = missing.label || missing.key || "este campo";
+        notice.replaceChildren();
+        notice.append("No se encontraron coincidencias exactas para ");
+        const emphasis = document.createElement("strong");
+        emphasis.textContent = `“${label}”`;
+        notice.appendChild(emphasis);
+        notice.append(".");
+        const hint = container.querySelector(".preview-hint");
+        if (hint && hint.parentElement === container) {
+          container.insertBefore(notice, hint.nextSibling);
+        } else {
+          container.prepend(notice);
+        }
+        container.classList.add("preview-content--missing");
       }
 
       function resetDockedPreview() {
@@ -3034,6 +3104,7 @@
           state.modalPreviewUrl = null;
         }
         previewModalContent.innerHTML = "";
+        clearMissingHighlightNotice(previewModalContent);
         document.body.classList.remove("modal-open");
         if (focusTarget && typeof focusTarget.focus === "function") {
           focusTarget.focus();
@@ -3043,6 +3114,7 @@
 
       function renderModalPreview(file, category) {
         previewModalContent.innerHTML = "";
+        clearMissingHighlightNotice(previewModalContent);
         if (!file || !category) {
           const message = document.createElement("p");
           message.style.padding = "1.25rem";
@@ -3537,6 +3609,44 @@
         return String(field).toLowerCase();
       }
 
+      function setMissingHighlight(field, label) {
+        const normalized = field ? normalizeHighlightKey(field) : "";
+        const key = normalized || null;
+        if (!key) {
+          if (state.missingHighlight) {
+            state.missingHighlight = null;
+            return true;
+          }
+          return false;
+        }
+        const safeLabel = typeof label === "string" ? label : "";
+        if (
+          state.missingHighlight &&
+          state.missingHighlight.key === key &&
+          state.missingHighlight.label === safeLabel
+        ) {
+          return false;
+        }
+        state.missingHighlight = { key, label: safeLabel };
+        return true;
+      }
+
+      function clearMissingHighlight(field) {
+        if (!state.missingHighlight) {
+          return false;
+        }
+        if (!field) {
+          state.missingHighlight = null;
+          return true;
+        }
+        const normalized = normalizeHighlightKey(field);
+        if (state.missingHighlight.key === normalized) {
+          state.missingHighlight = null;
+          return true;
+        }
+        return false;
+      }
+
       function getVisibleHighlights() {
         if (!Array.isArray(state.currentHighlights) || !state.currentHighlights.length) {
           return [];
@@ -3585,16 +3695,28 @@
         });
       }
 
-      function setHighlightFocusKey(field) {
+      function setHighlightFocusKey(field, options = {}) {
         const normalized = field ? normalizeHighlightKey(field) : "";
         const key = normalized || null;
-        if (key && (!state.highlightIndex || !state.highlightIndex[key])) {
+        const allowMissing = Boolean(options.allowMissing);
+        if (key && !allowMissing && (!state.highlightIndex || !state.highlightIndex[key])) {
           return false;
         }
-        if (state.highlightFocusKey === key) {
+        const previousKey = state.highlightFocusKey;
+        if (previousKey === key) {
+          if (!key && state.missingHighlight) {
+            state.missingHighlight = null;
+            return true;
+          }
+          if (!allowMissing) {
+            state.missingHighlight = null;
+          }
           return false;
         }
         state.highlightFocusKey = key;
+        if (!key || !allowMissing) {
+          state.missingHighlight = null;
+        }
         return true;
       }
 
@@ -3627,13 +3749,17 @@
             field.removeAttribute("data-highlight-key");
             return;
           }
-          const suppressed =
-            !state.highlightFocusKey &&
-            state.highlightVisibility &&
-            state.highlightVisibility[key] === false;
+          const hasFocus = Boolean(state.highlightFocusKey);
+          const suppressedByVisibility =
+            !hasFocus && state.highlightVisibility && state.highlightVisibility[key] === false;
           const isFocused = state.highlightFocusKey === key;
-          field.classList.toggle("result-field--highlighted", !suppressed || isFocused);
-          field.classList.toggle("result-field--muted", suppressed && !isFocused);
+          const suppressedByFocus = hasFocus && !isFocused;
+          const shouldHighlight = !suppressedByVisibility && !suppressedByFocus;
+          field.classList.toggle("result-field--highlighted", shouldHighlight);
+          field.classList.toggle(
+            "result-field--muted",
+            (suppressedByVisibility || suppressedByFocus) && !isFocused
+          );
           field.classList.toggle("result-field--focused", isFocused);
         });
       }
@@ -3741,6 +3867,7 @@
           if (state.highlightFocusKey === normalizedKey) {
             setHighlightFocusKey(null);
           }
+          clearMissingHighlight(normalizedKey);
         }
         delete entry.previewHighlights;
         renderResult(state.currentIndex, { preserveHighlightVisibility: true });
@@ -3957,6 +4084,7 @@
           setDockedPreviewMessage("No hay vista previa disponible.");
           return;
         }
+        clearMissingHighlightNotice(dockedPreviewContent);
         const label =
           (entry && typeof entry.source === "string" && entry.source.trim()) ||
           (typeof file.name === "string" && file.name.trim()) ||
@@ -4125,6 +4253,7 @@
         clearDockedPreviewUrl();
         const normalized = typeof text === "string" ? text : "";
         const hint = getTextOriginDescription(origin);
+        const visibleHighlights = getVisibleHighlights();
         if (isPreviewDocked && dockedPreviewContent) {
           if (!normalized.trim()) {
             setDockedPreviewMessage("No hay contenido disponible.");
@@ -4140,8 +4269,11 @@
             }
           }
           const pre = document.createElement("pre");
-          applyPreviewHighlights(pre, normalized, getVisibleHighlights());
+          applyPreviewHighlights(pre, normalized, visibleHighlights);
           dockedPreviewContent.replaceChildren(pre);
+          updateMissingHighlightNotice(dockedPreviewContent, visibleHighlights, {
+            mode: "text",
+          });
           return;
         }
         previewModalContent.innerHTML = "";
@@ -4162,8 +4294,11 @@
           previewModalContent.appendChild(hintElement);
         }
         const pre = document.createElement("pre");
-        applyPreviewHighlights(pre, normalized, getVisibleHighlights());
+        applyPreviewHighlights(pre, normalized, visibleHighlights);
         previewModalContent.appendChild(pre);
+        updateMissingHighlightNotice(previewModalContent, visibleHighlights, {
+          mode: "text",
+        });
         if (previewModal.hidden) {
           openPreviewModal();
         }
@@ -4208,6 +4343,7 @@
         if (!entry) {
           state.currentHighlights = [];
           state.highlightVisibility = visibilitySnapshot || {};
+          state.missingHighlight = null;
           updatePreviewModeControls(null);
           updateViewContentButton(null);
           updateHighlightIndicators();
@@ -4225,6 +4361,7 @@
         const flat = flattenData(entry.data);
         const highlights = getEntryHighlights(entry, flat);
         state.currentHighlights = Array.isArray(highlights) ? highlights : [];
+        state.missingHighlight = null;
         state.highlightIndex = state.currentHighlights.reduce((acc, highlight) => {
           const key = normalizeHighlightKey(highlight.field);
           if (!key) {
@@ -4311,12 +4448,19 @@
               if (isSuppressed()) {
                 return;
               }
-              if (setHighlightFocusKey(highlightKey)) {
+              const focusChanged = setHighlightFocusKey(highlightKey);
+              const missingCleared = clearMissingHighlight();
+              if (focusChanged || missingCleared) {
                 refreshPreviewHighlights();
               }
             };
             const clear = () => {
-              if (state.highlightFocusKey === highlightKey && setHighlightFocusKey(null)) {
+              let shouldRefresh = false;
+              if (state.highlightFocusKey === highlightKey) {
+                shouldRefresh = setHighlightFocusKey(null) || shouldRefresh;
+              }
+              shouldRefresh = clearMissingHighlight(highlightKey) || shouldRefresh;
+              if (shouldRefresh) {
                 refreshPreviewHighlights();
               }
             };
@@ -4326,6 +4470,30 @@
             field.addEventListener("mouseleave", clear);
             field.addEventListener("focus", activate);
             field.addEventListener("blur", clear);
+          } else if (highlightKey) {
+            const activateMissing = () => {
+              const focusChanged = setHighlightFocusKey(highlightKey, { allowMissing: true });
+              const missingChanged = setMissingHighlight(highlightKey, labelText);
+              if (focusChanged || missingChanged) {
+                refreshPreviewHighlights();
+              }
+            };
+            const clearMissing = () => {
+              let shouldRefresh = false;
+              if (state.highlightFocusKey === highlightKey) {
+                shouldRefresh = setHighlightFocusKey(null) || shouldRefresh;
+              }
+              shouldRefresh = clearMissingHighlight(highlightKey) || shouldRefresh;
+              if (shouldRefresh) {
+                refreshPreviewHighlights();
+              }
+            };
+            field.addEventListener("pointerenter", activateMissing);
+            field.addEventListener("pointerleave", clearMissing);
+            field.addEventListener("mouseenter", activateMissing);
+            field.addEventListener("mouseleave", clearMissing);
+            field.addEventListener("focus", activateMissing);
+            field.addEventListener("blur", clearMissing);
           }
 
           const triggerEdit = () => {
