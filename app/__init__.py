@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import Config
 from app.routes.extract import router as extract_router
+from app.routes.predictions import router as predictions_router
 from app.routes.ui import router as ui_router
 
 
@@ -18,4 +19,5 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
     app.include_router(ui_router)
     app.include_router(extract_router, prefix="/api/v1")
+    app.include_router(predictions_router, prefix="/api/v1")
     return app

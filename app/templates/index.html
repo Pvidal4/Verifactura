@@ -1058,6 +1058,149 @@
         color: var(--text);
       }
 
+      .prediction-card {
+        border: 1px solid var(--border);
+        background: var(--surface-subtle);
+        border-radius: 1.25rem;
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .prediction-card__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .prediction-card__title {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+      }
+
+      .prediction-card__title h3 {
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .prediction-card__subtitle {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .prediction-card__body {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .prediction-placeholder {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .prediction-error {
+        margin: 0;
+        color: var(--danger);
+        font-size: 0.95rem;
+      }
+
+      .prediction-retry {
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--accent);
+        border-radius: 999px;
+        padding: 0.5rem 1.1rem;
+        font-weight: 500;
+        transition: border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .prediction-retry:hover:not(:disabled),
+      .prediction-retry:focus-visible:not(:disabled) {
+        border-color: var(--accent);
+        color: var(--accent-dark);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+        outline: none;
+      }
+
+      .prediction-retry:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .prediction-result__label {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .prediction-result {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .prediction-probabilities {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+      }
+
+      .prediction-probabilities li {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 0.75rem;
+        align-items: center;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0.9rem;
+        padding: 0.7rem 0.9rem;
+      }
+
+      .prediction-probability__name {
+        font-weight: 500;
+        color: var(--text);
+      }
+
+      .prediction-probability__value {
+        display: inline-flex;
+        gap: 0.4rem;
+        align-items: center;
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .prediction-probability__meter {
+        flex: 1;
+        height: 0.4rem;
+        background: var(--surface-subtle);
+        border-radius: 999px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .prediction-probability__meter-bar {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, var(--accent) 0%, var(--accent-dark) 100%);
+        border-radius: inherit;
+      }
+
+      .prediction-note {
+        font-size: 0.85rem;
+        color: var(--muted);
+        margin: 0;
+      }
+
       .results-grid {
         display: grid;
         gap: 1rem;
@@ -1959,6 +2102,28 @@
 
           <div class="result-meta" id="resultMeta" hidden></div>
 
+          <div class="prediction-card" id="predictionCard" hidden>
+            <div class="prediction-card__header">
+              <div class="prediction-card__title">
+                <h3>Predicción del modelo</h3>
+                <p
+                  class="prediction-card__subtitle"
+                  id="predictionSubtitle"
+                  role="status"
+                  aria-live="polite"
+                ></p>
+              </div>
+              <button type="button" class="prediction-retry" id="retryPredictionButton" disabled>
+                Reintentar
+              </button>
+            </div>
+            <div class="prediction-card__body" id="predictionContent">
+              <p class="prediction-placeholder">
+                Proporciona los campos requeridos para ejecutar la predicción.
+              </p>
+            </div>
+          </div>
+
           <div class="results-grid empty" id="resultsContainer">
             Aún no hay resultados. Procesa un documento para comenzar.
           </div>
@@ -2110,6 +2275,72 @@
         },
       };
 
+      const PREDICTION_ENDPOINT = "/api/v1/predictions";
+      const PREDICTION_REQUIRED_FIELDS = [
+        "marca",
+        "tipo",
+        "clase",
+        "capacidad",
+        "combustible",
+        "ruedas",
+        "total",
+      ];
+      const PREDICTION_FIELD_CANDIDATES = {
+        marca: [
+          "marca",
+          "vehiculo.marca",
+          "datos_vehiculo.marca",
+          "vehiculo.marca_del_vehiculo",
+          "datos.marca",
+          "vehiculo.datos.marca",
+        ],
+        tipo: [
+          "tipo",
+          "vehiculo.tipo",
+          "datos_vehiculo.tipo",
+          "categoria.tipo",
+          "tipo_de_vehiculo",
+        ],
+        clase: [
+          "clase",
+          "vehiculo.clase",
+          "datos_vehiculo.clase",
+          "categoria",
+          "clase_vehiculo",
+        ],
+        capacidad: [
+          "capacidad",
+          "vehiculo.capacidad",
+          "datos_vehiculo.capacidad",
+          "capacidad_pasajeros",
+          "capacidad.maxima",
+          "pasajeros",
+        ],
+        combustible: [
+          "combustible",
+          "vehiculo.combustible",
+          "datos_vehiculo.combustible",
+          "tipo_combustible",
+          "combustible.tipo",
+        ],
+        ruedas: [
+          "ruedas",
+          "vehiculo.ruedas",
+          "datos_vehiculo.ruedas",
+          "numero_ruedas",
+          "cantidad_ruedas",
+        ],
+        total: [
+          "total",
+          "total.total",
+          "importe_total",
+          "monto_total",
+          "factura.total",
+          "total_a_pagar",
+          "resumen.total",
+        ],
+      };
+
       const REASONING_EFFORT_VALUES = new Set([
         "minimal",
         "low",
@@ -2235,6 +2466,10 @@
       const resultsNavigation = document.getElementById("resultsNavigation");
       const resultPosition = document.getElementById("resultPosition");
       const resultMeta = document.getElementById("resultMeta");
+      const predictionCard = document.getElementById("predictionCard");
+      const predictionSubtitle = document.getElementById("predictionSubtitle");
+      const predictionContent = document.getElementById("predictionContent");
+      const retryPredictionButton = document.getElementById("retryPredictionButton");
       const viewContentButton = document.getElementById("viewContentButton");
       const downloadJson = document.getElementById("downloadJson");
       const downloadCsv = document.getElementById("downloadCsv");
@@ -3792,6 +4027,7 @@
             } else {
               current[segment] = value;
             }
+            markPredictionDirty(entry);
             return;
           }
           const nextSegment = segments[index + 1];
@@ -4002,6 +4238,219 @@
           rawText,
           textOrigin: origin,
         };
+      }
+
+      function normalizeFieldIdentifier(key) {
+        if (key === null || key === undefined) {
+          return "";
+        }
+        return String(key)
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]/gi, "")
+          .toLowerCase();
+      }
+
+      function pickPredictionValue(flatData, candidates, fallbackKey) {
+        if (!flatData || typeof flatData !== "object") {
+          return null;
+        }
+        const keys = Array.isArray(candidates) ? candidates : [];
+        for (let index = 0; index < keys.length; index += 1) {
+          const key = keys[index];
+          if (!key) {
+            continue;
+          }
+          if (Object.prototype.hasOwnProperty.call(flatData, key)) {
+            const value = flatData[key];
+            if (value !== null && value !== undefined && value !== "") {
+              return value;
+            }
+          }
+        }
+        if (fallbackKey) {
+          const normalizedTarget = normalizeFieldIdentifier(fallbackKey);
+          if (normalizedTarget) {
+            const entries = Object.entries(flatData);
+            for (let index = 0; index < entries.length; index += 1) {
+              const [candidateKey, candidateValue] = entries[index];
+              if (
+                candidateValue === null ||
+                candidateValue === undefined ||
+                candidateValue === ""
+              ) {
+                continue;
+              }
+              const normalizedCandidate = normalizeFieldIdentifier(candidateKey);
+              if (
+                normalizedCandidate === normalizedTarget ||
+                normalizedCandidate.endsWith(normalizedTarget)
+              ) {
+                return candidateValue;
+              }
+            }
+          }
+        }
+        return null;
+      }
+
+      function normalizePredictionCategory(value) {
+        if (value === null || value === undefined) {
+          return null;
+        }
+        const text = String(value).trim();
+        if (!text) {
+          return null;
+        }
+        return text.toUpperCase();
+      }
+
+      function parseNumericValue(value) {
+        if (value === null || value === undefined) {
+          return null;
+        }
+        if (typeof value === "number") {
+          return Number.isFinite(value) ? value : null;
+        }
+        if (typeof value === "string") {
+          const trimmed = value.trim();
+          if (!trimmed) {
+            return null;
+          }
+          const sanitized = trimmed.replace(/\s+/g, "").replace(/[^0-9,.-]/g, "");
+          if (!sanitized) {
+            return null;
+          }
+          const lastComma = sanitized.lastIndexOf(",");
+          const lastDot = sanitized.lastIndexOf(".");
+          let normalized = sanitized;
+          if (lastComma > lastDot) {
+            normalized = normalized.replace(/\./g, "");
+            normalized = normalized.replace(/,/g, ".");
+          } else {
+            normalized = normalized.replace(/,/g, "");
+          }
+          const parsed = Number(normalized);
+          if (!Number.isFinite(parsed)) {
+            return null;
+          }
+          return parsed;
+        }
+        return null;
+      }
+
+      function parseIntegerValue(value) {
+        const numeric = parseNumericValue(value);
+        if (!Number.isFinite(numeric)) {
+          return null;
+        }
+        return Math.round(numeric);
+      }
+
+      function collectPredictionFeatures(entry, precomputedFlat) {
+        if (!entry || typeof entry !== "object") {
+          return {
+            ready: false,
+            missing: [...PREDICTION_REQUIRED_FIELDS],
+            payload: {},
+            signature: null,
+            flat: {},
+          };
+        }
+        const baseData = entry.data && typeof entry.data === "object" ? entry.data : {};
+        const flat =
+          precomputedFlat && typeof precomputedFlat === "object"
+            ? precomputedFlat
+            : flattenData(baseData);
+        const prepared = {};
+        const missing = [];
+        const marca = normalizePredictionCategory(
+          pickPredictionValue(flat, PREDICTION_FIELD_CANDIDATES.marca, "marca")
+        );
+        if (marca) {
+          prepared.marca = marca;
+        } else {
+          missing.push("marca");
+        }
+        const tipo = normalizePredictionCategory(
+          pickPredictionValue(flat, PREDICTION_FIELD_CANDIDATES.tipo, "tipo")
+        );
+        if (tipo) {
+          prepared.tipo = tipo;
+        } else {
+          missing.push("tipo");
+        }
+        const clase = normalizePredictionCategory(
+          pickPredictionValue(flat, PREDICTION_FIELD_CANDIDATES.clase, "clase")
+        );
+        if (clase) {
+          prepared.clase = clase;
+        } else {
+          missing.push("clase");
+        }
+        const capacidad = parseIntegerValue(
+          pickPredictionValue(flat, PREDICTION_FIELD_CANDIDATES.capacidad, "capacidad")
+        );
+        if (Number.isFinite(capacidad)) {
+          prepared.capacidad = capacidad;
+        } else {
+          missing.push("capacidad");
+        }
+        const combustible = normalizePredictionCategory(
+          pickPredictionValue(flat, PREDICTION_FIELD_CANDIDATES.combustible, "combustible")
+        );
+        if (combustible) {
+          prepared.combustible = combustible;
+        } else {
+          missing.push("combustible");
+        }
+        const ruedas = parseIntegerValue(
+          pickPredictionValue(flat, PREDICTION_FIELD_CANDIDATES.ruedas, "ruedas")
+        );
+        if (Number.isFinite(ruedas)) {
+          prepared.ruedas = ruedas;
+        } else {
+          missing.push("ruedas");
+        }
+        const total = parseNumericValue(
+          pickPredictionValue(flat, PREDICTION_FIELD_CANDIDATES.total, "total")
+        );
+        if (Number.isFinite(total)) {
+          prepared.total = Number(total.toFixed(2));
+        } else {
+          missing.push("total");
+        }
+        const ready = missing.length === 0;
+        return {
+          ready,
+          missing,
+          payload: prepared,
+          signature: ready ? JSON.stringify(prepared) : null,
+          flat,
+        };
+      }
+
+      function formatPredictionPercentage(value) {
+        if (!Number.isFinite(value)) {
+          return "0%";
+        }
+        const percentage = value * 100;
+        if (percentage >= 99.95) {
+          return "100%";
+        }
+        if (percentage <= 0.05) {
+          return "0%";
+        }
+        return `${percentage.toFixed(1)}%`;
+      }
+
+      function markPredictionDirty(entry) {
+        if (!entry || typeof entry !== "object") {
+          return;
+        }
+        if (entry.prediction && typeof entry.prediction === "object") {
+          entry.prediction.needsRefresh = true;
+        }
       }
 
       function getTextOriginDescription(origin) {
@@ -4304,6 +4753,341 @@
         }
       }
 
+      function setPredictionMessage(message, options = {}) {
+        if (!predictionContent) {
+          return;
+        }
+        const paragraph = document.createElement("p");
+        paragraph.className = options.className || "prediction-placeholder";
+        paragraph.textContent = message;
+        predictionContent.replaceChildren(paragraph);
+      }
+
+      function renderPredictionResult(predictionState) {
+        if (!predictionContent) {
+          return;
+        }
+        const wrapper = document.createElement("div");
+        wrapper.className = "prediction-result";
+        const label = document.createElement("p");
+        label.className = "prediction-result__label";
+        const category =
+          predictionState && typeof predictionState.category === "string"
+            ? predictionState.category
+            : "";
+        label.textContent = category
+          ? `Categoría predicha: ${category}`
+          : "Categoría predicha:";
+        wrapper.appendChild(label);
+        const probabilitiesSource = Array.isArray(predictionState?.probabilities)
+          ? predictionState.probabilities.slice()
+          : [];
+        if (probabilitiesSource.length) {
+          probabilitiesSource.sort((a, b) => {
+            const valueA = Number(a?.probabilidad ?? a?.probability ?? 0);
+            const valueB = Number(b?.probabilidad ?? b?.probability ?? 0);
+            return valueB - valueA;
+          });
+          const list = document.createElement("ul");
+          list.className = "prediction-probabilities";
+          probabilitiesSource.forEach((item) => {
+            const listItem = document.createElement("li");
+            const name = document.createElement("span");
+            name.className = "prediction-probability__name";
+            const labelText =
+              typeof item?.clase === "string"
+                ? item.clase
+                : typeof item?.category === "string"
+                ? item.category
+                : typeof item?.label === "string"
+                ? item.label
+                : "";
+            name.textContent = labelText || "—";
+            listItem.appendChild(name);
+            const valueContainer = document.createElement("span");
+            valueContainer.className = "prediction-probability__value";
+            const meter = document.createElement("span");
+            meter.className = "prediction-probability__meter";
+            const bar = document.createElement("span");
+            bar.className = "prediction-probability__meter-bar";
+            const probabilityValue = Number(item?.probabilidad ?? item?.probability ?? 0);
+            const width = Math.max(0, Math.min(100, Math.round(probabilityValue * 100)));
+            bar.style.width = `${width}%`;
+            meter.appendChild(bar);
+            const percent = document.createElement("strong");
+            percent.textContent = formatPredictionPercentage(probabilityValue);
+            valueContainer.appendChild(meter);
+            valueContainer.appendChild(percent);
+            listItem.appendChild(valueContainer);
+            list.appendChild(listItem);
+          });
+          wrapper.appendChild(list);
+        }
+        predictionContent.replaceChildren(wrapper);
+      }
+
+      function renderPredictionCard(entry, features) {
+        if (!predictionCard) {
+          return;
+        }
+        if (!entry) {
+          predictionCard.hidden = true;
+          if (predictionSubtitle) {
+            predictionSubtitle.textContent = "";
+          }
+          if (predictionContent) {
+            predictionContent.innerHTML = "";
+          }
+          if (retryPredictionButton) {
+            retryPredictionButton.disabled = true;
+          }
+          return;
+        }
+        predictionCard.hidden = false;
+        const state =
+          entry.prediction && typeof entry.prediction === "object" ? entry.prediction : null;
+        const status = state ? state.status : null;
+        const needsRefresh = Boolean(state && state.needsRefresh);
+        const ready = Boolean(features && features.ready);
+        const missingFields =
+          features && Array.isArray(features.missing)
+            ? features.missing
+            : PREDICTION_REQUIRED_FIELDS;
+        let subtitle = "";
+        let buttonLabel = state ? "Reintentar" : "Calcular";
+        let buttonDisabled = false;
+
+        if (!ready) {
+          if (state && state.status === "success") {
+            renderPredictionResult(state);
+            const note = document.createElement("p");
+            note.className = "prediction-note";
+            note.textContent = missingFields.length
+              ? `Proporciona los campos faltantes (${missingFields.join(", ")}) para recalcular la predicción.`
+              : "Proporciona los campos requeridos para recalcular la predicción.";
+            predictionContent.appendChild(note);
+            subtitle = "Faltan datos para recalcular la predicción.";
+            buttonDisabled = true;
+            buttonLabel = "Recalcular";
+          } else {
+            const message = missingFields.length
+              ? `Faltan los campos: ${missingFields.join(", ")}.`
+              : "Proporciona los campos requeridos para ejecutar la predicción.";
+            setPredictionMessage(message);
+            subtitle = "Completa los campos requeridos para ejecutar la predicción.";
+            buttonDisabled = true;
+            buttonLabel = state ? "Reintentar" : "Calcular";
+          }
+        } else if (status === "loading") {
+          setPredictionMessage("Calculando predicción...");
+          subtitle = "Calculando predicción...";
+          buttonDisabled = true;
+        } else if (status === "error") {
+          const message =
+            typeof state.message === "string" && state.message.trim()
+              ? state.message
+              : "No se pudo obtener la predicción.";
+          setPredictionMessage(message, { className: "prediction-error" });
+          subtitle = "Ocurrió un error al obtener la predicción.";
+          buttonDisabled = false;
+          buttonLabel = "Reintentar";
+        } else if (status === "success") {
+          renderPredictionResult(state);
+          if (needsRefresh) {
+            const note = document.createElement("p");
+            note.className = "prediction-note";
+            note.textContent =
+              "Los datos cambiaron. Ejecuta nuevamente la predicción para actualizar el resultado.";
+            predictionContent.appendChild(note);
+            subtitle = "Los datos cambiaron. Recalcula la predicción.";
+            buttonDisabled = false;
+            buttonLabel = "Recalcular";
+          } else {
+            const timestamp =
+              state.obtainedAt && Number.isFinite(state.obtainedAt)
+                ? new Date(state.obtainedAt).toLocaleString()
+                : "";
+            subtitle = timestamp ? `Última actualización: ${timestamp}.` : "Predicción lista.";
+            buttonDisabled = false;
+            buttonLabel = "Reintentar";
+          }
+        } else {
+          setPredictionMessage("Ejecuta la predicción para conocer la categoría estimada.");
+          subtitle = "Predicción lista para ejecutarse.";
+          buttonDisabled = false;
+          buttonLabel = "Calcular";
+        }
+
+        if (predictionSubtitle) {
+          predictionSubtitle.textContent = subtitle;
+        }
+        if (retryPredictionButton) {
+          retryPredictionButton.disabled = buttonDisabled;
+          retryPredictionButton.textContent = buttonLabel;
+        }
+      }
+
+      function shouldAutoRunPrediction(entry, features) {
+        if (!entry || !features || !features.ready) {
+          return false;
+        }
+        const state =
+          entry.prediction && typeof entry.prediction === "object" ? entry.prediction : null;
+        if (!state) {
+          return true;
+        }
+        if (state.status === "loading") {
+          return false;
+        }
+        if (state.needsRefresh) {
+          return false;
+        }
+        if (state.status === "success") {
+          return state.inputSignature !== features.signature;
+        }
+        return false;
+      }
+
+      async function triggerPrediction(entry, features) {
+        if (!entry || !features || !features.ready) {
+          return;
+        }
+        const payload = features.payload || {};
+        const signature = features.signature || JSON.stringify(payload);
+        const requestId = (entry.predictionRequestId || 0) + 1;
+        entry.predictionRequestId = requestId;
+        entry.prediction = {
+          status: "loading",
+          needsRefresh: false,
+          inputSignature: signature,
+          features: payload,
+        };
+        if (state.results[state.currentIndex] === entry) {
+          renderPredictionCard(entry, features);
+        }
+        try {
+          const response = await fetch(PREDICTION_ENDPOINT, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          if (!response.ok) {
+            let detail = "No se pudo obtener la predicción.";
+            try {
+              const errorBody = await response.json();
+              if (errorBody && typeof errorBody.detail === "string") {
+                detail = errorBody.detail;
+              }
+            } catch (error) {
+              // Ignorado a propósito
+            }
+            throw new Error(detail);
+          }
+          const data = await response.json();
+          if (entry.predictionRequestId !== requestId) {
+            return;
+          }
+          const probabilitiesSource = Array.isArray(data?.probabilidades)
+            ? data.probabilidades
+            : [];
+          const probabilities = probabilitiesSource.map((item) => ({
+            clase:
+              typeof item?.clase === "string"
+                ? item.clase
+                : typeof item?.category === "string"
+                ? item.category
+                : typeof item?.label === "string"
+                ? item.label
+                : "",
+            probabilidad: Number(item?.probabilidad ?? item?.probability ?? 0),
+          }));
+          const categoryValue =
+            typeof data?.categoria_predicha === "string"
+              ? data.categoria_predicha
+              : typeof data?.predicted_class === "string"
+              ? data.predicted_class
+              : "";
+          const valoresEntrada =
+            data?.valores_entrada && typeof data.valores_entrada === "object"
+              ? data.valores_entrada
+              : payload;
+          entry.prediction = {
+            status: "success",
+            category: categoryValue || "",
+            probabilities,
+            features: valoresEntrada,
+            inputSignature: signature,
+            obtainedAt: Date.now(),
+            needsRefresh: false,
+          };
+        } catch (error) {
+          if (entry.predictionRequestId !== requestId) {
+            return;
+          }
+          const message =
+            error && typeof error.message === "string" && error.message.trim()
+              ? error.message
+              : "No se pudo obtener la predicción.";
+          entry.prediction = {
+            status: "error",
+            message,
+            features: payload,
+            inputSignature: signature,
+            needsRefresh: false,
+          };
+        }
+        if (state.results[state.currentIndex] === entry) {
+          const refreshed = collectPredictionFeatures(entry, features.flat);
+          renderPredictionCard(entry, refreshed);
+        }
+      }
+
+
+      function getPredictionDownload(entry) {
+        if (!entry || typeof entry !== "object") {
+          return null;
+        }
+        const state =
+          entry.prediction && typeof entry.prediction === "object" ? entry.prediction : null;
+        if (!state) {
+          return null;
+        }
+        const download = {
+          estado: state.status || "desconocido",
+        };
+        if (state.features) {
+          download.valores_entrada = state.features;
+        }
+        if (state.needsRefresh) {
+          download.necesita_actualizacion = true;
+        }
+        if (state.status === "success") {
+          download.categoria_predicha = state.category || "";
+          download.probabilidades = Array.isArray(state.probabilities)
+            ? state.probabilities.map((item) => ({
+                clase:
+                  typeof item?.clase === "string"
+                    ? item.clase
+                    : typeof item?.category === "string"
+                    ? item.category
+                    : typeof item?.label === "string"
+                    ? item.label
+                    : "",
+                probabilidad: Number(item?.probabilidad ?? item?.probability ?? 0),
+              }))
+            : [];
+          if (state.obtainedAt && Number.isFinite(state.obtainedAt)) {
+            download.calculada_en = new Date(state.obtainedAt).toISOString();
+          }
+        } else if (state.status === "error" && state.message) {
+          download.mensaje = state.message;
+        }
+        return download;
+      }
+
+
+
+
       function renderResult(index, options = {}) {
         if (isPreviewDocked) {
           resetDockedPreview();
@@ -4330,6 +5114,7 @@
           updateViewContentButton(null);
           downloadJson.disabled = true;
           downloadCsv.disabled = true;
+          renderPredictionCard(null, null);
           updateHighlightIndicators();
           return;
         }
@@ -4346,6 +5131,7 @@
           state.missingHighlight = null;
           updatePreviewModeControls(null);
           updateViewContentButton(null);
+          renderPredictionCard(null, null);
           updateHighlightIndicators();
           return;
         }
@@ -4359,6 +5145,11 @@
         ).toLocaleString()}`;
 
         const flat = flattenData(entry.data);
+        const predictionFeatures = collectPredictionFeatures(entry, flat);
+        renderPredictionCard(entry, predictionFeatures);
+        if (shouldAutoRunPrediction(entry, predictionFeatures)) {
+          triggerPrediction(entry, predictionFeatures);
+        }
         const highlights = getEntryHighlights(entry, flat);
         state.currentHighlights = Array.isArray(highlights) ? highlights : [];
         state.missingHighlight = null;
@@ -4669,6 +5460,8 @@
             typeof options.textOrigin === "string" ? options.textOrigin : "",
           uploadedAt: options.uploadedAt || timestamp,
           editedFields: Object.create(null),
+          prediction: null,
+          predictionRequestId: 0,
           file:
             options.file && typeof options.file === "object" ? options.file : null,
           category:
@@ -4721,6 +5514,20 @@
         }
       });
 
+      if (retryPredictionButton) {
+        retryPredictionButton.addEventListener("click", () => {
+          const entry = state.results[state.currentIndex];
+          const features = collectPredictionFeatures(entry);
+          if (entry) {
+            renderPredictionCard(entry, features);
+          }
+          if (!entry || !features.ready) {
+            return;
+          }
+          triggerPrediction(entry, features);
+        });
+      }
+
       function downloadFile(content, filename, type) {
         const blob = new Blob([content], { type });
         const link = document.createElement("a");
@@ -4737,6 +5544,7 @@
           subido_en: new Date((entry.uploadedAt || entry.timestamp)).toISOString(),
           procesado_en: new Date(entry.timestamp).toISOString(),
           datos: entry.data,
+          prediccion: getPredictionDownload(entry),
         }));
         return enriched;
       }
@@ -4759,15 +5567,59 @@
               allKeys.add(`datos.${key}`);
             }
           });
+          const predictionData =
+            item.prediccion && typeof item.prediccion === "object" ? item.prediccion : null;
+          if (predictionData) {
+            Object.keys(flattenData(predictionData)).forEach((key) => {
+              if (!key) {
+                allKeys.add("prediccion");
+              } else {
+                allKeys.add(`prediccion.${key}`);
+              }
+            });
+          }
         });
         const headers = Array.from(allKeys);
         const rows = payload.map((item) => {
           const flat = flattenData(item.datos);
+          const predictionData =
+            item.prediccion && typeof item.prediccion === "object" ? item.prediccion : null;
+          const flatPrediction = predictionData ? flattenData(predictionData) : {};
           const values = headers.map((header) => {
             if (header === "id") return item.id;
             if (header === "archivo") return item.archivo;
             if (header === "subido_en") return item.subido_en;
             if (header === "procesado_en") return item.procesado_en;
+            if (header === "datos" || header.startsWith("datos.")) {
+              const dataKey = header === "datos" ? "" : header.replace(/^datos\./, "");
+              const value = Object.prototype.hasOwnProperty.call(flat, dataKey)
+                ? flat[dataKey]
+                : null;
+              if (value === null || value === undefined) {
+                return "";
+              }
+              if (typeof value === "object") {
+                return JSON.stringify(value);
+              }
+              return String(value);
+            }
+            if (header === "prediccion" || header.startsWith("prediccion.")) {
+              const predictionKey =
+                header === "prediccion" ? "" : header.replace(/^prediccion\./, "");
+              const predictionValue = Object.prototype.hasOwnProperty.call(
+                flatPrediction,
+                predictionKey
+              )
+                ? flatPrediction[predictionKey]
+                : null;
+              if (predictionValue === null || predictionValue === undefined) {
+                return "";
+              }
+              if (typeof predictionValue === "object") {
+                return JSON.stringify(predictionValue);
+              }
+              return String(predictionValue);
+            }
             const key = header === "datos" ? "" : header.replace(/^datos\./, "");
             const value = Object.prototype.hasOwnProperty.call(flat, key)
               ? flat[key]

@@ -21,6 +21,7 @@ class Config:
 
     MAX_CHARS_PER_CHUNK: int = int(os.getenv("MAX_CHARS_PER_CHUNK", "50000"))
     JSON_MODE_SCHEMA_NAME: str = os.getenv("JSON_MODE_SCHEMA_NAME", "factura_vehicular")
+    RF_MODEL_PATH: str = os.getenv("RF_MODEL_PATH", "verifactura_rf_model.pkl")
 
     @property
     def azure_configured(self) -> bool:
