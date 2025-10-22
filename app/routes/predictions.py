@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -7,6 +8,7 @@ from pydantic import BaseModel, Field, conint, confloat, validator
 
 from app.config import Config
 from app.services.prediction_service import PredictionService
+from app.services.training_service import TrainingService
 
 router = APIRouter(tags=["Predicciones"])
 
@@ -94,6 +96,31 @@ class PredictionResponse(BaseModel):
     )
 
 
+class RetrainResponse(BaseModel):
+    mensaje: str = Field(
+        ..., description="Descripción del resultado del proceso de reentrenamiento."
+    )
+    modelo: str = Field(..., description="Ruta en disco del modelo entrenado.")
+    clases: list[str] = Field(
+        ..., description="Listado de clases conocidas por el modelo entrenado."
+    )
+    muestras_entrenamiento: conint(ge=0) = Field(
+        ..., description="Cantidad de muestras utilizadas para el entrenamiento."
+    )
+    muestras_validacion: conint(ge=0) = Field(
+        ..., description="Cantidad de muestras utilizadas para la validación."
+    )
+    matriz_confusion: list[list[int]] = Field(
+        ..., description="Matriz de confusión calculada en el conjunto de validación."
+    )
+    reporte: Dict[str, Dict[str, float]] = Field(
+        ..., description="Reporte de métricas por clase."
+    )
+    servicio_recargado: bool = Field(
+        ..., description="Indica si el servicio de predicciones se recargó correctamente."
+    )
+
+
 def _get_prediction_service(request: Request) -> PredictionService:
     service: Optional[PredictionService] = getattr(
         request.app.state, "prediction_service", None
@@ -140,4 +167,65 @@ async def create_prediction(
         categoria_predicha=result.predicted_class,
         probabilidades=probabilities,
         valores_entrada=features,
+    )
+
+
+@router.post(
+    "/predictions/retrain",
+    response_model=RetrainResponse,
+    summary="Reentrenar el modelo Random Forest con el dataset configurado",
+)
+async def retrain_prediction_model(request: Request) -> RetrainResponse:
+    config: Config = getattr(request.app.state, "config", Config())
+    dataset_path = Path(config.RF_TRAINING_DATA_PATH).expanduser()
+    model_path = Path(config.RF_MODEL_PATH).expanduser()
+    training_service = TrainingService(dataset_path=dataset_path, model_path=model_path)
+    try:
+        result = training_service.retrain_random_forest()
+    except FileNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=(
+                "No se encontró el archivo CSV configurado para el entrenamiento "
+                f"({dataset_path!s})."
+            ),
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(exc),
+        ) from exc
+
+    servicio_recargado = False
+    try:
+        service: Optional[PredictionService] = getattr(
+            request.app.state, "prediction_service", None
+        )
+        if service is None:
+            service = PredictionService(model_path)
+            request.app.state.prediction_service = service
+        else:
+            service.reload()
+        servicio_recargado = True
+    except Exception:
+        request.app.state.prediction_service = None
+
+    mensaje = "Modelo Random Forest reentrenado correctamente."
+    if not servicio_recargado:
+        mensaje += " Vuelve a ejecutar una predicción para cargar el nuevo modelo."
+
+    return RetrainResponse(
+        mensaje=mensaje,
+        modelo=str(result.model_path),
+        clases=result.classes,
+        muestras_entrenamiento=result.training_samples,
+        muestras_validacion=result.validation_samples,
+        matriz_confusion=result.confusion_matrix,
+        reporte={key: dict(value) for key, value in result.classification_report.items()},
+        servicio_recargado=servicio_recargado,
     )

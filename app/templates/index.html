@@ -1416,6 +1416,62 @@
         font: inherit;
       }
 
+      .settings-option--action {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+      }
+
+      .settings-option__text {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+
+      .settings-option__title {
+        font-weight: 600;
+      }
+
+      .settings-action {
+        align-self: flex-start;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 0.5rem 1.1rem;
+        background: var(--surface);
+        color: var(--accent);
+        font-weight: 500;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease,
+          color 0.2s ease, background 0.2s ease;
+      }
+
+      .settings-action:hover,
+      .settings-action:focus-visible {
+        border-color: var(--accent);
+        color: var(--accent-dark);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+        outline: none;
+      }
+
+      .settings-action[disabled] {
+        cursor: progress;
+        opacity: 0.6;
+        box-shadow: none;
+      }
+
+      .settings-option__note {
+        color: var(--muted);
+        font-size: 0.8rem;
+        line-height: 1.4;
+      }
+
+      .settings-option__note.is-error {
+        color: var(--danger);
+      }
+
+      .settings-option__note.is-success {
+        color: var(--accent);
+      }
+
       body.theme-dark {
         color-scheme: dark;
         --surface: #0f172a;
@@ -2244,6 +2300,33 @@
             </label>
             <input type="checkbox" id="developerToggle" />
           </div>
+          <div
+            class="settings-option settings-option--action"
+            data-developer-only
+            hidden
+          >
+            <div class="settings-option__text">
+              <p class="settings-option__title">Reentrenar Random Forest</p>
+              <span>
+                Genera un nuevo modelo con el dataset configurado y recarga el
+                servicio de predicciones.
+              </span>
+            </div>
+            <button
+              type="button"
+              class="settings-action"
+              id="retrainRandomForestButton"
+              data-default-label="Reentrenar Random Forest"
+            >
+              Reentrenar Random Forest
+            </button>
+            <p
+              class="settings-option__note"
+              id="retrainRandomForestStatus"
+              aria-live="polite"
+              hidden
+            ></p>
+          </div>
         </div>
       </div>
     </aside>
@@ -2276,6 +2359,7 @@
       };
 
       const PREDICTION_ENDPOINT = "/api/v1/predictions";
+      const RETRAIN_ENDPOINT = "/api/v1/predictions/retrain";
       const PREDICTION_REQUIRED_FIELDS = [
         "marca",
         "tipo",
@@ -2507,6 +2591,12 @@
       const themeSelect = document.getElementById("themeSelect");
       const developerToggle = document.getElementById("developerToggle");
       const developerBadge = document.getElementById("developerBadge");
+      const retrainRandomForestButton = document.getElementById(
+        "retrainRandomForestButton"
+      );
+      const retrainRandomForestStatus = document.getElementById(
+        "retrainRandomForestStatus"
+      );
       const llmProviderRow = document.getElementById("llmProviderRow");
       const llmProviderSelect = document.getElementById("llmProviderSelect");
       const llmSettingsContainer = document.getElementById("llmSettings");
@@ -3107,6 +3197,9 @@
           element.hidden = !enabled;
           element.setAttribute("aria-hidden", String(!enabled));
         });
+        if (!enabled) {
+          updateRetrainStatus("", null);
+        }
         if (llmSettingsContainer) {
           llmSettingsContainer.hidden = !enabled;
           llmSettingsContainer.setAttribute("aria-hidden", String(!enabled));
@@ -4763,6 +4856,49 @@
         predictionContent.replaceChildren(paragraph);
       }
 
+      function updateRetrainStatus(message, tone) {
+        if (!retrainRandomForestStatus) {
+          return;
+        }
+        const normalizedMessage = message ? String(message).trim() : "";
+        retrainRandomForestStatus.textContent = normalizedMessage;
+        if (!normalizedMessage) {
+          retrainRandomForestStatus.hidden = true;
+          retrainRandomForestStatus.classList.remove("is-error", "is-success");
+          return;
+        }
+        retrainRandomForestStatus.hidden = false;
+        retrainRandomForestStatus.classList.remove("is-error", "is-success");
+        if (tone === "error") {
+          retrainRandomForestStatus.classList.add("is-error");
+        } else if (tone === "success") {
+          retrainRandomForestStatus.classList.add("is-success");
+        }
+      }
+
+      function markPredictionsAsStale() {
+        let marked = false;
+        state.results.forEach((entry) => {
+          if (
+            entry &&
+            typeof entry === "object" &&
+            entry.prediction &&
+            typeof entry.prediction === "object" &&
+            entry.prediction.status === "success"
+          ) {
+            entry.prediction.needsRefresh = true;
+            marked = true;
+          }
+        });
+        if (marked && state.currentIndex >= 0) {
+          const currentEntry = state.results[state.currentIndex];
+          if (currentEntry) {
+            const features = collectPredictionFeatures(currentEntry);
+            renderPredictionCard(currentEntry, features);
+          }
+        }
+      }
+
       function renderPredictionResult(predictionState) {
         if (!predictionContent) {
           return;
@@ -5525,6 +5661,52 @@
             return;
           }
           triggerPrediction(entry, features);
+        });
+      }
+
+      if (retrainRandomForestButton) {
+        const retrainDefaultLabel =
+          retrainRandomForestButton.getAttribute("data-default-label") ||
+          retrainRandomForestButton.textContent ||
+          "Reentrenar Random Forest";
+        retrainRandomForestButton.textContent = retrainDefaultLabel;
+        retrainRandomForestButton.addEventListener("click", async () => {
+          updateRetrainStatus(
+            "Reentrenando el modelo. Esto puede tardar unos segundos..."
+          );
+          retrainRandomForestButton.disabled = true;
+          retrainRandomForestButton.textContent = "Entrenando...";
+          try {
+            const response = await fetch(RETRAIN_ENDPOINT, { method: "POST" });
+            let payload = null;
+            try {
+              payload = await response.json();
+            } catch (error) {
+              payload = null;
+            }
+            if (!response.ok) {
+              const detail =
+                payload && typeof payload.detail === "string"
+                  ? payload.detail
+                  : "No se pudo reentrenar el modelo.";
+              throw new Error(detail);
+            }
+            const message =
+              payload && typeof payload.mensaje === "string"
+                ? payload.mensaje
+                : "Reentrenamiento completado.";
+            updateRetrainStatus(message, "success");
+            markPredictionsAsStale();
+          } catch (error) {
+            const fallback =
+              error && typeof error.message === "string" && error.message.trim()
+                ? error.message
+                : "No se pudo reentrenar el modelo.";
+            updateRetrainStatus(fallback, "error");
+          } finally {
+            retrainRandomForestButton.disabled = false;
+            retrainRandomForestButton.textContent = retrainDefaultLabel;
+          }
         });
       }
 

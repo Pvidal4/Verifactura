@@ -85,3 +85,9 @@ class PredictionService:
             predicted_class=str(predicted), probabilities=probability_map
         )
 
+    def reload(self) -> None:
+        """Recarga el modelo desde disco tras un reentrenamiento."""
+
+        self._model = self._load_model()
+        self._feature_columns = self._resolve_feature_columns()
+
