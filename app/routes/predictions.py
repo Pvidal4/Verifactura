@@ -132,9 +132,7 @@ async def create_prediction(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="No se pudo calcular la predicción solicitada.",
         ) from exc
-    ordered = sorted(
-        result.probabilities.items(), key=lambda item: item[1], reverse=True
-    )
+    ordered = list(result.probabilities.items())
     probabilities = [
         PredictionProbability(clase=label, probabilidad=prob) for label, prob in ordered
     ]

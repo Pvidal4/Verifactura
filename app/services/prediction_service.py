@@ -1,11 +1,19 @@
 from __future__ import annotations
 
+from collections import OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, List, Mapping, Sequence
+from typing import Iterable, Mapping, Sequence
 
-import joblib
-import pandas as pd
+try:  # pragma: no cover - dependencias opcionales en tiempo de importación
+    import joblib  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover - dependencias opcionales
+    joblib = None  # type: ignore[assignment]
+
+try:  # pragma: no cover - dependencias opcionales en tiempo de importación
+    import pandas as pd  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover - dependencias opcionales
+    pd = None  # type: ignore[assignment]
 
 
 @dataclass(frozen=True)
@@ -13,7 +21,7 @@ class PredictionResult:
     """Structured result returned by the random forest classifier."""
 
     predicted_class: str
-    probabilities: Dict[str, float]
+    probabilities: OrderedDict[str, float]
 
 
 class PredictionService:
@@ -29,6 +37,10 @@ class PredictionService:
         self._feature_columns = self._resolve_feature_columns()
 
     def _load_model(self):  # type: ignore[no-untyped-def]
+        if joblib is None:
+            raise RuntimeError(
+                "joblib no está instalado. Instálalo para utilizar el servicio de predicciones."
+            )
         try:
             return joblib.load(self._model_path)
         except Exception as exc:  # pragma: no cover - defensive path
@@ -44,18 +56,32 @@ class PredictionService:
         return ["marca", "tipo", "clase", "capacidad", "combustible", "ruedas", "total"]
 
     def predict(self, features: Mapping[str, object]) -> PredictionResult:
-        row = {column: features.get(column) for column in self._feature_columns}
-        frame = pd.DataFrame([row], columns=list(self._feature_columns))
+        try:
+            if pd is None:
+                raise RuntimeError(
+                    "pandas no está instalado. Instálalo para utilizar el servicio de predicciones."
+                )
+            ordered_row = {
+                column: features[column] for column in self._feature_columns
+            }
+        except KeyError as exc:  # pragma: no cover - defensive path
+            missing = exc.args[0]
+            raise ValueError(
+                f"Falta el atributo requerido '{missing}' en la solicitud de predicción."
+            ) from exc
+        frame = pd.DataFrame([ordered_row], columns=list(self._feature_columns))
         predicted = self._model.predict(frame)[0]
-        probabilities: List[float]
-        if hasattr(self._model, "predict_proba"):
-            probabilities = list(self._model.predict_proba(frame)[0])
-        else:  # pragma: no cover - the shipped model implements predict_proba
-            probabilities = [0.0 for _ in getattr(self._model, "classes_", [])]
+        try:
+            probability_vector = self._model.predict_proba(frame)[0]
+        except AttributeError as exc:  # pragma: no cover - modelos sin predict_proba
+            raise RuntimeError(
+                "El modelo configurado no expone probabilidades de clase."
+            ) from exc
         classes: Sequence[str] = getattr(self._model, "classes_", [])
-        probability_map = {
-            str(label): float(prob)
-            for label, prob in zip(classes, probabilities)
-        }
-        return PredictionResult(predicted_class=str(predicted), probabilities=probability_map)
+        probability_map: OrderedDict[str, float] = OrderedDict(
+            (str(label), float(prob)) for label, prob in zip(classes, probability_vector)
+        )
+        return PredictionResult(
+            predicted_class=str(predicted), probabilities=probability_map
+        )
 
