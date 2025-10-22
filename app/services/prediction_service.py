@@ -50,7 +50,7 @@ class PredictionService:
         candidates: Iterable[str] | None = getattr(
             self._model, "feature_names_in_", None
         )
-        if candidates:
+        if candidates is not None:
             return list(candidates)
         # Default to the expected training order if metadata is not present.
         return ["marca", "tipo", "clase", "capacidad", "combustible", "ruedas", "total"]
