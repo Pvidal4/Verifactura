@@ -127,14 +127,13 @@ class ExtractionService:
 
         raise RuntimeError(f"Proveedor OCR '{provider}' no disponible.")
 
-    def _needs_ocr(self, extension: str, text: str) -> bool:
+    def _needs_ocr(self, extension: str, _text: str) -> bool:
         """Determina si es imprescindible recurrir a OCR para obtener texto legible."""
 
-        if extension in IMAGE_EXTENSIONS:
-            return True
-        if extension in PDF_EXTENSIONS and not text:
-            return True
-        return False
+        # Actualmente solo las imágenes requieren obligatoriamente OCR para extraer texto
+        # legible. Los PDF respetan el toggle de OCR, incluso si la extracción directa no
+        # arroja contenido.
+        return extension in IMAGE_EXTENSIONS
 
     @staticmethod
     def _normalize_image_media_type(data: bytes, content_type: Optional[str]) -> str:
@@ -462,7 +461,7 @@ class ExtractionService:
                 text = self._pdf.read_text(data)
             elif suffix in TEXT_EXTENSIONS or suffix in XML_EXTENSIONS:
                 text = data.decode("utf-8", errors="replace")
-        if force_ocr or self._needs_ocr(suffix, text) or not text:
+        if force_ocr or self._needs_ocr(suffix, text):
             text = self._extract_text_from_file(
                 filename,
                 data,

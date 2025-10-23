@@ -388,8 +388,8 @@ def test_extraction_service_uses_ocr_when_forced():
     assert result.text_origin == "ocr"
 
 
-def test_extraction_service_falls_back_to_ocr_when_no_text():
-    """Si el PDF no tiene texto legible, debe activarse OCR automáticamente."""
+def test_extraction_service_respects_disabled_ocr_for_pdfs():
+    """Los PDF sin texto deben conservar el origen 'file' cuando el OCR está apagado."""
 
     service = _InstrumentedExtractionService()
     service._pdf.text = ""
@@ -398,11 +398,12 @@ def test_extraction_service_falls_back_to_ocr_when_no_text():
     result = service.extract_from_file("factura.pdf", b"%PDF", "application/pdf")
 
     invocation = service.text_invocations[-1]
-    assert invocation["text"] == "texto recuperado"
-    assert invocation["text_origin"] == "ocr"
+    assert invocation["text"] == ""
+    assert invocation["text_origin"] == "file"
     assert invocation["vision_images"] is None
-    assert service.ocr_invocations == 1
-    assert result.text_origin == "ocr"
+    assert service.ocr_invocations == 0
+    assert result.raw_text == ""
+    assert result.text_origin == "file"
 
 
 def test_extraction_service_omits_pixels_when_vision_disabled_for_images():
