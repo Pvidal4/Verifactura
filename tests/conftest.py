@@ -3,7 +3,17 @@ from __future__ import annotations
 
 import sys
 import types
+from pathlib import Path
 from types import SimpleNamespace
+
+
+# Aseguramos que la carpeta raíz del proyecto esté en ``sys.path`` para que los
+# imports absolutos como ``import app`` funcionen aunque las pruebas se ejecuten
+# desde subdirectorios. Esto evita errores «No module named 'app'» reportados al
+# ejecutar ``pytest`` desde ``tests/`` o entornos externos.
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 
 def _ensure_fastapi_stub() -> None:
