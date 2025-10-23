@@ -1,7 +1,6 @@
 .env
 env
 __pycache__
-requirements.txt
 gpt-oss-20b
 test.py
 train_script.py

@@ -1,3 +1,5 @@
+"""Servicios de conveniencia para reentrenar el modelo de clasificación."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

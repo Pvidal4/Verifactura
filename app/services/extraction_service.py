@@ -1,3 +1,5 @@
+"""Servicios de orquestación para extraer información desde distintos soportes."""
+
 from __future__ import annotations
 
 import logging
@@ -12,6 +14,7 @@ from app.services.llm_service import LocalLLMService, OpenAILLMService
 from app.services.ocr_service import AzureOCRConfig, AzureOCRService
 from app.services.pdf_service import PDFTextExtractor
 
+# Conjuntos de extensiones soportadas que determinan la ruta de procesamiento
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
 TEXT_EXTENSIONS = {".json"}
 XML_EXTENSIONS = {".xml"}
@@ -23,11 +26,15 @@ LOGGER = logging.getLogger(__name__)
 
 @dataclass
 class ExtractionResult:
+    """Estructura con el texto procesado y los campos estructurados resultantes."""
+
     fields: Dict[str, object]
     raw_text: str
     text_origin: Literal["input", "file", "ocr"]
 
     def to_payload(self) -> Dict[str, object]:
+        """Convierte el resultado en un diccionario listo para serializar."""
+
         return {
             "fields": self.fields,
             "raw_text": self.raw_text,
@@ -36,9 +43,14 @@ class ExtractionResult:
 
 
 class ExtractionService:
+    """Gestiona la extracción de texto y la invocación a los modelos de lenguaje."""
+
     def __init__(self, config: Config) -> None:
+        """Prepara los auxiliares necesarios tomando como base la configuración."""
+
         self._config = config
         self._pdf = PDFTextExtractor(config.MAX_CHARS_PER_CHUNK)
+        # Diccionarios para crear instancias de LLM bajo demanda y cachearlas
         self._llm_factories: Dict[str, Callable[[], object]] = {}
         self._llm_cache: Dict[str, object] = {}
         self._llm_factories["api"] = partial(OpenAILLMService, config)
@@ -48,6 +60,7 @@ class ExtractionService:
         self._default_provider = "api" if "api" in self._llm_factories else next(
             iter(self._llm_factories)
         )
+        # Cache de clientes OCR organizada por tupla (proveedor, endpoint, clave)
         self._ocr_cache: Dict[Tuple[str, str, str], AzureOCRService] = {}
         self._default_ocr_key: Optional[Tuple[str, str, str]] = None
         if config.azure_configured:
@@ -61,6 +74,8 @@ class ExtractionService:
                 self._default_ocr_key = cache_key
 
     def _get_llm(self, provider: Optional[str] = None):
+        """Devuelve una instancia de servicio LLM, reutilizando caches si existen."""
+
         key = (provider or self._default_provider).lower()
         if key not in self._llm_factories:
             available = ", ".join(sorted(self._llm_factories))
@@ -79,6 +94,8 @@ class ExtractionService:
         key: Optional[str],
         error_message: str,
     ) -> AzureOCRService:
+        """Selecciona la instancia OCR adecuada considerando overrides en la llamada."""
+
         normalized_provider = (provider or "").strip().lower()
         normalized_endpoint = endpoint.strip() if isinstance(endpoint, str) else None
         normalized_key = key.strip() if isinstance(key, str) else None
@@ -110,6 +127,8 @@ class ExtractionService:
         raise RuntimeError(f"Proveedor OCR '{provider}' no disponible.")
 
     def _needs_ocr(self, extension: str, text: str) -> bool:
+        """Determina si es imprescindible recurrir a OCR para obtener texto legible."""
+
         if extension in IMAGE_EXTENSIONS:
             return True
         if extension in PDF_EXTENSIONS and not text:
@@ -119,6 +138,8 @@ class ExtractionService:
     def _extract_text_from_pdf_with_ocr(
         self, data: bytes, ocr_service: Optional[AzureOCRService]
     ) -> str:
+        """Aplica OCR a un PDF, intentando diferentes estrategias si es necesario."""
+
         if ocr_service is None:
             raise RuntimeError(
                 "Azure OCR no está configurado pero es requirido para este tipo de archivo"
@@ -163,6 +184,8 @@ class ExtractionService:
         force_ocr: bool = False,
         ocr_service: Optional[AzureOCRService] = None,
     ) -> str:
+        """Resuelve cómo obtener texto de un archivo según su extensión y contenido."""
+
         suffix = Path(filename).suffix.lower()
         normalized_content_type = (content_type or "").lower()
         if suffix in PDF_EXTENSIONS or normalized_content_type == "application/pdf":
@@ -172,9 +195,7 @@ class ExtractionService:
             if text:
                 return text
             return self._extract_text_from_pdf_with_ocr(data, ocr_service)
-        elif suffix in TEXT_EXTENSIONS:
-            return data.decode("utf-8", errors="replace")
-        elif suffix in XML_EXTENSIONS:
+        if suffix in TEXT_EXTENSIONS or suffix in XML_EXTENSIONS:
             return data.decode("utf-8", errors="replace")
         if ocr_service is None:
             raise RuntimeError(
@@ -204,6 +225,8 @@ class ExtractionService:
         openai_api_key: Optional[str] = None,
         text_origin: Literal["input", "file", "ocr"] = "input",
     ) -> ExtractionResult:
+        """Envía texto directamente al LLM elegido para obtener los campos estructurados."""
+
         sanitized_model = model.strip() if isinstance(model, str) else None
         llm = self._get_llm(provider)
         extracted = llm.extract(
@@ -236,6 +259,8 @@ class ExtractionService:
         ocr_endpoint: Optional[str] = None,
         ocr_key: Optional[str] = None,
     ) -> ExtractionResult:
+        """Extrae texto vía OCR y luego invoca el flujo genérico de extracción."""
+
         ocr_service = self._resolve_ocr_service(
             ocr_provider,
             endpoint=ocr_endpoint,
@@ -289,8 +314,11 @@ class ExtractionService:
         ocr_endpoint: Optional[str] = None,
         ocr_key: Optional[str] = None,
     ) -> ExtractionResult:
+        """Decide si se debe aplicar OCR o lectura directa antes de usar el LLM."""
+
         suffix = Path(filename).suffix.lower()
         if suffix in IMAGE_EXTENSIONS:
+            # Derivar a la ruta especializada para garantizar OCR explícito
             return self.extract_from_image(
                 filename,
                 data,
@@ -311,6 +339,8 @@ class ExtractionService:
         ocr_service_instance: Optional[AzureOCRService] = None
 
         def require_ocr_service() -> AzureOCRService:
+            """Inicializa el servicio OCR una única vez si llega a ser necesario."""
+
             nonlocal ocr_service_instance
             if ocr_service_instance is None:
                 ocr_service_instance = self._resolve_ocr_service(

@@ -1,3 +1,5 @@
+"""Endpoints relacionados con la clasificación y reentrenamiento del modelo."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -14,6 +16,8 @@ router = APIRouter(tags=["Predicciones"])
 
 
 class PredictionRequest(BaseModel):
+    """Representa la solicitud necesaria para generar una predicción."""
+
     marca: str = Field(..., description="Marca del vehículo en mayúsculas.")
     tipo: str = Field(..., description="Tipo del vehículo (por ejemplo, SEDAN).")
     clase: str = Field(..., description="Clase del vehículo.")
@@ -24,6 +28,7 @@ class PredictionRequest(BaseModel):
 
     @validator("marca", "tipo", "clase", "combustible", pre=True)
     def _normalize_text(cls, value: Any) -> str:
+        """Estandariza el texto recibido eliminando espacios y usando mayúsculas."""
         if isinstance(value, str):
             cleaned = value.strip()
             if not cleaned:
@@ -33,6 +38,7 @@ class PredictionRequest(BaseModel):
 
     @validator("capacidad", "ruedas", pre=True)
     def _coerce_int(cls, value: Any) -> int:
+        """Convierte el valor a entero redondeando y validando que sea positivo."""
         number = PredictionRequest._parse_number(value)
         if number < 0:
             raise ValueError("El valor debe ser mayor o igual a cero.")
@@ -40,6 +46,7 @@ class PredictionRequest(BaseModel):
 
     @validator("total", pre=True)
     def _coerce_float(cls, value: Any) -> float:
+        """Transforma las entradas numéricas a float garantizando valores válidos."""
         number = PredictionRequest._parse_number(value)
         if number < 0:
             raise ValueError("El valor debe ser mayor o igual a cero.")
@@ -47,6 +54,7 @@ class PredictionRequest(BaseModel):
 
     @staticmethod
     def _parse_number(value: Any) -> float:
+        """Acepta distintos formatos numéricos y los normaliza a float."""
         if isinstance(value, (int, float)):
             return float(value)
         if isinstance(value, str):
@@ -70,6 +78,7 @@ class PredictionRequest(BaseModel):
         raise ValueError("El valor debe ser numérico.")
 
     def to_features(self) -> Dict[str, object]:
+        """Serializa el modelo de datos en un diccionario listo para el modelo."""
         return {
             "marca": self.marca,
             "tipo": self.tipo,
@@ -82,11 +91,15 @@ class PredictionRequest(BaseModel):
 
 
 class PredictionProbability(BaseModel):
+    """Elemento auxiliar que describe la probabilidad de cada etiqueta."""
+
     clase: str = Field(..., description="Nombre de la categoría evaluada.")
     probabilidad: float = Field(..., ge=0, le=1, description="Probabilidad asociada a la categoría.")
 
 
 class PredictionResponse(BaseModel):
+    """Respuesta entregada al cliente con la predicción y probabilidades."""
+
     categoria_predicha: str = Field(..., description="Categoría predicha por el modelo.")
     probabilidades: list[PredictionProbability] = Field(
         ..., description="Listado de probabilidades por categoría."
@@ -97,6 +110,8 @@ class PredictionResponse(BaseModel):
 
 
 class RetrainResponse(BaseModel):
+    """Estructura devuelta tras ejecutar el reentrenamiento del modelo."""
+
     mensaje: str = Field(
         ..., description="Descripción del resultado del proceso de reentrenamiento."
     )
@@ -122,6 +137,7 @@ class RetrainResponse(BaseModel):
 
 
 def _get_prediction_service(request: Request) -> PredictionService:
+    """Obtiene el servicio de predicciones cacheado o lo crea bajo demanda."""
     service: Optional[PredictionService] = getattr(
         request.app.state, "prediction_service", None
     )
@@ -151,6 +167,7 @@ def _get_prediction_service(request: Request) -> PredictionService:
 async def create_prediction(
     payload: PredictionRequest, service: PredictionService = Depends(_get_prediction_service)
 ) -> PredictionResponse:
+    """Expone la inferencia del modelo Random Forest como endpoint HTTP."""
     features = payload.to_features()
     try:
         result = service.predict(features)
@@ -176,6 +193,7 @@ async def create_prediction(
     summary="Reentrenar el modelo Random Forest con el dataset configurado",
 )
 async def retrain_prediction_model(request: Request) -> RetrainResponse:
+    """Reentrena el modelo y actualiza la instancia del servicio en memoria."""
     config: Config = getattr(request.app.state, "config", Config())
     dataset_path = Path(config.RF_TRAINING_DATA_PATH).expanduser()
     model_path = Path(config.RF_MODEL_PATH).expanduser()

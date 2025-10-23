@@ -1,3 +1,5 @@
+"""Herramientas para leer contenido textual y gráfico contenido en archivos PDF."""
+
 from __future__ import annotations
 
 import io
@@ -15,12 +17,15 @@ try:  # pragma: no cover - optional dependency
 except Exception:  # pragma: no cover - optional dependency not installed
     fitz = None  # type: ignore
 
+
 class PDFTextExtractor:
+    """Encapsula diferentes estrategias para obtener información de un PDF."""
 
     def __init__(self, max_chars_per_chunk: int = 50_000) -> None:
         self.max_chars_per_chunk = max_chars_per_chunk
 
     def read_text(self, file_bytes: bytes) -> str:
+        """Extrae el texto embebido en el PDF usando PyPDF2."""
 
         reader = PdfReader(io.BytesIO(file_bytes))
         parts: List[str] = []
@@ -35,6 +40,8 @@ class PDFTextExtractor:
 
     @staticmethod
     def _guess_image_content_type(data: bytes, image_format: str) -> str:
+        """Determina el tipo MIME más probable para una imagen extraída."""
+
         fmt = (image_format or "").lower()
         if fmt in {"jpeg", "jpg", "jpe"}:
             return "image/jpeg"
@@ -55,6 +62,8 @@ class PDFTextExtractor:
         return "image/png"
 
     def _render_with_pdf2image(self, file_bytes: bytes) -> List[Tuple[bytes, str]]:
+        """Renderiza páginas a imágenes usando pdf2image cuando está disponible."""
+
         if convert_from_bytes is None:  # pragma: no cover - exercised when dependency exists
             return []
         try:
@@ -72,6 +81,8 @@ class PDFTextExtractor:
         return rendered
 
     def _render_with_pymupdf(self, file_bytes: bytes) -> List[Tuple[bytes, str]]:
+        """Genera imágenes mediante PyMuPDF, útil para documentos escaneados."""
+
         if fitz is None:  # pragma: no cover - optional dependency
             return []
         try:
@@ -94,6 +105,8 @@ class PDFTextExtractor:
         return rendered
 
     def _extract_embedded_images(self, file_bytes: bytes) -> List[Tuple[bytes, str]]:
+        """Recupera imágenes ya embebidas en el PDF como último recurso."""
+
         reader = PdfReader(io.BytesIO(file_bytes))
         rendered: List[Tuple[bytes, str]] = []
         for page in reader.pages:
@@ -124,8 +137,9 @@ class PDFTextExtractor:
         return rendered
 
     def render_page_images(self, file_bytes: bytes) -> List[Tuple[bytes, str]]:
-        # Try high fidelity renderers first (pdf2image or PyMuPDF) and fall back to
-        # embedded images for scanned PDFs.
+        """Aplica distintos motores para obtener imágenes representativas del PDF."""
+
+        # Se priorizan renderizadores de alta fidelidad y se cae a imágenes embebidas
         for renderer in (self._render_with_pdf2image, self._render_with_pymupdf):
             rendered = renderer(file_bytes)
             if rendered:
@@ -133,6 +147,8 @@ class PDFTextExtractor:
         return self._extract_embedded_images(file_bytes)
 
     def chunk_text(self, text: str) -> list[str]:
+        """Divide el texto extenso en bloques manejables para los modelos LLM."""
+
         if len(text) <= self.max_chars_per_chunk:
             return [text]
         chunks: list[str] = []
