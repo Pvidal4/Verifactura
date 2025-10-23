@@ -320,8 +320,8 @@ class ExtractionService:
             (content_type or "").startswith("image/")
         ):
             raise RuntimeError("Formato de imagen no admitido")
-        # Las imágenes siempre envían su representación visual al modelo
-        use_vision = True
+        # Las imágenes siguen obligando al uso de OCR para obtener el texto base,
+        # mientras que adjuntar la captura visual queda sujeto a la bandera recibida.
         text = ocr_service.extract_text(data, content_type=content_type)
         if not text:
             raise RuntimeError("No se pudo extraer texto de la imagen ingresada")

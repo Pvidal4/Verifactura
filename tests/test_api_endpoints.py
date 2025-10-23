@@ -368,8 +368,8 @@ def test_extraction_service_falls_back_to_ocr_when_no_text():
     assert result.text_origin == "ocr"
 
 
-def test_extraction_service_always_sends_images_with_pixels():
-    """Las imágenes deben adjuntar su captura base64 aunque Visión se desactive."""
+def test_extraction_service_omits_pixels_when_vision_disabled_for_images():
+    """Las imágenes respetan la bandera de Visión y solo usan OCR obligatorio."""
 
     service = _InstrumentedExtractionService()
     service._ocr_stub.text = "texto imagen"
@@ -379,6 +379,27 @@ def test_extraction_service_always_sends_images_with_pixels():
         b"\x89PNGdatos",
         "image/png",
         use_vision=False,
+    )
+
+    invocation = service.text_invocations[-1]
+    assert invocation["text"] == "texto imagen"
+    assert invocation["vision_images"] is None
+    assert service.vision_invocations == []
+    assert invocation["text_origin"] == "ocr"
+    assert result.text_origin == "ocr"
+
+
+def test_extraction_service_adds_pixels_when_vision_enabled_for_images():
+    """La bandera Visión en imágenes adjunta la captura en base64 al modelo."""
+
+    service = _InstrumentedExtractionService()
+    service._ocr_stub.text = "texto imagen"
+
+    result = service.extract_from_file(
+        "foto.png",
+        b"\x89PNGdatos",
+        "image/png",
+        use_vision=True,
     )
 
     invocation = service.text_invocations[-1]

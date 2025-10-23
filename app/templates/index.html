@@ -4284,14 +4284,8 @@
         setMultiPdfToggleVisibility(hasPdfBatch);
         const isImageBatch =
           state.multiCategory === "image" && state.multiFiles.length > 0;
-        if (isImageBatch) {
-          state.multiUseVision = true;
-        }
         const hasVisionBatch = hasPdfBatch || isImageBatch;
-        setVisionToggleVisibility(hasVisionBatch, {
-          locked: isImageBatch,
-          forceChecked: isImageBatch ? true : undefined,
-        });
+        setVisionToggleVisibility(hasVisionBatch);
         updateTestingSampleButtonsState();
         if (hasPdfBatch) {
           if (multiPdfOcrToggle) {
@@ -4379,15 +4373,9 @@
           state.multiCategory === "pdf" && state.multiFiles.length > 0;
         const isImageBatch =
           state.multiCategory === "image" && state.multiFiles.length > 0;
-        if (isImageBatch) {
-          state.multiUseVision = true;
-        }
         const isVisionBatch = isPdfBatch || isImageBatch;
         setMultiPdfToggleVisibility(isPdfBatch);
-        setVisionToggleVisibility(isVisionBatch, {
-          locked: isImageBatch,
-          forceChecked: isImageBatch ? true : undefined,
-        });
+        setVisionToggleVisibility(isVisionBatch);
         if (isPdfBatch) {
           if (multiPdfOcrToggle) {
             multiPdfOcrToggle.checked = state.multiUseOcr;
@@ -4559,7 +4547,9 @@
         const uploadedAt = Date.now();
         state.multiFiles.push({ file, category, uploadedAt });
         if (category === "image") {
-          state.multiUseVision = true;
+          if (wasEmpty) {
+            state.multiUseVision = true;
+          }
         } else if (wasEmpty) {
           state.multiUseVision = false;
         }
