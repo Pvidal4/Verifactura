@@ -512,6 +512,174 @@
         box-shadow: 0 10px 22px -16px rgba(37, 99, 235, 0.8);
       }
 
+      .testing-mode {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+
+      .testing-description {
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .testing-samples {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1rem;
+      }
+
+      .testing-sample {
+        border: 1px solid var(--border);
+        border-radius: 1rem;
+        background: var(--surface);
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .testing-sample:hover,
+      .testing-sample:focus-within {
+        border-color: var(--accent);
+        box-shadow: 0 12px 30px -18px rgba(37, 99, 235, 0.6);
+      }
+
+      .testing-sample__icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        background: var(--surface-subtle);
+        display: grid;
+        place-items: center;
+        font-size: 1.5rem;
+      }
+
+      .testing-sample__body {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+      }
+
+      .testing-sample__body strong {
+        font-size: 1rem;
+      }
+
+      .testing-sample__body p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .testing-sample__meta {
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+
+      .testing-sample__actions {
+        margin-top: auto;
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .testing-sample__add,
+      .testing-sample__view {
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        padding: 0.45rem 0.9rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        color: inherit;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+      }
+
+      .testing-sample__add:hover,
+      .testing-sample__add:focus-visible,
+      .testing-sample__view:hover,
+      .testing-sample__view:focus-visible {
+        border-color: var(--accent);
+        color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+        outline: none;
+      }
+
+      .testing-selection {
+        border: 1px solid var(--border);
+        border-radius: 1rem;
+        padding: 1.25rem;
+        background: var(--surface-subtle);
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .testing-selection h4 {
+        margin: 0;
+        font-size: 1rem;
+      }
+
+      .testing-selection__empty {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .testing-selection__list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 0.75rem;
+      }
+
+      .testing-selection__item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+      }
+
+      .testing-selection__info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+
+      .testing-selection__info strong {
+        font-size: 0.95rem;
+      }
+
+      .testing-selection__info span {
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      .testing-selection__remove {
+        border: 1px solid var(--border);
+        background: var(--surface);
+        border-radius: 999px;
+        padding: 0.35rem 0.9rem;
+        font-size: 0.85rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+      }
+
+      .testing-selection__remove:hover,
+      .testing-selection__remove:focus-visible {
+        border-color: var(--danger);
+        color: var(--danger);
+        box-shadow: 0 0 0 3px var(--danger-soft);
+        outline: none;
+      }
+
       .drop-zone {
         border: 1.5px dashed var(--border);
         border-radius: 1.25rem;
@@ -2076,6 +2244,14 @@
               >
                 Ingreso manual
               </button>
+              <button
+                type="button"
+                id="testingModeButton"
+                role="tab"
+                aria-selected="false"
+              >
+                Testing
+              </button>
             </div>
 
             <div id="multiMode" role="tabpanel" aria-labelledby="multiModeButton">
@@ -2130,6 +2306,121 @@
                 placeholder="Manualmente coloca el contenido de la factura..."
                 aria-label="Contenido manual de la factura"
               ></textarea>
+            </div>
+
+            <div id="testingMode" role="tabpanel" aria-labelledby="testingModeButton" hidden>
+              <div class="testing-mode">
+                <p class="testing-description">
+                  Explora estos documentos de ejemplo para validar el flujo de extracción sin buscar archivos locales.
+                </p>
+                <ul class="testing-samples" id="testingSamplesList">
+                  <li
+                    class="testing-sample"
+                    data-testing-sample
+                    data-url="{{ url_for('static', path='testing-samples/factura_pdf_sin_ocr.pdf') }}"
+                    data-filename="factura_pdf_sin_ocr.pdf"
+                    data-mime="application/pdf"
+                    data-requires-ocr="true"
+                  >
+                    <div class="testing-sample__icon" aria-hidden="true">📄</div>
+                    <div class="testing-sample__body">
+                      <strong>Factura PDF sin OCR</strong>
+                      <p>Archivo escaneado ideal para probar el flujo con reconocimiento óptico.</p>
+                    </div>
+                    <div class="testing-sample__actions">
+                      <a
+                        class="testing-sample__view"
+                        href="{{ url_for('static', path='testing-samples/factura_pdf_sin_ocr.pdf') }}"
+                        target="_blank"
+                        rel="noopener"
+                      >
+                        Ver
+                      </a>
+                      <button type="button" class="testing-sample__add">Agregar a la lista</button>
+                    </div>
+                  </li>
+                  <li
+                    class="testing-sample"
+                    data-testing-sample
+                    data-url="{{ url_for('static', path='testing-samples/factura_pdf_con_ocr.pdf') }}"
+                    data-filename="factura_pdf_con_ocr.pdf"
+                    data-mime="application/pdf"
+                    data-requires-ocr="false"
+                  >
+                    <div class="testing-sample__icon" aria-hidden="true">📄</div>
+                    <div class="testing-sample__body">
+                      <strong>Factura PDF con OCR</strong>
+                      <p>Documento PDF con texto seleccionable para validar el procesamiento directo.</p>
+                    </div>
+                    <div class="testing-sample__actions">
+                      <a
+                        class="testing-sample__view"
+                        href="{{ url_for('static', path='testing-samples/factura_pdf_con_ocr.pdf') }}"
+                        target="_blank"
+                        rel="noopener"
+                      >
+                        Ver
+                      </a>
+                      <button type="button" class="testing-sample__add">Agregar a la lista</button>
+                    </div>
+                  </li>
+                  <li
+                    class="testing-sample"
+                    data-testing-sample
+                    data-url="{{ url_for('static', path='testing-samples/factura_imagen.png') }}"
+                    data-filename="factura_imagen.png"
+                    data-mime="image/png"
+                  >
+                    <div class="testing-sample__icon" aria-hidden="true">🖼️</div>
+                    <div class="testing-sample__body">
+                      <strong>Imagen de factura</strong>
+                      <p>Imagen ligera para revisar el flujo de extracción basado en fotografías.</p>
+                    </div>
+                    <div class="testing-sample__actions">
+                      <a
+                        class="testing-sample__view"
+                        href="{{ url_for('static', path='testing-samples/factura_imagen.png') }}"
+                        target="_blank"
+                        rel="noopener"
+                      >
+                        Ver
+                      </a>
+                      <button type="button" class="testing-sample__add">Agregar a la lista</button>
+                    </div>
+                  </li>
+                  <li
+                    class="testing-sample"
+                    data-testing-sample
+                    data-url="{{ url_for('static', path='testing-samples/factura_electronica.xml') }}"
+                    data-filename="factura_electronica.xml"
+                    data-mime="application/xml"
+                  >
+                    <div class="testing-sample__icon" aria-hidden="true">🧾</div>
+                    <div class="testing-sample__body">
+                      <strong>Factura XML</strong>
+                      <p>Factura electrónica simplificada para validar la ingesta estructurada.</p>
+                    </div>
+                    <div class="testing-sample__actions">
+                      <a
+                        class="testing-sample__view"
+                        href="{{ url_for('static', path='testing-samples/factura_electronica.xml') }}"
+                        target="_blank"
+                        rel="noopener"
+                      >
+                        Ver
+                      </a>
+                      <button type="button" class="testing-sample__add">Agregar a la lista</button>
+                    </div>
+                  </li>
+                </ul>
+                <div class="testing-selection" id="testingSelection">
+                  <h4>Documentos agregados</h4>
+                  <p class="testing-selection__empty" id="testingSelectionEmpty">
+                    Aún no agregas documentos de prueba a la lista.
+                  </p>
+                  <ul class="testing-selection__list" id="testingSelectionList" hidden></ul>
+                </div>
+              </div>
             </div>
 
             <div class="submit-row">
@@ -2577,6 +2868,12 @@
       const multiMode = document.getElementById("multiMode");
       const textModeButton = document.getElementById("textModeButton");
       const multiModeButton = document.getElementById("multiModeButton");
+      const testingMode = document.getElementById("testingMode");
+      const testingModeButton = document.getElementById("testingModeButton");
+      const testingSamplesList = document.getElementById("testingSamplesList");
+      const testingSelection = document.getElementById("testingSelection");
+      const testingSelectionList = document.getElementById("testingSelectionList");
+      const testingSelectionEmpty = document.getElementById("testingSelectionEmpty");
 
       const multiDropZone = document.getElementById("multiDropZone");
       const multiBrowseButton = document.getElementById("multiBrowseButton");
@@ -3647,6 +3944,16 @@
         multiTypeLabel.textContent = "—";
         setMultiPdfToggleVisibility(false);
         resetMultiProgress();
+        if (multiPdfOcrToggle) {
+          multiPdfOcrToggle.checked = false;
+        }
+        if (testingSelectionList) {
+          testingSelectionList.innerHTML = "";
+          testingSelectionList.hidden = true;
+        }
+        if (testingSelectionEmpty) {
+          testingSelectionEmpty.hidden = false;
+        }
       }
 
       // Actualiza el mensaje de estado principal indicando errores o progreso.
@@ -3657,6 +3964,9 @@
 
       // Marca el botón activo entre los modos de procesamiento.
       function setActiveModeButton(button, isActive) {
+        if (!button) {
+          return;
+        }
         button.classList.toggle("active", isActive);
         button.setAttribute("aria-selected", String(isActive));
       }
@@ -3667,25 +3977,45 @@
         state.mode = mode;
         const isTextMode = mode === "text";
         const isMultiMode = mode === "multi";
+        const isTestingMode = mode === "testing";
         textMode.hidden = !isTextMode;
         multiMode.hidden = !isMultiMode;
+        if (testingMode) {
+          testingMode.hidden = !isTestingMode;
+        }
         setActiveModeButton(textModeButton, isTextMode);
         setActiveModeButton(multiModeButton, isMultiMode);
+        setActiveModeButton(testingModeButton, isTestingMode);
         const inputHidden = workspace.classList.contains("workspace--input-hidden");
         if (isTextMode) {
           resetMultiFiles();
           if (!inputHidden) {
             plainText.focus();
           }
-        } else if (!inputHidden) {
-          plainText.value = "";
-          multiDropZone.focus();
+        } else if (isMultiMode) {
+          if (!inputHidden) {
+            plainText.value = "";
+            multiDropZone.focus();
+          }
+        } else if (isTestingMode) {
+          if (!inputHidden) {
+            plainText.value = "";
+            const firstAddButton = testingSamplesList
+              ? testingSamplesList.querySelector(".testing-sample__add")
+              : null;
+            if (firstAddButton) {
+              firstAddButton.focus();
+            }
+          }
         }
         setStatus("");
       }
 
       textModeButton.addEventListener("click", () => switchMode("text"));
       multiModeButton.addEventListener("click", () => switchMode("multi"));
+      if (testingModeButton) {
+        testingModeButton.addEventListener("click", () => switchMode("testing"));
+      }
 
       // Infere la categoría de un archivo según su extensión y tipo MIME.
       function detectCategory(file) {
@@ -3760,13 +4090,7 @@
             `Eliminar ${entry.file.name} de la lista`
           );
           removeButton.addEventListener("click", () => {
-            state.multiFiles.splice(index, 1);
-            if (!state.multiFiles.length) {
-              state.multiCategory = null;
-              state.multiUseOcr = false;
-              multiPdfOcrToggle.checked = false;
-            }
-            renderMultiList();
+            removeMultiEntry(index);
           });
 
           actions.appendChild(viewButton);
@@ -3776,10 +4100,76 @@
           item.appendChild(actions);
           multiFileList.appendChild(item);
         });
+        updateTestingSelection();
+      }
+
+      function updateTestingSelection() {
+        if (!testingSelectionList || !testingSelectionEmpty) {
+          return;
+        }
+        testingSelectionList.innerHTML = "";
+        if (!state.multiFiles.length) {
+          testingSelectionList.hidden = true;
+          testingSelectionEmpty.hidden = false;
+          return;
+        }
+        testingSelectionEmpty.hidden = true;
+        testingSelectionList.hidden = false;
+        state.multiFiles.forEach((entry, index) => {
+          const item = document.createElement("li");
+          item.className = "testing-selection__item";
+
+          const info = document.createElement("div");
+          info.className = "testing-selection__info";
+          const name = document.createElement("strong");
+          name.textContent = entry.file.name;
+          const typeLabel = SUPPORTED_TYPES[entry.category]
+            ? SUPPORTED_TYPES[entry.category].label
+            : entry.category;
+          const typeText = document.createElement("span");
+          if (entry.category === "pdf" && state.multiUseOcr) {
+            typeText.textContent = `${typeLabel} (OCR)`;
+          } else {
+            typeText.textContent = typeLabel;
+          }
+          info.appendChild(name);
+          info.appendChild(typeText);
+
+          const removeButton = document.createElement("button");
+          removeButton.type = "button";
+          removeButton.className = "testing-selection__remove";
+          removeButton.textContent = "Quitar";
+          removeButton.setAttribute(
+            "aria-label",
+            `Quitar ${entry.file.name} de la lista de pruebas`
+          );
+          removeButton.addEventListener("click", () => {
+            removeMultiEntry(index);
+          });
+
+          item.appendChild(info);
+          item.appendChild(removeButton);
+          testingSelectionList.appendChild(item);
+        });
+      }
+
+      function removeMultiEntry(index) {
+        if (index < 0 || index >= state.multiFiles.length) {
+          return;
+        }
+        state.multiFiles.splice(index, 1);
+        if (!state.multiFiles.length) {
+          state.multiCategory = null;
+          state.multiUseOcr = false;
+          if (multiPdfOcrToggle) {
+            multiPdfOcrToggle.checked = false;
+          }
+        }
+        renderMultiList();
       }
 
       // Procesa un archivo individual añadido al modo múltiple.
-      function handleMultiSelection(file) {
+      function handleMultiSelection(file, options = {}) {
         const category = detectCategory(file);
         if (!category) {
           setStatus(`El archivo ${file.name} no es de un formato admitido.`, true);
@@ -3796,8 +4186,19 @@
         if (category !== "pdf") {
           setMultiPdfToggleVisibility(false);
         }
+        const wasEmpty = state.multiFiles.length === 0;
         const uploadedAt = Date.now();
         state.multiFiles.push({ file, category, uploadedAt });
+        if (category === "pdf" && typeof options.useOcr === "boolean") {
+          if (options.useOcr) {
+            state.multiUseOcr = true;
+          } else if (wasEmpty) {
+            state.multiUseOcr = false;
+          }
+          if (multiPdfOcrToggle) {
+            multiPdfOcrToggle.checked = state.multiUseOcr;
+          }
+        }
         renderMultiList();
         setStatus("");
       }
@@ -3809,6 +4210,47 @@
         }
         Array.from(fileList).forEach((file) => handleMultiSelection(file));
         multiFileInput.value = "";
+      }
+
+      async function addTestingSample(sampleElement) {
+        if (!sampleElement) {
+          return;
+        }
+        const url = sampleElement.getAttribute("data-url");
+        const filename = sampleElement.getAttribute("data-filename") || "documento";
+        const mime = sampleElement.getAttribute("data-mime") || "";
+        const requiresOcrAttr = sampleElement.getAttribute("data-requires-ocr");
+        if (!url) {
+          setStatus("No se encontró la ruta del documento de prueba.", true);
+          return;
+        }
+        try {
+          const response = await fetch(url);
+          if (!response.ok) {
+            throw new Error(`No se pudo cargar ${filename}.`);
+          }
+          const blob = await response.blob();
+          const fileOptions = {};
+          if (mime) {
+            fileOptions.type = mime;
+          } else if (blob.type) {
+            fileOptions.type = blob.type;
+          }
+          const file = new File([blob], filename, fileOptions);
+          const selectionOptions = {};
+          if (requiresOcrAttr === "true") {
+            selectionOptions.useOcr = true;
+          } else if (requiresOcrAttr === "false") {
+            selectionOptions.useOcr = false;
+          }
+          handleMultiSelection(file, selectionOptions);
+          if (state.mode !== "testing") {
+            switchMode("testing");
+          }
+        } catch (error) {
+          console.error(error);
+          setStatus(error.message || "No se pudo cargar el documento de prueba.", true);
+        }
       }
 
       multiBrowseButton.addEventListener("click", () => {
@@ -3852,6 +4294,17 @@
         state.multiUseOcr = multiPdfOcrToggle.checked;
         renderMultiList();
       });
+
+      if (testingSamplesList) {
+        testingSamplesList.addEventListener("click", (event) => {
+          const addButton = event.target.closest(".testing-sample__add");
+          if (!addButton) {
+            return;
+          }
+          const sample = addButton.closest("[data-testing-sample]");
+          addTestingSample(sample);
+        });
+      }
 
       // Aplana un objeto anidado para facilitar búsquedas por clave.
       function flattenData(data, prefix = "") {
@@ -5943,9 +6396,13 @@
           }
           return { type: "text", payload: value };
         }
-        if (state.mode === "multi") {
+        if (state.mode === "multi" || state.mode === "testing") {
           if (!state.multiFiles.length || !state.multiCategory) {
-            throw new Error("Agrega al menos un archivo para procesar en lote.");
+            const message =
+              state.mode === "testing"
+                ? "Agrega al menos un documento de prueba para procesar."
+                : "Agrega al menos un archivo para procesar en lote.";
+            throw new Error(message);
           }
           return {
             type: "multi",
