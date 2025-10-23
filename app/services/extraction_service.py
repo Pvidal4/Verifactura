@@ -320,6 +320,8 @@ class ExtractionService:
             (content_type or "").startswith("image/")
         ):
             raise RuntimeError("Formato de imagen no admitido")
+        # Las imágenes siempre envían su representación visual al modelo
+        use_vision = True
         text = ocr_service.extract_text(data, content_type=content_type)
         if not text:
             raise RuntimeError("No se pudo extraer texto de la imagen ingresada")
@@ -364,6 +366,7 @@ class ExtractionService:
 
         suffix = Path(filename).suffix.lower()
         normalized_content_type = (content_type or "").lower()
+        force_ocr = bool(force_ocr)
         allow_vision = bool(
             suffix in PDF_EXTENSIONS
             or suffix in IMAGE_EXTENSIONS
@@ -391,6 +394,8 @@ class ExtractionService:
                 ocr_key=ocr_key,
                 openai_api_key=openai_api_key,
             )
+        if force_ocr and suffix not in PDF_EXTENSIONS:
+            force_ocr = False
         text = ""
         ocr_service_instance: Optional[AzureOCRService] = None
         vision_images: Optional[List[Dict[str, str]]] = None

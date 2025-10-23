@@ -297,6 +297,7 @@ def test_extraction_service_never_enables_vision_for_xml():
         "factura.xml",
         b"<factura>contenido</factura>",
         "application/xml",
+        force_ocr=True,
         use_vision=True,
     )
 
@@ -305,6 +306,29 @@ def test_extraction_service_never_enables_vision_for_xml():
     assert invocation["vision_images"] is None
     assert invocation["text_origin"] == "file"
     assert service._pdf.render_calls == 0
+    assert service.ocr_invocations == 0
+    assert result.text_origin == "file"
+
+
+def test_extraction_service_never_enables_vision_for_json():
+    """Los JSON deben ignorar indicadores de OCR o Visión forzados."""
+
+    service = _InstrumentedExtractionService()
+
+    result = service.extract_from_file(
+        "factura.json",
+        b'{"monto": 100}',
+        "application/json",
+        use_vision=True,
+        force_ocr=True,
+    )
+
+    invocation = service.text_invocations[-1]
+    assert invocation["text"] == '{"monto": 100}'
+    assert invocation["vision_images"] is None
+    assert invocation["text_origin"] == "file"
+    assert service._pdf.render_calls == 0
+    assert service.ocr_invocations == 0
     assert result.text_origin == "file"
 
 
@@ -341,4 +365,27 @@ def test_extraction_service_falls_back_to_ocr_when_no_text():
     assert invocation["text_origin"] == "ocr"
     assert invocation["vision_images"] is None
     assert service.ocr_invocations == 1
+    assert result.text_origin == "ocr"
+
+
+def test_extraction_service_always_sends_images_with_pixels():
+    """Las imágenes deben adjuntar su captura base64 aunque Visión se desactive."""
+
+    service = _InstrumentedExtractionService()
+    service._ocr_stub.text = "texto imagen"
+
+    result = service.extract_from_file(
+        "foto.png",
+        b"\x89PNGdatos",
+        "image/png",
+        use_vision=False,
+    )
+
+    invocation = service.text_invocations[-1]
+    assert invocation["text"] == "texto imagen"
+    assert invocation["vision_images"] == [
+        {"media_type": "image/png", "data": "encoded-0"},
+    ]
+    assert service.vision_invocations[-1] == [(b"\x89PNGdatos", "image/png")]
+    assert invocation["text_origin"] == "ocr"
     assert result.text_origin == "ocr"

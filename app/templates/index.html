@@ -1178,6 +1178,19 @@
         transition: background 0.25s ease;
       }
 
+      .toggle input[type="checkbox"]:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+
+      .toggle--locked {
+        opacity: 0.85;
+      }
+
+      .toggle--locked label {
+        cursor: not-allowed;
+      }
+
       .toggle input[type="checkbox"]::after {
         content: "";
         position: absolute;
@@ -3182,13 +3195,50 @@
         }
       }
 
-      function setVisionToggleVisibility(visible) {
-        const showInMulti = Boolean(visible && state.mode === "multi");
-        const showInTesting = Boolean(visible && state.mode === "testing");
+      function setVisionToggleVisibility(visible, options = {}) {
+        const { locked = false, forceChecked } = options;
+        if (!visible) {
+          if (multiVisionToggleRow) {
+            multiVisionToggleRow.hidden = true;
+            multiVisionToggleRow.setAttribute("aria-hidden", "true");
+            multiVisionToggleRow.style.display = "none";
+            multiVisionToggleRow.classList.remove("toggle--locked");
+            multiVisionToggleRow.removeAttribute("aria-disabled");
+          }
+          if (testingVisionToggleRow) {
+            testingVisionToggleRow.hidden = true;
+            testingVisionToggleRow.setAttribute("aria-hidden", "true");
+            testingVisionToggleRow.style.display = "none";
+            testingVisionToggleRow.classList.remove("toggle--locked");
+            testingVisionToggleRow.removeAttribute("aria-disabled");
+          }
+          if (multiVisionToggle) {
+            multiVisionToggle.checked = false;
+            multiVisionToggle.disabled = false;
+            multiVisionToggle.removeAttribute("aria-disabled");
+          }
+          if (testingVisionToggle) {
+            testingVisionToggle.checked = false;
+            testingVisionToggle.disabled = false;
+            testingVisionToggle.removeAttribute("aria-disabled");
+          }
+          state.multiUseVision = false;
+          return;
+        }
+
+        if (typeof forceChecked === "boolean") {
+          state.multiUseVision = forceChecked;
+        }
+
+        const showInMulti = state.mode === "multi";
+        const showInTesting = state.mode === "testing";
+
         if (multiVisionToggleRow) {
           multiVisionToggleRow.hidden = !showInMulti;
           multiVisionToggleRow.setAttribute("aria-hidden", String(!showInMulti));
           multiVisionToggleRow.style.display = showInMulti ? "flex" : "none";
+          multiVisionToggleRow.classList.toggle("toggle--locked", locked);
+          multiVisionToggleRow.setAttribute("aria-disabled", String(locked));
         }
         if (testingVisionToggleRow) {
           testingVisionToggleRow.hidden = !showInTesting;
@@ -3197,21 +3247,26 @@
             String(!showInTesting)
           );
           testingVisionToggleRow.style.display = showInTesting ? "flex" : "none";
+          testingVisionToggleRow.classList.toggle("toggle--locked", locked);
+          testingVisionToggleRow.setAttribute("aria-disabled", String(locked));
         }
-        if (visible) {
-          if (multiVisionToggle) {
-            multiVisionToggle.checked = state.multiUseVision;
+
+        if (multiVisionToggle) {
+          multiVisionToggle.checked = state.multiUseVision;
+          multiVisionToggle.disabled = Boolean(locked);
+          if (locked) {
+            multiVisionToggle.setAttribute("aria-disabled", "true");
+          } else {
+            multiVisionToggle.removeAttribute("aria-disabled");
           }
-          if (testingVisionToggle) {
-            testingVisionToggle.checked = state.multiUseVision;
-          }
-        } else {
-          state.multiUseVision = false;
-          if (multiVisionToggle) {
-            multiVisionToggle.checked = false;
-          }
-          if (testingVisionToggle) {
-            testingVisionToggle.checked = false;
+        }
+        if (testingVisionToggle) {
+          testingVisionToggle.checked = state.multiUseVision;
+          testingVisionToggle.disabled = Boolean(locked);
+          if (locked) {
+            testingVisionToggle.setAttribute("aria-disabled", "true");
+          } else {
+            testingVisionToggle.removeAttribute("aria-disabled");
           }
         }
       }
@@ -4112,6 +4167,7 @@
       refreshOcrSettings(state.ocrProvider);
 
       setMultiPdfToggleVisibility(false);
+      setVisionToggleVisibility(false);
       updateTestingSampleButtonsState();
       resetMultiProgress();
 
@@ -4226,10 +4282,16 @@
         const hasPdfBatch =
           state.multiCategory === "pdf" && state.multiFiles.length > 0;
         setMultiPdfToggleVisibility(hasPdfBatch);
-        const hasVisionBatch =
-          (state.multiCategory === "pdf" || state.multiCategory === "image") &&
-          state.multiFiles.length > 0;
-        setVisionToggleVisibility(hasVisionBatch);
+        const isImageBatch =
+          state.multiCategory === "image" && state.multiFiles.length > 0;
+        if (isImageBatch) {
+          state.multiUseVision = true;
+        }
+        const hasVisionBatch = hasPdfBatch || isImageBatch;
+        setVisionToggleVisibility(hasVisionBatch, {
+          locked: isImageBatch,
+          forceChecked: isImageBatch ? true : undefined,
+        });
         updateTestingSampleButtonsState();
         if (hasPdfBatch) {
           if (multiPdfOcrToggle) {
@@ -4313,12 +4375,19 @@
         }
         multiDetails.hidden = false;
         multiEmptyState.hidden = true;
-        const isPdfBatch = state.multiCategory === "pdf" && state.multiFiles.length > 0;
-        const isVisionBatch =
-          (state.multiCategory === "pdf" || state.multiCategory === "image") &&
-          state.multiFiles.length > 0;
+        const isPdfBatch =
+          state.multiCategory === "pdf" && state.multiFiles.length > 0;
+        const isImageBatch =
+          state.multiCategory === "image" && state.multiFiles.length > 0;
+        if (isImageBatch) {
+          state.multiUseVision = true;
+        }
+        const isVisionBatch = isPdfBatch || isImageBatch;
         setMultiPdfToggleVisibility(isPdfBatch);
-        setVisionToggleVisibility(isVisionBatch);
+        setVisionToggleVisibility(isVisionBatch, {
+          locked: isImageBatch,
+          forceChecked: isImageBatch ? true : undefined,
+        });
         if (isPdfBatch) {
           if (multiPdfOcrToggle) {
             multiPdfOcrToggle.checked = state.multiUseOcr;
@@ -4489,7 +4558,7 @@
         const wasEmpty = state.multiFiles.length === 0;
         const uploadedAt = Date.now();
         state.multiFiles.push({ file, category, uploadedAt });
-        if (wasEmpty && (category === "pdf" || category === "image")) {
+        if (category === "image") {
           state.multiUseVision = true;
         } else if (wasEmpty) {
           state.multiUseVision = false;
