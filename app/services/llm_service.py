@@ -49,8 +49,7 @@ INVOICE_SCHEMA: Dict[str, Any] = {
         "CONCESIONARIA": {"type": ["string", "null"]},
         "TONELAJE": {"type": ["number", "null"]},
         "VIN_CHASIS": {"type": ["string", "null"]},
-        "PAIS_ORIGEN": {"type": ["string", "null"]},
-        "ETIQUETA": {"type": ["string", "null"]},
+        "PAIS_ORIGEN": {"type": ["string", "null"]}
     },
     "required": list(),
 }
@@ -60,7 +59,24 @@ INVOICE_SCHEMA["required"] = list(INVOICE_SCHEMA["properties"].keys())
 
 SYSTEM_PROMPT = (
     "Eres un asistente que extrae datos estructurados de documentos vehiculares. "
+    "Cuando tengas disponible una imagen del documento (png) y el contenido OCR de la imagen para facilitar la lectura, puede ocurrir que algunos detalles importantes se pierdan debido a saltos de línea inesperados."
+    "\n\nINICIO DE EJEMPLO\n\nTexto original:\n\nMODELO: V3 VAN AC 1.5 4P 4X2 TM\n\nTexto OCR:\n\nMODELO: V3 VAN\nCOLOR: PLATEADO\nAC 1.5 4P 4X2 TM\n\nFIN DE EJEMPLO\n\n"
+    "En el texto OCR, la información de 'AC 1.5 4P 4X2 TM' se ha separado de la línea 'MODELO: V3 VAN' debido a un salto de línea no intencionado."
+    "La respuesta correcta seria: 'MODELO: V3 VAN AC 1.5 4P 4X2 TM'"
+    "Es importante tener en cuenta esta posibilidad y realizar un análisis adicional para recombinar las partes separadas y garantizar que se capture toda la información correctamente."
+    "Se te ha proporcionado una estructura que indica los campos que debes extraer del contenido OCR de la imagen. Asegúrate de leer bien todo el contenido antes de identificar el campo, es posible que el campo completo se encuentre luego en el documento."
     "Responde únicamente con JSON válido que coincida con el esquema dado. "
+    "Algunos de los campos son:"
+    "MARCA: El fabricante del vehículo."
+    "MODELO: Siglas designadas por el fabricante del vehículo."
+    "COLOR: El color del vehículo."
+    "MOTOR: Código individual (letras y números) que identifica el motor del vehículo, la capacidad y el tipo de combustible. (sin espacio)"
+    "VIN_CHASIS: También se puede encontrar como “Serie” o “VIN” (de 17 caracteres). Identifica el chasis o carrocería único de cada vehículo. (sin espacio)"
+    "AÑO: Año de fabricación del vehículo."
+    "CLASE: La clase del vehículo."
+    "TIPO: El tipo del vehículo."
+    "RAMV_CPN: Se puede encontrar como RAMV o CPN. Ejemplo: T00123456. (sin espacio)"
+    "Los que dicen 'sin espacio' significa que debes quitarle espacios si estan presentes. Ej. T00 123 456 -> T00123456"
     "Utiliza null cuando la información no esté presente."
 )
 

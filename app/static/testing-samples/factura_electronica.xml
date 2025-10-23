@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Factura version="1.1">
+  <InfoTributaria>
+    <RucEmisor>1790009289001</RucEmisor>
+    <RazonSocialEmisor>AUTOMOTORES CONTINENTAL S.A.</RazonSocialEmisor>
+    <NombreComercial>Automotores Continental - La casa CHEVROLET</NombreComercial>
+    <DirMatriz>AV. 10 DE AGOSTO N45-266 Y AV AMAZONAS</DirMatriz>
+    <DirSucursal>Av. Juan Tanca Marengo y Calle 11 Cdla. A.D.A.C.E.</DirSucursal>
+    <Ambiente>PRODUCCION</Ambiente>
+    <TipoEmision>NORMAL</TipoEmision>
+    <NumeroAutorizacion>2605201616573317900092890017306768073</NumeroAutorizacion>
+  </InfoTributaria>
+
+  <InfoFactura>
+    <NUMERO_FACTURA>002-100-000001911</NUMERO_FACTURA>
+    <FECHA_DOCUMENTO>2016-05-26</FECHA_DOCUMENTO>
+    <MONEDA>USD</MONEDA>
+
+    <Comprador>
+      <NOMBRE_CLIENTE>QUIZHPI JIMENEZ MARCOS ENRIQUE</NOMBRE_CLIENTE>
+      <Identificacion>0103981734</Identificacion>
+      <DIRECCION>COOPERATIVA PACO OÑATE VILLA3 MANZANA C, GUAYAQUIL</DIRECCION>
+      <emailCliente>marcos_quizhpi@hotmail.com</emailCliente>
+      <telefonoCliente>042499803 / 0991058825</telefonoCliente>
+    </Comprador>
+
+    <Totales>
+      <SUBTOTAL>15982.14</SUBTOTAL>
+      <DESCUENTO>0.00</DESCUENTO>
+      <IVA>1917.86</IVA>
+      <TOTAL>17900.00</TOTAL>
+      <baseImponibleBienes>15982.14</baseImponibleBienes>
+      <SUBSIDIO xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/>
+    </Totales>
+  </InfoFactura>
+
+  <Detalles>
+    <Detalle>
+      <Codigo>B7740044361</Codigo>
+      <Descripcion>Vehículo (ver atributos)</Descripcion>
+      <Cantidad>1.00</Cantidad>
+      <PrecioUnitario>15585.64</PrecioUnitario>
+      <Descuento>0.00</Descuento>
+      <PrecioTotalSinImpuesto>15585.64</PrecioTotalSinImpuesto>
+
+      <!-- Atributos técnicos del vehículo -->
+      <AtributosVehiculo>
+        <MARCA>CHEVROLET</MARCA>
+        <MODELO>SAIL AC 1.4 4P 4X2 TM</MODELO>
+        <CLASE>AUTOMOVIL</CLASE>
+        <TIPO>SEDAN</TIPO>
+        <AÑO>2016</AÑO>
+        <CILINDRAJE>1.398 CC</CILINDRAJE>
+        <CAPACIDAD>5</CAPACIDAD>
+        <TONELAJE>0.37</TONELAJE>
+        <COMBUSTIBLE>GASOLINA</COMBUSTIBLE>
+        <PAIS_ORIGEN>ECUADOR</PAIS_ORIGEN>
+        <COLOR>PLOMO</COLOR>
+        <MOTOR>LCU 1603300 52</MOTOR>
+        <RAMV_CPN>B7740044361</RAMV_CPN>
+        <EJES>2</EJES>
+        <RUEDAS>4</RUEDAS>
+        <VIN_CHASIS>8LAYJ5277G 0393589</VIN_CHASIS>
+        <MODELO_HOMOLOGADO_ANT>Sin valor</MODELO_HOMOLOGADO_ANT>
+        <MODELO_REGISTRADO_SRI>Sin valor</MODELO_REGISTRADO_SRI>
+        <CONCESIONARIA>AUTOMOTORES CONTINENTAL S.A.</CONCESIONARIA>
+      </AtributosVehiculo>
+    </Detalle>
+
+    <Detalle>
+      <Codigo>2</Codigo>
+      <Descripcion>ACCESORIOS</Descripcion>
+      <Cantidad>1.00</Cantidad>
+      <PrecioUnitario>396.50</PrecioUnitario>
+      <Descuento>0.00</Descuento>
+      <PrecioTotalSinImpuesto>396.50</PrecioTotalSinImpuesto>
+    </Detalle>
+  </Detalles>
+
+  <Impuestos>
+    <Impuesto>
+      <Codigo>IVA</Codigo>
+      <Tarifa>12</Tarifa>
+      <BaseImponible>15982.14</BaseImponible>
+      <Valor>1917.86</Valor>
+    </Impuesto>
+  </Impuestos>
+
+  <InfoAdicional>
+    <leyenda>VENTA A CRÉDITO CON CONTRATO DE PRENDA INDUSTRIAL A FAVOR DE AUTOMOTORES CONTINENTAL S.A</leyenda>
+    <numeroAsistencia>000</numeroAsistencia>
+    <vendedor>RICARDO CRUZ LLANGA</vendedor>
+    <facturador>JACKELINE VANEGAS</facturador>
+    <CodigoInterno>FA-123249</CodigoInterno>
+  </InfoAdicional>
+</Factura>
