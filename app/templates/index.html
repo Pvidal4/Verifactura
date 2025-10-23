@@ -612,6 +612,21 @@
         outline: none;
       }
 
+      .testing-sample__add:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+        border-color: var(--border);
+        color: var(--muted);
+        box-shadow: none;
+      }
+
+      .testing-sample__add:disabled:hover,
+      .testing-sample__add:disabled:focus-visible {
+        border-color: var(--border);
+        color: var(--muted);
+        box-shadow: none;
+      }
+
       .testing-selection {
         border: 1px solid var(--border);
         border-radius: 1rem;
@@ -2317,7 +2332,7 @@
                   <li
                     class="testing-sample"
                     data-testing-sample
-                    data-url="{{ url_for('static', filename='testing-samples/factura_pdf_sin_ocr.pdf') }}"
+                    data-url="{{ url_for('static', path='testing-samples/factura_pdf_sin_ocr.pdf') }}"
                     data-filename="factura_pdf_sin_ocr.pdf"
                     data-mime="application/pdf"
                     data-requires-ocr="true"
@@ -2330,7 +2345,7 @@
                     <div class="testing-sample__actions">
                       <a
                         class="testing-sample__view"
-                        href="{{ url_for('static', filename='testing-samples/factura_pdf_sin_ocr.pdf') }}"
+                        href="{{ url_for('static', path='testing-samples/factura_pdf_sin_ocr.pdf') }}"
                         target="_blank"
                         rel="noopener"
                       >
@@ -2342,7 +2357,7 @@
                   <li
                     class="testing-sample"
                     data-testing-sample
-                    data-url="{{ url_for('static', filename='testing-samples/factura_pdf_con_ocr.pdf') }}"
+                    data-url="{{ url_for('static', path='testing-samples/factura_pdf_con_ocr.pdf') }}"
                     data-filename="factura_pdf_con_ocr.pdf"
                     data-mime="application/pdf"
                     data-requires-ocr="false"
@@ -2355,7 +2370,7 @@
                     <div class="testing-sample__actions">
                       <a
                         class="testing-sample__view"
-                        href="{{ url_for('static', filename='testing-samples/factura_pdf_con_ocr.pdf') }}"
+                        href="{{ url_for('static', path='testing-samples/factura_pdf_con_ocr.pdf') }}"
                         target="_blank"
                         rel="noopener"
                       >
@@ -2367,7 +2382,7 @@
                   <li
                     class="testing-sample"
                     data-testing-sample
-                    data-url="{{ url_for('static', filename='testing-samples/factura_imagen.png') }}"
+                    data-url="{{ url_for('static', path='testing-samples/factura_imagen.png') }}"
                     data-filename="factura_imagen.png"
                     data-mime="image/png"
                   >
@@ -2379,7 +2394,7 @@
                     <div class="testing-sample__actions">
                       <a
                         class="testing-sample__view"
-                        href="{{ url_for('static', filename='testing-samples/factura_imagen.png') }}"
+                        href="{{ url_for('static', path='testing-samples/factura_imagen.png') }}"
                         target="_blank"
                         rel="noopener"
                       >
@@ -2391,7 +2406,7 @@
                   <li
                     class="testing-sample"
                     data-testing-sample
-                    data-url="{{ url_for('static', filename='testing-samples/factura_electronica.xml') }}"
+                    data-url="{{ url_for('static', path='testing-samples/factura_electronica.xml') }}"
                     data-filename="factura_electronica.xml"
                     data-mime="application/xml"
                   >
@@ -2403,7 +2418,7 @@
                     <div class="testing-sample__actions">
                       <a
                         class="testing-sample__view"
-                        href="{{ url_for('static', filename='testing-samples/factura_electronica.xml') }}"
+                        href="{{ url_for('static', path='testing-samples/factura_electronica.xml') }}"
                         target="_blank"
                         rel="noopener"
                       >
@@ -2415,6 +2430,10 @@
                 </ul>
                 <div class="testing-selection" id="testingSelection">
                   <h4>Documentos agregados</h4>
+                  <div class="toggle" id="testingPdfToggleRow" hidden>
+                    <input type="checkbox" id="testingPdfOcrToggle" />
+                    <label for="testingPdfOcrToggle">OCR</label>
+                  </div>
                   <p class="testing-selection__empty" id="testingSelectionEmpty">
                     Aún no agregas documentos de prueba a la lista.
                   </p>
@@ -2874,6 +2893,8 @@
       const testingSelection = document.getElementById("testingSelection");
       const testingSelectionList = document.getElementById("testingSelectionList");
       const testingSelectionEmpty = document.getElementById("testingSelectionEmpty");
+      const testingPdfToggleRow = document.getElementById("testingPdfToggleRow");
+      const testingPdfOcrToggle = document.getElementById("testingPdfOcrToggle");
 
       const multiDropZone = document.getElementById("multiDropZone");
       const multiBrowseButton = document.getElementById("multiBrowseButton");
@@ -2977,12 +2998,26 @@
 
       // Muestra u oculta el control para forzar OCR en documentos PDF
       function setMultiPdfToggleVisibility(visible) {
-        multiPdfToggleRow.hidden = !visible;
-        multiPdfToggleRow.setAttribute("aria-hidden", String(!visible));
-        multiPdfToggleRow.style.display = visible ? "flex" : "none";
+        const showInMulti = Boolean(visible && state.mode === "multi");
+        const showInTesting = Boolean(visible && state.mode === "testing");
+        if (multiPdfToggleRow) {
+          multiPdfToggleRow.hidden = !showInMulti;
+          multiPdfToggleRow.setAttribute("aria-hidden", String(!showInMulti));
+          multiPdfToggleRow.style.display = showInMulti ? "flex" : "none";
+        }
+        if (testingPdfToggleRow) {
+          testingPdfToggleRow.hidden = !showInTesting;
+          testingPdfToggleRow.setAttribute("aria-hidden", String(!showInTesting));
+          testingPdfToggleRow.style.display = showInTesting ? "flex" : "none";
+        }
         if (!visible) {
           state.multiUseOcr = false;
-          multiPdfOcrToggle.checked = false;
+          if (multiPdfOcrToggle) {
+            multiPdfOcrToggle.checked = false;
+          }
+          if (testingPdfOcrToggle) {
+            testingPdfOcrToggle.checked = false;
+          }
         }
       }
 
@@ -3882,6 +3917,7 @@
       refreshOcrSettings(state.ocrProvider);
 
       setMultiPdfToggleVisibility(false);
+      updateTestingSampleButtonsState();
       resetMultiProgress();
 
       hideInputPanelButton.addEventListener("click", () => {
@@ -3947,6 +3983,10 @@
         if (multiPdfOcrToggle) {
           multiPdfOcrToggle.checked = false;
         }
+        if (testingPdfOcrToggle) {
+          testingPdfOcrToggle.checked = false;
+        }
+        updateTestingSampleButtonsState();
         if (testingSelectionList) {
           testingSelectionList.innerHTML = "";
           testingSelectionList.hidden = true;
@@ -3986,6 +4026,18 @@
         setActiveModeButton(textModeButton, isTextMode);
         setActiveModeButton(multiModeButton, isMultiMode);
         setActiveModeButton(testingModeButton, isTestingMode);
+        const hasPdfBatch =
+          state.multiCategory === "pdf" && state.multiFiles.length > 0;
+        setMultiPdfToggleVisibility(hasPdfBatch);
+        updateTestingSampleButtonsState();
+        if (hasPdfBatch) {
+          if (multiPdfOcrToggle) {
+            multiPdfOcrToggle.checked = state.multiUseOcr;
+          }
+          if (testingPdfOcrToggle) {
+            testingPdfOcrToggle.checked = state.multiUseOcr;
+          }
+        }
         const inputHidden = workspace.classList.contains("workspace--input-hidden");
         if (isTextMode) {
           resetMultiFiles();
@@ -4037,6 +4089,7 @@
 
       // Redibuja la lista de archivos seleccionados con su estado.
       function renderMultiList() {
+        updateTestingSampleButtonsState();
         if (!state.multiFiles.length) {
           resetMultiFiles();
           return;
@@ -4047,9 +4100,17 @@
         const isPdfBatch = state.multiCategory === "pdf" && state.multiFiles.length > 0;
         setMultiPdfToggleVisibility(isPdfBatch);
         if (isPdfBatch) {
-          multiPdfOcrToggle.checked = state.multiUseOcr;
+          if (multiPdfOcrToggle) {
+            multiPdfOcrToggle.checked = state.multiUseOcr;
+          }
+          if (testingPdfOcrToggle) {
+            testingPdfOcrToggle.checked = state.multiUseOcr;
+          }
           multiTypeLabel.textContent = `${label}${state.multiUseOcr ? " (OCR)" : ""}`;
         } else {
+          if (testingPdfOcrToggle) {
+            testingPdfOcrToggle.checked = false;
+          }
           multiTypeLabel.textContent = label;
         }
         multiFileList.innerHTML = "";
@@ -4103,10 +4164,24 @@
         updateTestingSelection();
       }
 
+      function updateTestingSampleButtonsState() {
+        if (!testingSamplesList) {
+          return;
+        }
+        const disableButtons = state.multiFiles.length >= 1;
+        testingSamplesList
+          .querySelectorAll(".testing-sample__add")
+          .forEach((button) => {
+            button.disabled = disableButtons;
+            button.setAttribute("aria-disabled", String(disableButtons));
+          });
+      }
+
       function updateTestingSelection() {
         if (!testingSelectionList || !testingSelectionEmpty) {
           return;
         }
+        updateTestingSampleButtonsState();
         testingSelectionList.innerHTML = "";
         if (!state.multiFiles.length) {
           testingSelectionList.hidden = true;
@@ -4164,6 +4239,9 @@
           if (multiPdfOcrToggle) {
             multiPdfOcrToggle.checked = false;
           }
+          if (testingPdfOcrToggle) {
+            testingPdfOcrToggle.checked = false;
+          }
         }
         renderMultiList();
       }
@@ -4214,6 +4292,13 @@
 
       async function addTestingSample(sampleElement) {
         if (!sampleElement) {
+          return;
+        }
+        if (state.mode === "testing" && state.multiFiles.length >= 1) {
+          setStatus(
+            "Solo puedes agregar un documento de prueba a la vez. Quita el actual antes de continuar.",
+            true
+          );
           return;
         }
         const url = sampleElement.getAttribute("data-url");
@@ -4290,10 +4375,36 @@
         handleMultiFileList(files);
       });
 
-      multiPdfOcrToggle.addEventListener("change", () => {
-        state.multiUseOcr = multiPdfOcrToggle.checked;
-        renderMultiList();
-      });
+      if (multiPdfOcrToggle) {
+        multiPdfOcrToggle.addEventListener("change", () => {
+          state.multiUseOcr = multiPdfOcrToggle.checked;
+          if (testingPdfOcrToggle) {
+            testingPdfOcrToggle.checked = state.multiUseOcr;
+          }
+          renderMultiList();
+        });
+      }
+
+      if (testingPdfOcrToggle) {
+        testingPdfOcrToggle.addEventListener("change", () => {
+          state.multiUseOcr = testingPdfOcrToggle.checked;
+          if (multiPdfOcrToggle) {
+            multiPdfOcrToggle.checked = state.multiUseOcr;
+          }
+          renderMultiList();
+        });
+      }
+
+      if (testingSamplesList) {
+        testingSamplesList.addEventListener("click", (event) => {
+          const addButton = event.target.closest(".testing-sample__add");
+          if (!addButton) {
+            return;
+          }
+          const sample = addButton.closest("[data-testing-sample]");
+          addTestingSample(sample);
+        });
+      }
 
       if (testingSamplesList) {
         testingSamplesList.addEventListener("click", (event) => {
