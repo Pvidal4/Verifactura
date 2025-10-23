@@ -1,3 +1,5 @@
+"""Rutas HTTP relacionadas con la extracción de información estructurada."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -15,7 +17,10 @@ from app.services.extraction_service import (
 
 router = APIRouter(tags=["Extracción"])
 
+
 class TextExtractionRequest(BaseModel):
+    """Cuerpo esperado cuando el cliente envía texto plano para procesar."""
+
     text: str = Field(
         ..., description="Texto completo del comprobante o documento a procesar."
     )
@@ -74,12 +79,16 @@ class TextExtractionRequest(BaseModel):
 def _normalize_reasoning_effort(
     value: Optional[Literal["none", "minimal", "low", "medium", "high"]]
 ) -> Optional[str]:
+    """Convierte el valor recibido en un modo válido para OpenAI."""
+
     if value == "none":
         return None
     return value
 
 
 def _normalize_optional_string(value: Optional[str]) -> Optional[str]:
+    """Limpia cadenas opcionales evitando valores vacíos o con espacios."""
+
     if value is None:
         return None
     trimmed = value.strip()
@@ -87,10 +96,14 @@ def _normalize_optional_string(value: Optional[str]) -> Optional[str]:
 
 
 def _normalize_api_key(value: Optional[str]) -> Optional[str]:
+    """Reutiliza la normalización genérica para claves de API."""
+
     return _normalize_optional_string(value)
 
 
 def _normalize_ocr_provider(value: Optional[str]) -> Optional[str]:
+    """Valida el proveedor OCR admitido y estandariza la cadena proporcionada."""
+
     normalized = _normalize_optional_string(value)
     if not normalized:
         return None
@@ -104,6 +117,8 @@ def _normalize_ocr_provider(value: Optional[str]) -> Optional[str]:
 
 
 def _get_service(request: Request) -> ExtractionService:
+    """Obtiene o inicializa el servicio de extracción y lo cachea en la app."""
+
     service: Optional[ExtractionService] = getattr(
         request.app.state, "extraction_service", None
     )
@@ -115,6 +130,8 @@ def _get_service(request: Request) -> ExtractionService:
 
 
 def _validate_not_image(upload: UploadFile) -> None:
+    """Evita que se procese una imagen en el endpoint de archivos generales."""
+
     filename = (upload.filename or "").lower()
     suffix = Path(filename).suffix.lower()
     if suffix in IMAGE_EXTENSIONS or (upload.content_type or "").startswith("image/"):
@@ -136,7 +153,8 @@ def _validate_not_image(upload: UploadFile) -> None:
 async def extract_from_text_endpoint(
     payload: TextExtractionRequest, service: ExtractionService = Depends(_get_service)
 ) -> Dict[str, Any]:
-    
+    """Procesa texto plano y devuelve la extracción estructurada generada."""
+
     text = payload.text.strip()
     if not text:
         raise HTTPException(
@@ -239,6 +257,7 @@ async def extract_from_file_endpoint(
     ),
     service: ExtractionService = Depends(_get_service),
 ) -> Dict[str, Any]:
+    """Gestiona la carga de archivos y orquesta la lógica de OCR y extracción."""
 
     _validate_not_image(file)
     data = await file.read()
@@ -342,6 +361,7 @@ async def extract_from_image_endpoint(
     ),
     service: ExtractionService = Depends(_get_service),
 ) -> Dict[str, Any]:
+    """Extrae texto mediante OCR y delega la estructuración en el servicio LLM."""
 
     content_type = (image.content_type or "").lower()
     suffix = Path((image.filename or "").lower()).suffix

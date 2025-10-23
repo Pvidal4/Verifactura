@@ -1,4 +1,5 @@
 from __future__ import annotations
+"""Servicios auxiliares para interactuar con el modelo de clasificación."""
 
 from collections import OrderedDict
 from dataclasses import dataclass
@@ -18,14 +19,14 @@ except ModuleNotFoundError:  # pragma: no cover - dependencias opcionales
 
 @dataclass(frozen=True)
 class PredictionResult:
-    """Structured result returned by the random forest classifier."""
+    """Resultado estructurado producido por el clasificador Random Forest."""
 
     predicted_class: str
     probabilities: OrderedDict[str, float]
 
 
 class PredictionService:
-    """Thin wrapper around the trained random forest model used for scoring."""
+    """Envoltorio ligero alrededor del modelo entrenado para realizar inferencias."""
 
     def __init__(self, model_path: Path | str) -> None:
         self._model_path = Path(model_path)
@@ -37,6 +38,8 @@ class PredictionService:
         self._feature_columns = self._resolve_feature_columns()
 
     def _load_model(self):  # type: ignore[no-untyped-def]
+        """Carga el modelo desde disco validando la presencia de joblib."""
+
         if joblib is None:
             raise RuntimeError(
                 "joblib no está instalado. Instálalo para utilizar el servicio de predicciones."
@@ -47,15 +50,19 @@ class PredictionService:
             raise RuntimeError("No se pudo cargar el modelo de predicción.") from exc
 
     def _resolve_feature_columns(self) -> Sequence[str]:
+        """Obtiene el orden esperado de columnas a partir del modelo entrenado."""
+
         candidates: Iterable[str] | None = getattr(
             self._model, "feature_names_in_", None
         )
         if candidates is not None:
             return list(candidates)
-        # Default to the expected training order if metadata is not present.
+        # Se vuelve al orden utilizado durante el entrenamiento cuando no hay metadatos
         return ["marca", "tipo", "clase", "capacidad", "combustible", "ruedas", "total"]
 
     def predict(self, features: Mapping[str, object]) -> PredictionResult:
+        """Recibe un diccionario de atributos y devuelve la clase estimada."""
+
         try:
             if pd is None:
                 raise RuntimeError(
