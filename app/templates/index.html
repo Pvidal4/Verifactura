@@ -305,8 +305,14 @@
         color: var(--text);
       }
 
-      .llm-provider-row label span,
-      .ocr-provider-row label span {
+      .field-label__title {
+        font-size: 0.95rem;
+        color: inherit;
+        font-weight: inherit;
+      }
+
+      .llm-provider-row label .field-label__description,
+      .ocr-provider-row label .field-label__description {
         font-weight: 400;
         color: var(--muted);
         font-size: 0.85rem;
@@ -328,6 +334,75 @@
         outline: none;
         border-color: var(--accent);
         box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+
+      .field-label__row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem;
+      }
+
+      .field-label__row label {
+        flex: 1;
+      }
+
+      .info-button {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.5rem;
+        height: 1.5rem;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--accent);
+        font-size: 0.85rem;
+        font-weight: 700;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: background-color 0.2s ease, color 0.2s ease,
+          border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .info-button:hover,
+      .info-button:focus-visible {
+        outline: none;
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+
+      .info-button__tooltip {
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translate(-50%, 0.5rem);
+        max-width: min(260px, 80vw);
+        padding: 0.65rem 0.75rem;
+        border-radius: 0.75rem;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        font-size: 0.8rem;
+        line-height: 1.4;
+        box-shadow: 0 18px 35px -25px rgba(15, 23, 42, 0.6);
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity 0.2s ease, transform 0.2s ease,
+          visibility 0.2s ease;
+        z-index: 10;
+        text-align: left;
+      }
+
+      .info-button:hover .info-button__tooltip,
+      .info-button:focus-visible .info-button__tooltip {
+        opacity: 1;
+        visibility: visible;
+        transform: translate(-50%, 0.75rem);
       }
 
       .llm-settings {
@@ -1270,6 +1345,17 @@
         gap: 0.3rem;
       }
 
+      .prediction-card__heading {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+
+      .prediction-card__heading h3 {
+        margin: 0;
+      }
+
       .prediction-card__title h3 {
         font-size: 1.05rem;
         font-weight: 600;
@@ -1912,12 +1998,32 @@
               aria-hidden="true"
               data-developer-only
             >
-              <label for="llmProviderSelect">
-                Proveedor LLM
-                <span
-                  >Elige entre el servicio API y el modelo local (GPT OSS 20B).</span
+              <div class="field-label__row">
+                <label for="llmProviderSelect">
+                  <span class="field-label__title">Proveedor LLM</span>
+                  <span class="field-label__description"
+                    >Elige entre el servicio API y el modelo local (GPT OSS
+                    20B).</span
+                  >
+                </label>
+                <button
+                  type="button"
+                  class="info-button"
+                  aria-label="Información sobre el proveedor LLM"
+                  aria-describedby="llmProviderInfo"
                 >
-              </label>
+                  <span aria-hidden="true">i</span>
+                  <span
+                    class="info-button__tooltip"
+                    role="tooltip"
+                    id="llmProviderInfo"
+                  >
+                    Selecciona la fuente del modelo de lenguaje usado para
+                    interpretar las facturas, ya sea un servicio API hospedado
+                    o el modelo local disponible en tu entorno.
+                  </span>
+                </button>
+              </div>
               <select id="llmProviderSelect">
                 <option value="api">Servicio API</option>
                 <option value="local">Servicio local (GPT OSS 20B)</option>
@@ -2188,13 +2294,32 @@
             </div>
             <div class="ocr-settings" id="ocrSettings" data-developer-only hidden aria-hidden="true">
               <div class="ocr-provider-row">
-                <label for="ocrProviderSelect">
-                  Proveedor OCR
-                  <span>
-                    Selecciona el servicio para el reconocimiento óptico de
-                    caracteres.
-                  </span>
-                </label>
+                <div class="field-label__row">
+                  <label for="ocrProviderSelect">
+                    <span class="field-label__title">Proveedor OCR</span>
+                    <span class="field-label__description">
+                      Selecciona el servicio para el reconocimiento óptico de
+                      caracteres.
+                    </span>
+                  </label>
+                  <button
+                    type="button"
+                    class="info-button"
+                    aria-label="Información sobre el proveedor OCR"
+                    aria-describedby="ocrProviderInfo"
+                  >
+                    <span aria-hidden="true">i</span>
+                    <span
+                      class="info-button__tooltip"
+                      role="tooltip"
+                      id="ocrProviderInfo"
+                    >
+                      Define qué servicio extrae texto de los documentos cuando
+                      requieren reconocimiento óptico, por ejemplo al procesar
+                      PDFs escaneados o imágenes.
+                    </span>
+                  </button>
+                </div>
                 <select id="ocrProviderSelect">
                   <option value="azure-vision" selected>Azure Vision</option>
                 </select>
@@ -2335,12 +2460,12 @@
                     data-url="{{ url_for('static', path='testing-samples/factura_pdf_sin_ocr.pdf') }}"
                     data-filename="factura_pdf_sin_ocr.pdf"
                     data-mime="application/pdf"
-                    data-requires-ocr="true"
+                    data-requires-ocr="false"
                   >
                     <div class="testing-sample__icon" aria-hidden="true">📄</div>
                     <div class="testing-sample__body">
-                      <strong>Factura PDF sin OCR</strong>
-                      <p>Archivo escaneado ideal para probar el flujo con reconocimiento óptico.</p>
+                      <strong>Factura Digital</strong>
+                      <p>Documento PDF con texto seleccionable para validar el procesamiento directo.</p>
                     </div>
                     <div class="testing-sample__actions">
                       <a
@@ -2360,12 +2485,12 @@
                     data-url="{{ url_for('static', path='testing-samples/factura_pdf_con_ocr.pdf') }}"
                     data-filename="factura_pdf_con_ocr.pdf"
                     data-mime="application/pdf"
-                    data-requires-ocr="false"
+                    data-requires-ocr="true"
                   >
                     <div class="testing-sample__icon" aria-hidden="true">📄</div>
                     <div class="testing-sample__body">
-                      <strong>Factura PDF con OCR</strong>
-                      <p>Documento PDF con texto seleccionable para validar el procesamiento directo.</p>
+                      <strong>Factura Escaneada</strong>
+                      <p>Archivo escaneado ideal para probar el flujo con reconocimiento óptico.</p>
                     </div>
                     <div class="testing-sample__actions">
                       <a
@@ -2476,7 +2601,26 @@
           <div class="prediction-card" id="predictionCard" hidden>
             <div class="prediction-card__header">
               <div class="prediction-card__title">
-                <h3>Predicción del modelo</h3>
+                <div class="prediction-card__heading">
+                  <h3>Predicción del modelo</h3>
+                  <button
+                    type="button"
+                    class="info-button"
+                    aria-label="Información sobre la predicción del modelo"
+                    aria-describedby="predictionInfo"
+                  >
+                    <span aria-hidden="true">i</span>
+                    <span
+                      class="info-button__tooltip"
+                      role="tooltip"
+                      id="predictionInfo"
+                    >
+                      Visualiza la interpretación del modelo sobre los campos
+                      extraídos del documento para validar y comparar los
+                      resultados.
+                    </span>
+                  </button>
+                </div>
                 <p
                   class="prediction-card__subtitle"
                   id="predictionSubtitle"
@@ -4392,17 +4536,6 @@
             multiPdfOcrToggle.checked = state.multiUseOcr;
           }
           renderMultiList();
-        });
-      }
-
-      if (testingSamplesList) {
-        testingSamplesList.addEventListener("click", (event) => {
-          const addButton = event.target.closest(".testing-sample__add");
-          if (!addButton) {
-            return;
-          }
-          const sample = addButton.closest("[data-testing-sample]");
-          addTestingSample(sample);
         });
       }
 
