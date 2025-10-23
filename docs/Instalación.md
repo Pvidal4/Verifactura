@@ -51,6 +51,8 @@
   ```bash
   pytest
   ```
+  Consulta la guía detallada en [`docs/Pruebas.md`](Pruebas.md) para conocer
+  opciones adicionales y recomendaciones de ejecución.
 - **Reentrenar el modelo Random Forest**
   ```bash
   python -m train.random_forest
