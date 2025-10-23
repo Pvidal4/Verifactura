@@ -4406,6 +4406,17 @@
         });
       }
 
+      if (testingSamplesList) {
+        testingSamplesList.addEventListener("click", (event) => {
+          const addButton = event.target.closest(".testing-sample__add");
+          if (!addButton) {
+            return;
+          }
+          const sample = addButton.closest("[data-testing-sample]");
+          addTestingSample(sample);
+        });
+      }
+
       // Aplana un objeto anidado para facilitar búsquedas por clave.
       function flattenData(data, prefix = "") {
         if (data === null || data === undefined) {
