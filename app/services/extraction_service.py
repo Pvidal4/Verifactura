@@ -363,6 +363,15 @@ class ExtractionService:
         """Decide si se debe aplicar OCR o lectura directa antes de usar el LLM."""
 
         suffix = Path(filename).suffix.lower()
+        normalized_content_type = (content_type or "").lower()
+        allow_vision = bool(
+            suffix in PDF_EXTENSIONS
+            or suffix in IMAGE_EXTENSIONS
+            or normalized_content_type.startswith("image/")
+            or normalized_content_type == "application/pdf"
+        )
+        if use_vision and not allow_vision:
+            use_vision = False
         if suffix in IMAGE_EXTENSIONS:
             # Derivar a la ruta especializada para garantizar OCR explícito
             return self.extract_from_image(

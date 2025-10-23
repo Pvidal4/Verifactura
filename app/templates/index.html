@@ -2951,7 +2951,7 @@
         multiFiles: [],
         multiCategory: null,
         multiUseOcr: false,
-        multiUseVision: true,
+        multiUseVision: false,
         results: [],
         currentIndex: -1,
         currentHighlights: [],
@@ -3206,6 +3206,7 @@
             testingVisionToggle.checked = state.multiUseVision;
           }
         } else {
+          state.multiUseVision = false;
           if (multiVisionToggle) {
             multiVisionToggle.checked = false;
           }
@@ -4167,7 +4168,7 @@
         state.multiFiles = [];
         state.multiCategory = null;
         state.multiUseOcr = false;
-        state.multiUseVision = true;
+        state.multiUseVision = false;
         multiFileInput.value = "";
         multiDetails.hidden = true;
         multiEmptyState.hidden = true;
@@ -4456,7 +4457,7 @@
         if (!state.multiFiles.length) {
           state.multiCategory = null;
           state.multiUseOcr = false;
-          state.multiUseVision = true;
+          state.multiUseVision = false;
           if (multiPdfOcrToggle) {
             multiPdfOcrToggle.checked = false;
           }
@@ -4490,6 +4491,8 @@
         state.multiFiles.push({ file, category, uploadedAt });
         if (wasEmpty && (category === "pdf" || category === "image")) {
           state.multiUseVision = true;
+        } else if (wasEmpty) {
+          state.multiUseVision = false;
         }
         if (category === "pdf" && typeof options.useOcr === "boolean") {
           if (options.useOcr) {
