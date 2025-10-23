@@ -7,9 +7,10 @@ from collections import OrderedDict
 import pytest
 from fastapi import HTTPException
 
+from app.config import Config
 from app.routes.extract import TextExtractionRequest, extract_from_file_endpoint, extract_from_text_endpoint
 from app.routes.predictions import PredictionRequest, create_prediction
-from app.services.extraction_service import ExtractionResult
+from app.services.extraction_service import ExtractionResult, ExtractionService
 from app.services.prediction_service import PredictionResult
 
 
@@ -46,6 +47,7 @@ class _StubExtractionService:
     def __init__(self) -> None:
         self.text_calls: list[dict[str, object]] = []
         self.file_calls: list[dict[str, object]] = []
+        self.image_calls: list[dict[str, object]] = []
 
     def extract_from_text(self, text: str, **kwargs) -> ExtractionResult:
         self.text_calls.append({"text": text, **kwargs})
@@ -70,6 +72,21 @@ class _StubExtractionService:
             text_origin="file",
         )
 
+    def extract_from_image(self, filename: str, data: bytes, content_type: str | None, **kwargs) -> ExtractionResult:
+        self.image_calls.append(
+            {
+                "filename": filename,
+                "content_type": content_type,
+                "size": len(data),
+                **kwargs,
+            }
+        )
+        return ExtractionResult(
+            fields={"nit": "987654321"},
+            raw_text="contenido procesado",
+            text_origin="ocr",
+        )
+
 
 class _DummyUploadFile:
     """Equivalente mínimo de :class:`fastapi.UploadFile` para las pruebas."""
@@ -81,6 +98,73 @@ class _DummyUploadFile:
 
     async def read(self) -> bytes:
         return self._data
+
+
+class _StubPdfExtractor:
+    """Simula un lector de PDF permitiendo controlar su salida en las pruebas."""
+
+    def __init__(self) -> None:
+        self.text = "texto pdf"
+        self.images = [(b"page-1", "image/png")]
+        self.render_calls = 0
+
+    def read_text(self, data: bytes) -> str:
+        return self.text
+
+    def render_page_images(self, data: bytes):
+        self.render_calls += 1
+        return list(self.images)
+
+
+class _StubAzureOCRService:
+    """OCR mínimo que devuelve siempre el mismo texto."""
+
+    def __init__(self) -> None:
+        self.text = "texto ocr"
+        self.calls: list[tuple[bytes, str | None]] = []
+
+    def extract_text(self, data: bytes, content_type: str | None = None) -> str:
+        self.calls.append((data, content_type))
+        return self.text
+
+
+class _InstrumentedExtractionService(ExtractionService):
+    """Extensión del servicio real que captura invocaciones para validarlas."""
+
+    def __init__(self) -> None:
+        super().__init__(Config())
+        self._pdf = _StubPdfExtractor()
+        self._ocr_stub = _StubAzureOCRService()
+        self.text_invocations: list[dict[str, object]] = []
+        self.vision_invocations: list[list[tuple[bytes, str | None]]] = []
+        self.ocr_invocations = 0
+
+    def extract_from_text(self, text: str, **kwargs) -> ExtractionResult:  # type: ignore[override]
+        payload = {"text": text, **kwargs}
+        self.text_invocations.append(payload)
+        return ExtractionResult(
+            fields={"ok": True},
+            raw_text=text,
+            text_origin=kwargs.get("text_origin", "file"),
+        )
+
+    def _resolve_ocr_service(self, *args, **kwargs):  # type: ignore[override]
+        return self._ocr_stub
+
+    def _encode_vision_images(self, images, limit=3):  # type: ignore[override]
+        collected = list(images)
+        self.vision_invocations.append(collected)
+        if not collected:
+            return None
+        encoded = []
+        for index, (_, media_type) in enumerate(collected):
+            normalized = (media_type or "image/png").lower()
+            encoded.append({"media_type": normalized, "data": f"encoded-{index}"})
+        return encoded
+
+    def _extract_text_from_file(self, *args, **kwargs):  # type: ignore[override]
+        self.ocr_invocations += 1
+        return self._ocr_stub.text
 
 
 def test_create_prediction_endpoint_returns_payload():
@@ -158,5 +242,249 @@ def test_extract_from_file_endpoint_returns_payload():
     result = asyncio.run(extract_from_file_endpoint(upload, service=service))
 
     assert result["fields"]["nit"] == "987654321"
+
+
+def test_extract_from_file_endpoint_forwards_use_vision():
+    """Debe propagar el indicador de visión cuando se solicite."""
+
+    service = _StubExtractionService()
+    upload = _DummyUploadFile("factura.pdf", "application/pdf", b"pdf-bytes")
+
+    asyncio.run(
+        extract_from_file_endpoint(upload, use_vision=True, service=service)
+    )
+
+    assert service.file_calls[0]["use_vision"] is True
     assert service.file_calls[0]["filename"] == "factura.pdf"
     assert service.file_calls[0]["size"] == len(b"pdf-bytes")
+
+
+def test_extract_from_image_endpoint_respects_use_ocr_flag():
+    """La API de imágenes debe permitir desactivar el OCR cuando se indique."""
+
+    service = _StubExtractionService()
+    upload = _DummyUploadFile("foto.png", "image/png", b"pixel")
+
+    asyncio.run(
+        extract_from_image_endpoint(
+            upload,
+            use_vision=True,
+            use_ocr=False,
+            service=service,
+        )
+    )
+
+    assert service.image_calls[0]["use_vision"] is True
+    assert service.image_calls[0]["use_ocr"] is False
+    assert service.image_calls[0]["filename"] == "foto.png"
+    assert service.image_calls[0]["size"] == len(b"pixel")
+
+
+def test_extraction_service_uses_direct_text_without_vision():
+    """Cuando Visión está apagado, solo debe enviarse el texto disponible."""
+
+    service = _InstrumentedExtractionService()
+    service._pdf.text = "contenido directo"
+
+    result = service.extract_from_file(
+        "factura.pdf", b"%PDF", "application/pdf", use_vision=False
+    )
+
+    invocation = service.text_invocations[-1]
+    assert invocation["text"] == "contenido directo"
+    assert invocation["vision_images"] is None
+    assert invocation["text_origin"] == "file"
+    assert service._pdf.render_calls == 0
+    assert result.raw_text == "contenido directo"
+    assert result.text_origin == "file"
+
+
+def test_extraction_service_adds_images_when_vision_enabled():
+    """Si Visión está activo, debe adjuntar capturas además del texto."""
+
+    service = _InstrumentedExtractionService()
+    service._pdf.text = "contenido digital"
+    service._pdf.images = [(b"page-1", "image/png"), (b"page-2", "image/jpeg")]
+
+    result = service.extract_from_file(
+        "factura.pdf", b"%PDF", "application/pdf", use_vision=True
+    )
+
+    invocation = service.text_invocations[-1]
+    assert invocation["text"] == "contenido digital"
+    assert invocation["vision_images"] == [
+        {"media_type": "image/png", "data": "encoded-0"},
+        {"media_type": "image/jpeg", "data": "encoded-1"},
+    ]
+    assert service._pdf.render_calls == 1
+    assert service.vision_invocations[-1] == [
+        (b"page-1", "image/png"),
+        (b"page-2", "image/jpeg"),
+    ]
+    assert result.raw_text == "contenido digital"
+    assert result.text_origin == "file"
+
+
+def test_extraction_service_never_enables_vision_for_xml():
+    """Archivos XML solo deben enviar el contenido plano al modelo."""
+
+    service = _InstrumentedExtractionService()
+
+    result = service.extract_from_file(
+        "factura.xml",
+        b"<factura>contenido</factura>",
+        "application/xml",
+        force_ocr=True,
+        use_vision=True,
+    )
+
+    invocation = service.text_invocations[-1]
+    assert invocation["text"] == "<factura>contenido</factura>"
+    assert invocation["vision_images"] is None
+    assert invocation["text_origin"] == "file"
+    assert service._pdf.render_calls == 0
+    assert service.ocr_invocations == 0
+    assert result.text_origin == "file"
+
+
+def test_extraction_service_never_enables_vision_for_json():
+    """Los JSON deben ignorar indicadores de OCR o Visión forzados."""
+
+    service = _InstrumentedExtractionService()
+
+    result = service.extract_from_file(
+        "factura.json",
+        b'{"monto": 100}',
+        "application/json",
+        use_vision=True,
+        force_ocr=True,
+    )
+
+    invocation = service.text_invocations[-1]
+    assert invocation["text"] == '{"monto": 100}'
+    assert invocation["vision_images"] is None
+    assert invocation["text_origin"] == "file"
+    assert service._pdf.render_calls == 0
+    assert service.ocr_invocations == 0
+    assert result.text_origin == "file"
+
+
+def test_extraction_service_uses_ocr_when_forced():
+    """Forzar OCR debe reemplazar el texto plano y marcar el origen correcto."""
+
+    service = _InstrumentedExtractionService()
+    service._pdf.text = "texto directo"
+    service._ocr_stub.text = "texto via ocr"
+
+    result = service.extract_from_file(
+        "factura.pdf", b"%PDF", "application/pdf", force_ocr=True
+    )
+
+    invocation = service.text_invocations[-1]
+    assert invocation["text"] == "texto via ocr"
+    assert invocation["vision_images"] is None
+    assert invocation["text_origin"] == "ocr"
+    assert service.ocr_invocations == 1
+    assert result.text_origin == "ocr"
+
+
+def test_extraction_service_respects_disabled_ocr_for_pdfs():
+    """Los PDF sin texto deben conservar el origen 'file' cuando el OCR está apagado."""
+
+    service = _InstrumentedExtractionService()
+    service._pdf.text = ""
+    service._ocr_stub.text = "texto recuperado"
+
+    result = service.extract_from_file("factura.pdf", b"%PDF", "application/pdf")
+
+    invocation = service.text_invocations[-1]
+    assert invocation["text"] == ""
+    assert invocation["text_origin"] == "file"
+    assert invocation["vision_images"] is None
+    assert service.ocr_invocations == 0
+    assert result.raw_text == ""
+    assert result.text_origin == "file"
+
+
+def test_extraction_service_omits_pixels_when_vision_disabled_for_images():
+    """Las imágenes respetan la bandera de Visión y solo usan OCR obligatorio."""
+
+    service = _InstrumentedExtractionService()
+    service._ocr_stub.text = "texto imagen"
+
+    result = service.extract_from_file(
+        "foto.png",
+        b"\x89PNGdatos",
+        "image/png",
+        use_vision=False,
+    )
+
+    invocation = service.text_invocations[-1]
+    assert invocation["text"] == "texto imagen"
+    assert invocation["vision_images"] is None
+    assert service.vision_invocations == []
+    assert invocation["text_origin"] == "ocr"
+    assert result.text_origin == "ocr"
+
+
+def test_extraction_service_adds_pixels_when_vision_enabled_for_images():
+    """La bandera Visión en imágenes adjunta la captura en base64 al modelo."""
+
+    service = _InstrumentedExtractionService()
+    service._ocr_stub.text = "texto imagen"
+
+    result = service.extract_from_file(
+        "foto.png",
+        b"\x89PNGdatos",
+        "image/png",
+        use_vision=True,
+    )
+
+    invocation = service.text_invocations[-1]
+    assert invocation["text"] == "texto imagen"
+    assert invocation["vision_images"] == [
+        {"media_type": "image/png", "data": "encoded-0"},
+    ]
+    assert service.vision_invocations[-1] == [(b"\x89PNGdatos", "image/png")]
+    assert invocation["text_origin"] == "ocr"
+    assert result.text_origin == "ocr"
+
+
+def test_extraction_service_skips_ocr_when_disabled_for_images():
+    """Al desactivar OCR, solo se envía la captura visual al modelo."""
+
+    service = _InstrumentedExtractionService()
+
+    result = service.extract_from_image(
+        "foto.png",
+        b"\x89PNGdatos",
+        "image/png",
+        use_vision=True,
+        use_ocr=False,
+    )
+
+    invocation = service.text_invocations[-1]
+    assert invocation["text"] == ""
+    assert invocation["vision_images"] == [
+        {"media_type": "image/png", "data": "encoded-0"},
+    ]
+    assert service._ocr_stub.calls == []
+    assert invocation["text_origin"] == "file"
+    assert result.text_origin == "file"
+
+
+def test_extraction_service_requires_modality_for_images():
+    """Debe exigir al menos OCR o Visión para procesar una imagen."""
+
+    service = _InstrumentedExtractionService()
+
+    with pytest.raises(RuntimeError) as excinfo:
+        service.extract_from_image(
+            "foto.png",
+            b"\x89PNGdatos",
+            "image/png",
+            use_vision=False,
+            use_ocr=False,
+        )
+
+    assert "Activa OCR o Visión" in str(excinfo.value)

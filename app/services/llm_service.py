@@ -124,6 +124,7 @@ class OpenAILLMService:
         frequency_penalty: Optional[float] = None,
         presence_penalty: Optional[float] = None,
         api_key: Optional[str] = None,
+        vision_images: Optional[List[Dict[str, str]]] = None,
     ) -> Dict[str, Any]:
         """Invoca el endpoint de chat completions utilizando modo JSON Schema."""
 
@@ -160,11 +161,29 @@ class OpenAILLMService:
             if presence_penalty is None
             else presence_penalty
         )
+        user_content: Any
+        if vision_images:
+            segments: List[Dict[str, Any]] = []
+            stripped = text.strip()
+            if stripped:
+                segments.append({"type": "text", "text": stripped})
+            for image in vision_images:
+                data = image.get("data")
+                if not data:
+                    continue
+                media_type = (image.get("media_type") or "image/png").lower()
+                if not media_type.startswith("image/"):
+                    media_type = f"image/{media_type.split('/')[-1]}"
+                url = f"data:{media_type};base64,{data}"
+                segments.append({"type": "image_url", "image_url": {"url": url}})
+            user_content = segments if segments else text
+        else:
+            user_content = text
         response = client.chat.completions.create(
             model=chosen_model,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": text},
+                {"role": "user", "content": user_content},
             ],
             response_format={
                 "type": "json_schema",
@@ -252,10 +271,12 @@ class LocalLLMService:
         frequency_penalty: Optional[float] = None,
         presence_penalty: Optional[float] = None,
         api_key: Optional[str] = None,
+        vision_images: Optional[List[Dict[str, str]]] = None,
     ) -> Dict[str, Any]:
         """Genera texto con el modelo local y lo interpreta como JSON."""
 
         _ = api_key  # Compatibilidad con la interfaz API
+        _ = vision_images  # Los modelos locales actuales no soportan entradas visuales
         messages: List[Dict[str, str]] = [
             {
                 "role": "user",

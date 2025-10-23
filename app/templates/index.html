@@ -1178,6 +1178,19 @@
         transition: background 0.25s ease;
       }
 
+      .toggle input[type="checkbox"]:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+
+      .toggle--locked {
+        opacity: 0.85;
+      }
+
+      .toggle--locked label {
+        cursor: not-allowed;
+      }
+
       .toggle input[type="checkbox"]::after {
         content: "";
         position: absolute;
@@ -2420,6 +2433,10 @@
                   <input type="checkbox" id="multiPdfOcrToggle" />
                   <label for="multiPdfOcrToggle">OCR</label>
                 </div>
+                <div class="toggle" id="multiVisionToggleRow" hidden>
+                  <input type="checkbox" id="multiVisionToggle" />
+                  <label for="multiVisionToggle">Visión</label>
+                </div>
                 <ul class="multi-file-list" id="multiFileList"></ul>
                 <div class="progress-row" id="multiProgress" hidden aria-live="polite">
                   <div class="progress-row__meta">
@@ -2560,6 +2577,10 @@
                   <div class="toggle" id="testingPdfToggleRow" hidden>
                     <input type="checkbox" id="testingPdfOcrToggle" />
                     <label for="testingPdfOcrToggle">OCR</label>
+                  </div>
+                  <div class="toggle" id="testingVisionToggleRow" hidden>
+                    <input type="checkbox" id="testingVisionToggle" />
+                    <label for="testingVisionToggle">Visión</label>
                   </div>
                   <p class="testing-selection__empty" id="testingSelectionEmpty">
                     Aún no agregas documentos de prueba a la lista.
@@ -2943,6 +2964,7 @@
         multiFiles: [],
         multiCategory: null,
         multiUseOcr: false,
+        multiUseVision: false,
         results: [],
         currentIndex: -1,
         currentHighlights: [],
@@ -3041,6 +3063,10 @@
       const testingSelectionEmpty = document.getElementById("testingSelectionEmpty");
       const testingPdfToggleRow = document.getElementById("testingPdfToggleRow");
       const testingPdfOcrToggle = document.getElementById("testingPdfOcrToggle");
+      const testingVisionToggleRow = document.getElementById(
+        "testingVisionToggleRow"
+      );
+      const testingVisionToggle = document.getElementById("testingVisionToggle");
 
       const multiDropZone = document.getElementById("multiDropZone");
       const multiBrowseButton = document.getElementById("multiBrowseButton");
@@ -3051,6 +3077,8 @@
       const multiEmptyState = document.getElementById("multiEmptyState");
       const multiPdfToggleRow = document.getElementById("multiPdfToggleRow");
       const multiPdfOcrToggle = document.getElementById("multiPdfOcrToggle");
+      const multiVisionToggleRow = document.getElementById("multiVisionToggleRow");
+      const multiVisionToggle = document.getElementById("multiVisionToggle");
       const workspace = document.querySelector(".workspace");
       const inputPanel = document.getElementById("inputPanel");
       const inputPanelBody = document.getElementById("inputPanelBody");
@@ -3142,27 +3170,152 @@
       let isPreviewDocked = false;
       let dockedFileReadToken = 0;
 
-      // Muestra u oculta el control para forzar OCR en documentos PDF
-      function setMultiPdfToggleVisibility(visible) {
-        const showInMulti = Boolean(visible && state.mode === "multi");
-        const showInTesting = Boolean(visible && state.mode === "testing");
+      // Muestra u oculta el control de OCR para documentos compatibles
+      function setOcrToggleVisibility(visible, options = {}) {
+        const { locked = false, forceChecked } = options;
+        if (!visible) {
+          if (multiPdfToggleRow) {
+            multiPdfToggleRow.hidden = true;
+            multiPdfToggleRow.setAttribute("aria-hidden", "true");
+            multiPdfToggleRow.style.display = "none";
+            multiPdfToggleRow.classList.remove("toggle--locked");
+            multiPdfToggleRow.removeAttribute("aria-disabled");
+          }
+          if (testingPdfToggleRow) {
+            testingPdfToggleRow.hidden = true;
+            testingPdfToggleRow.setAttribute("aria-hidden", "true");
+            testingPdfToggleRow.style.display = "none";
+            testingPdfToggleRow.classList.remove("toggle--locked");
+            testingPdfToggleRow.removeAttribute("aria-disabled");
+          }
+          if (multiPdfOcrToggle) {
+            multiPdfOcrToggle.checked = false;
+            multiPdfOcrToggle.disabled = false;
+            multiPdfOcrToggle.removeAttribute("aria-disabled");
+          }
+          if (testingPdfOcrToggle) {
+            testingPdfOcrToggle.checked = false;
+            testingPdfOcrToggle.disabled = false;
+            testingPdfOcrToggle.removeAttribute("aria-disabled");
+          }
+          state.multiUseOcr = false;
+          return;
+        }
+
+        if (typeof forceChecked === "boolean") {
+          state.multiUseOcr = forceChecked;
+        }
+
+        const showInMulti = state.mode === "multi";
+        const showInTesting = state.mode === "testing";
+
         if (multiPdfToggleRow) {
           multiPdfToggleRow.hidden = !showInMulti;
           multiPdfToggleRow.setAttribute("aria-hidden", String(!showInMulti));
           multiPdfToggleRow.style.display = showInMulti ? "flex" : "none";
+          multiPdfToggleRow.classList.toggle("toggle--locked", locked);
+          multiPdfToggleRow.setAttribute("aria-disabled", String(locked));
         }
         if (testingPdfToggleRow) {
           testingPdfToggleRow.hidden = !showInTesting;
           testingPdfToggleRow.setAttribute("aria-hidden", String(!showInTesting));
           testingPdfToggleRow.style.display = showInTesting ? "flex" : "none";
+          testingPdfToggleRow.classList.toggle("toggle--locked", locked);
+          testingPdfToggleRow.setAttribute("aria-disabled", String(locked));
         }
-        if (!visible) {
-          state.multiUseOcr = false;
-          if (multiPdfOcrToggle) {
-            multiPdfOcrToggle.checked = false;
+
+        if (multiPdfOcrToggle) {
+          multiPdfOcrToggle.checked = state.multiUseOcr;
+          multiPdfOcrToggle.disabled = Boolean(locked);
+          if (locked) {
+            multiPdfOcrToggle.setAttribute("aria-disabled", "true");
+          } else {
+            multiPdfOcrToggle.removeAttribute("aria-disabled");
           }
-          if (testingPdfOcrToggle) {
-            testingPdfOcrToggle.checked = false;
+        }
+        if (testingPdfOcrToggle) {
+          testingPdfOcrToggle.checked = state.multiUseOcr;
+          testingPdfOcrToggle.disabled = Boolean(locked);
+          if (locked) {
+            testingPdfOcrToggle.setAttribute("aria-disabled", "true");
+          } else {
+            testingPdfOcrToggle.removeAttribute("aria-disabled");
+          }
+        }
+      }
+
+      function setVisionToggleVisibility(visible, options = {}) {
+        const { locked = false, forceChecked } = options;
+        if (!visible) {
+          if (multiVisionToggleRow) {
+            multiVisionToggleRow.hidden = true;
+            multiVisionToggleRow.setAttribute("aria-hidden", "true");
+            multiVisionToggleRow.style.display = "none";
+            multiVisionToggleRow.classList.remove("toggle--locked");
+            multiVisionToggleRow.removeAttribute("aria-disabled");
+          }
+          if (testingVisionToggleRow) {
+            testingVisionToggleRow.hidden = true;
+            testingVisionToggleRow.setAttribute("aria-hidden", "true");
+            testingVisionToggleRow.style.display = "none";
+            testingVisionToggleRow.classList.remove("toggle--locked");
+            testingVisionToggleRow.removeAttribute("aria-disabled");
+          }
+          if (multiVisionToggle) {
+            multiVisionToggle.checked = false;
+            multiVisionToggle.disabled = false;
+            multiVisionToggle.removeAttribute("aria-disabled");
+          }
+          if (testingVisionToggle) {
+            testingVisionToggle.checked = false;
+            testingVisionToggle.disabled = false;
+            testingVisionToggle.removeAttribute("aria-disabled");
+          }
+          state.multiUseVision = false;
+          return;
+        }
+
+        if (typeof forceChecked === "boolean") {
+          state.multiUseVision = forceChecked;
+        }
+
+        const showInMulti = state.mode === "multi";
+        const showInTesting = state.mode === "testing";
+
+        if (multiVisionToggleRow) {
+          multiVisionToggleRow.hidden = !showInMulti;
+          multiVisionToggleRow.setAttribute("aria-hidden", String(!showInMulti));
+          multiVisionToggleRow.style.display = showInMulti ? "flex" : "none";
+          multiVisionToggleRow.classList.toggle("toggle--locked", locked);
+          multiVisionToggleRow.setAttribute("aria-disabled", String(locked));
+        }
+        if (testingVisionToggleRow) {
+          testingVisionToggleRow.hidden = !showInTesting;
+          testingVisionToggleRow.setAttribute(
+            "aria-hidden",
+            String(!showInTesting)
+          );
+          testingVisionToggleRow.style.display = showInTesting ? "flex" : "none";
+          testingVisionToggleRow.classList.toggle("toggle--locked", locked);
+          testingVisionToggleRow.setAttribute("aria-disabled", String(locked));
+        }
+
+        if (multiVisionToggle) {
+          multiVisionToggle.checked = state.multiUseVision;
+          multiVisionToggle.disabled = Boolean(locked);
+          if (locked) {
+            multiVisionToggle.setAttribute("aria-disabled", "true");
+          } else {
+            multiVisionToggle.removeAttribute("aria-disabled");
+          }
+        }
+        if (testingVisionToggle) {
+          testingVisionToggle.checked = state.multiUseVision;
+          testingVisionToggle.disabled = Boolean(locked);
+          if (locked) {
+            testingVisionToggle.setAttribute("aria-disabled", "true");
+          } else {
+            testingVisionToggle.removeAttribute("aria-disabled");
           }
         }
       }
@@ -4062,7 +4215,8 @@
       refreshLlmSettings(state.llmProvider);
       refreshOcrSettings(state.ocrProvider);
 
-      setMultiPdfToggleVisibility(false);
+      setOcrToggleVisibility(false);
+      setVisionToggleVisibility(false);
       updateTestingSampleButtonsState();
       resetMultiProgress();
 
@@ -4119,12 +4273,14 @@
         state.multiFiles = [];
         state.multiCategory = null;
         state.multiUseOcr = false;
+        state.multiUseVision = false;
         multiFileInput.value = "";
         multiDetails.hidden = true;
         multiEmptyState.hidden = true;
         multiFileList.innerHTML = "";
         multiTypeLabel.textContent = "—";
-        setMultiPdfToggleVisibility(false);
+        setOcrToggleVisibility(false);
+        setVisionToggleVisibility(false);
         resetMultiProgress();
         if (multiPdfOcrToggle) {
           multiPdfOcrToggle.checked = false;
@@ -4172,11 +4328,14 @@
         setActiveModeButton(textModeButton, isTextMode);
         setActiveModeButton(multiModeButton, isMultiMode);
         setActiveModeButton(testingModeButton, isTestingMode);
-        const hasPdfBatch =
-          state.multiCategory === "pdf" && state.multiFiles.length > 0;
-        setMultiPdfToggleVisibility(hasPdfBatch);
+        const hasOcrBatch =
+          (state.multiCategory === "pdf" || state.multiCategory === "image") &&
+          state.multiFiles.length > 0;
+        setOcrToggleVisibility(hasOcrBatch);
+        const hasVisionBatch = hasOcrBatch;
+        setVisionToggleVisibility(hasVisionBatch);
         updateTestingSampleButtonsState();
-        if (hasPdfBatch) {
+        if (hasOcrBatch) {
           if (multiPdfOcrToggle) {
             multiPdfOcrToggle.checked = state.multiUseOcr;
           }
@@ -4233,6 +4392,22 @@
         return null;
       }
 
+      function formatTypeLabel(category, options = {}) {
+        const info = SUPPORTED_TYPES[category];
+        const baseLabel = info ? info.label : category || "—";
+        const flags = [];
+        if (options.useOcr) {
+          flags.push("OCR");
+        }
+        if (options.useVision) {
+          flags.push("Visión");
+        }
+        if (!flags.length) {
+          return baseLabel;
+        }
+        return `${baseLabel} (${flags.join(", ")})`;
+      }
+
       // Redibuja la lista de archivos seleccionados con su estado.
       function renderMultiList() {
         updateTestingSampleButtonsState();
@@ -4242,23 +4417,32 @@
         }
         multiDetails.hidden = false;
         multiEmptyState.hidden = true;
-        const label = SUPPORTED_TYPES[state.multiCategory].label;
-        const isPdfBatch = state.multiCategory === "pdf" && state.multiFiles.length > 0;
-        setMultiPdfToggleVisibility(isPdfBatch);
-        if (isPdfBatch) {
+        const isPdfBatch =
+          state.multiCategory === "pdf" && state.multiFiles.length > 0;
+        const isImageBatch =
+          state.multiCategory === "image" && state.multiFiles.length > 0;
+        const isOcrBatch = isPdfBatch || isImageBatch;
+        setOcrToggleVisibility(isOcrBatch);
+        setVisionToggleVisibility(isOcrBatch);
+        if (isOcrBatch) {
           if (multiPdfOcrToggle) {
             multiPdfOcrToggle.checked = state.multiUseOcr;
           }
           if (testingPdfOcrToggle) {
             testingPdfOcrToggle.checked = state.multiUseOcr;
           }
-          multiTypeLabel.textContent = `${label}${state.multiUseOcr ? " (OCR)" : ""}`;
         } else {
           if (testingPdfOcrToggle) {
             testingPdfOcrToggle.checked = false;
           }
-          multiTypeLabel.textContent = label;
         }
+        const multiLabel = formatTypeLabel(state.multiCategory, {
+          useOcr:
+            (state.multiCategory === "pdf" || state.multiCategory === "image") &&
+            state.multiUseOcr,
+          useVision: isOcrBatch && state.multiUseVision,
+        });
+        multiTypeLabel.textContent = multiLabel;
         multiFileList.innerHTML = "";
         state.multiFiles.forEach((entry, index) => {
           const item = document.createElement("li");
@@ -4267,10 +4451,14 @@
           const name = document.createElement("strong");
           name.textContent = entry.file.name;
           const type = document.createElement("small");
-          type.textContent =
-            entry.category === "pdf" && state.multiUseOcr
-              ? `${SUPPORTED_TYPES[entry.category].label} (OCR)`
-              : SUPPORTED_TYPES[entry.category].label;
+          type.textContent = formatTypeLabel(entry.category, {
+            useOcr:
+              (entry.category === "pdf" || entry.category === "image") &&
+              state.multiUseOcr,
+            useVision:
+              (entry.category === "pdf" || entry.category === "image") &&
+              state.multiUseVision,
+          });
           info.appendChild(name);
           info.appendChild(type);
           const actions = document.createElement("div");
@@ -4344,15 +4532,15 @@
           info.className = "testing-selection__info";
           const name = document.createElement("strong");
           name.textContent = entry.file.name;
-          const typeLabel = SUPPORTED_TYPES[entry.category]
-            ? SUPPORTED_TYPES[entry.category].label
-            : entry.category;
           const typeText = document.createElement("span");
-          if (entry.category === "pdf" && state.multiUseOcr) {
-            typeText.textContent = `${typeLabel} (OCR)`;
-          } else {
-            typeText.textContent = typeLabel;
-          }
+          typeText.textContent = formatTypeLabel(entry.category, {
+            useOcr:
+              (entry.category === "pdf" || entry.category === "image") &&
+              state.multiUseOcr,
+            useVision:
+              (entry.category === "pdf" || entry.category === "image") &&
+              state.multiUseVision,
+          });
           info.appendChild(name);
           info.appendChild(typeText);
 
@@ -4382,6 +4570,7 @@
         if (!state.multiFiles.length) {
           state.multiCategory = null;
           state.multiUseOcr = false;
+          state.multiUseVision = false;
           if (multiPdfOcrToggle) {
             multiPdfOcrToggle.checked = false;
           }
@@ -4407,13 +4596,25 @@
           return;
         }
         state.multiCategory = category;
-        if (category !== "pdf") {
-          setMultiPdfToggleVisibility(false);
+        if (category !== "pdf" && category !== "image") {
+          setOcrToggleVisibility(false);
         }
         const wasEmpty = state.multiFiles.length === 0;
         const uploadedAt = Date.now();
         state.multiFiles.push({ file, category, uploadedAt });
-        if (category === "pdf" && typeof options.useOcr === "boolean") {
+        if (category === "image") {
+          if (wasEmpty) {
+            state.multiUseVision = true;
+            state.multiUseOcr = true;
+          }
+        } else if (wasEmpty) {
+          state.multiUseVision = false;
+          state.multiUseOcr = false;
+        }
+        if (
+          (category === "pdf" || category === "image") &&
+          typeof options.useOcr === "boolean"
+        ) {
           if (options.useOcr) {
             state.multiUseOcr = true;
           } else if (wasEmpty) {
@@ -4536,6 +4737,26 @@
           state.multiUseOcr = testingPdfOcrToggle.checked;
           if (multiPdfOcrToggle) {
             multiPdfOcrToggle.checked = state.multiUseOcr;
+          }
+          renderMultiList();
+        });
+      }
+
+      if (multiVisionToggle) {
+        multiVisionToggle.addEventListener("change", () => {
+          state.multiUseVision = multiVisionToggle.checked;
+          if (testingVisionToggle) {
+            testingVisionToggle.checked = state.multiUseVision;
+          }
+          renderMultiList();
+        });
+      }
+
+      if (testingVisionToggle) {
+        testingVisionToggle.addEventListener("change", () => {
+          state.multiUseVision = testingVisionToggle.checked;
+          if (multiVisionToggle) {
+            multiVisionToggle.checked = state.multiUseVision;
           }
           renderMultiList();
         });
@@ -6655,7 +6876,14 @@
             payload: {
               category: state.multiCategory,
               entries: state.multiFiles.map((entry) => ({ ...entry })),
-              useOcr: state.multiUseOcr,
+              useOcr:
+                state.multiCategory === "pdf" || state.multiCategory === "image"
+                  ? state.multiUseOcr
+                  : false,
+              useVision:
+                state.multiCategory === "pdf" || state.multiCategory === "image"
+                  ? state.multiUseVision
+                  : false,
             },
           };
         }
@@ -6723,7 +6951,7 @@
       }
 
       async function sendFile(file, type, options = {}) {
-        const { useOcr = false } = options;
+        const { useOcr = false, useVision = false } = options;
         const formData = new FormData();
         const fieldName = type === "image" ? "image" : "file";
         formData.append(fieldName, file);
@@ -6735,7 +6963,11 @@
         if (type === "pdf" && useOcr) {
           url.searchParams.set("force_ocr", "true");
         }
+        if (type === "image") {
+          url.searchParams.set("use_ocr", String(Boolean(useOcr)));
+        }
         url.searchParams.set("llm_provider", state.llmProvider);
+        url.searchParams.set("use_vision", String(Boolean(useVision)));
         const activeSettings = getActiveLlmSettings();
         if (activeSettings.model) {
           url.searchParams.set("llm_model", activeSettings.model);
@@ -6832,24 +7064,29 @@
             if (state.settings.autoClear) {
               plainText.value = "";
             }
-          } else if (type === "multi") {
-            const { category, entries, useOcr } = payload;
-            showMultiProgress(entries.length);
-            updateMultiProgress(0, entries.length);
-            for (let index = 0; index < entries.length; index += 1) {
-              const currentEntry = entries[index];
-              setStatus(
-                `Procesando factura ${index + 1} de ${entries.length}...`,
-                false
-              );
-              const currentResult = await sendFile(currentEntry.file, category, {
-                useOcr: category === "pdf" ? useOcr : false,
-              });
-              const label =
-                category === "pdf"
-                  ? `${SUPPORTED_TYPES[category].label}${useOcr ? " (OCR)" : ""}`
-                  : SUPPORTED_TYPES[category].label;
-              const description = `${label} · ${currentEntry.file.name}`;
+        } else if (type === "multi") {
+          const { category, entries, useOcr, useVision } = payload;
+          showMultiProgress(entries.length);
+          updateMultiProgress(0, entries.length);
+          for (let index = 0; index < entries.length; index += 1) {
+            const currentEntry = entries[index];
+            setStatus(
+              `Procesando factura ${index + 1} de ${entries.length}...`,
+              false
+            );
+            const currentResult = await sendFile(currentEntry.file, category, {
+              useOcr:
+                category === "pdf" || category === "image" ? useOcr : false,
+              useVision:
+                category === "pdf" || category === "image" ? useVision : false,
+            });
+            const label = formatTypeLabel(category, {
+              useOcr:
+                (category === "pdf" || category === "image") && useOcr,
+              useVision:
+                (category === "pdf" || category === "image") && useVision,
+            });
+            const description = `${label} · ${currentEntry.file.name}`;
               const normalized = normalizeExtractionResponse(currentResult);
               addResultEntry(normalized.fields, description, {
                 uploadedAt: currentEntry.uploadedAt || Date.now(),
