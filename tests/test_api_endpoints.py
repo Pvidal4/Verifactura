@@ -158,5 +158,18 @@ def test_extract_from_file_endpoint_returns_payload():
     result = asyncio.run(extract_from_file_endpoint(upload, service=service))
 
     assert result["fields"]["nit"] == "987654321"
+
+
+def test_extract_from_file_endpoint_forwards_use_vision():
+    """Debe propagar el indicador de visión cuando se solicite."""
+
+    service = _StubExtractionService()
+    upload = _DummyUploadFile("factura.pdf", "application/pdf", b"pdf-bytes")
+
+    asyncio.run(
+        extract_from_file_endpoint(upload, use_vision=True, service=service)
+    )
+
+    assert service.file_calls[0]["use_vision"] is True
     assert service.file_calls[0]["filename"] == "factura.pdf"
     assert service.file_calls[0]["size"] == len(b"pdf-bytes")

@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, Literal, Optional, Union
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
+from fastapi.params import Param
 from pydantic import BaseModel, Field
 
 from app.config import Config
@@ -89,10 +90,20 @@ def _normalize_reasoning_effort(
 def _normalize_optional_string(value: Optional[str]) -> Optional[str]:
     """Limpia cadenas opcionales evitando valores vacíos o con espacios."""
 
+    if isinstance(value, Param):
+        value = value.default
     if value is None:
         return None
     trimmed = value.strip()
     return trimmed or None
+
+
+def _normalize_flag(value: Union[bool, Param]) -> bool:
+    """Convierte banderas booleanas provenientes de FastAPI en bool genuinos."""
+
+    if isinstance(value, Param):
+        return bool(value.default)
+    return bool(value)
 
 
 def _normalize_api_key(value: Optional[str]) -> Optional[str]:
@@ -193,6 +204,13 @@ async def extract_from_file_endpoint(
             "Convierte cada página del PDF en imagen antes de aplicar Azure OCR."
         ),
     ),
+    use_vision: bool = Query(
+        False,
+        description=(
+            "Incluir la representación visual del documento al llamar al modelo "
+            "(cuando sea posible)."
+        ),
+    ),
     llm_provider: Optional[Literal["api", "local"]] = Query(
         None,
         description=(
@@ -263,12 +281,15 @@ async def extract_from_file_endpoint(
     data = await file.read()
     if not data:
         raise HTTPException(status_code=400, detail="El archivo subido está vacío.")
+    force_ocr_flag = _normalize_flag(force_ocr)
+    use_vision_flag = _normalize_flag(use_vision)
     try:
         result = service.extract_from_file(
             file.filename or "archivo",
             data,
             file.content_type,
-            force_ocr=force_ocr,
+            force_ocr=force_ocr_flag,
+            use_vision=use_vision_flag,
             provider=llm_provider,
             model=llm_model,
             temperature=temperature,
@@ -302,6 +323,12 @@ async def extract_from_image_endpoint(
         description=(
             "Proveedor del modelo de lenguaje a utilizar. "
             "Usa 'api' para OpenAI o 'local' para el modelo con pesos abiertos."
+        ),
+    ),
+    use_vision: bool = Query(
+        False,
+        description=(
+            "Enviar la imagen original codificada al modelo además del texto OCR."
         ),
     ),
     llm_model: Optional[str] = Query(
@@ -378,12 +405,14 @@ async def extract_from_image_endpoint(
     data = await image.read()
     if not data:
         raise HTTPException(status_code=400, detail="La imagen subida está vacía.")
+    use_vision_flag = _normalize_flag(use_vision)
     try:
         result = service.extract_from_image(
             image.filename or "imagen",
             data,
             image.content_type,
             provider=llm_provider,
+            use_vision=use_vision_flag,
             model=llm_model,
             temperature=temperature,
             top_p=top_p,

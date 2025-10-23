@@ -2420,6 +2420,10 @@
                   <input type="checkbox" id="multiPdfOcrToggle" />
                   <label for="multiPdfOcrToggle">OCR</label>
                 </div>
+                <div class="toggle" id="multiVisionToggleRow" hidden>
+                  <input type="checkbox" id="multiVisionToggle" />
+                  <label for="multiVisionToggle">Visión</label>
+                </div>
                 <ul class="multi-file-list" id="multiFileList"></ul>
                 <div class="progress-row" id="multiProgress" hidden aria-live="polite">
                   <div class="progress-row__meta">
@@ -2560,6 +2564,10 @@
                   <div class="toggle" id="testingPdfToggleRow" hidden>
                     <input type="checkbox" id="testingPdfOcrToggle" />
                     <label for="testingPdfOcrToggle">OCR</label>
+                  </div>
+                  <div class="toggle" id="testingVisionToggleRow" hidden>
+                    <input type="checkbox" id="testingVisionToggle" />
+                    <label for="testingVisionToggle">Visión</label>
                   </div>
                   <p class="testing-selection__empty" id="testingSelectionEmpty">
                     Aún no agregas documentos de prueba a la lista.
@@ -2943,6 +2951,7 @@
         multiFiles: [],
         multiCategory: null,
         multiUseOcr: false,
+        multiUseVision: true,
         results: [],
         currentIndex: -1,
         currentHighlights: [],
@@ -3041,6 +3050,10 @@
       const testingSelectionEmpty = document.getElementById("testingSelectionEmpty");
       const testingPdfToggleRow = document.getElementById("testingPdfToggleRow");
       const testingPdfOcrToggle = document.getElementById("testingPdfOcrToggle");
+      const testingVisionToggleRow = document.getElementById(
+        "testingVisionToggleRow"
+      );
+      const testingVisionToggle = document.getElementById("testingVisionToggle");
 
       const multiDropZone = document.getElementById("multiDropZone");
       const multiBrowseButton = document.getElementById("multiBrowseButton");
@@ -3051,6 +3064,8 @@
       const multiEmptyState = document.getElementById("multiEmptyState");
       const multiPdfToggleRow = document.getElementById("multiPdfToggleRow");
       const multiPdfOcrToggle = document.getElementById("multiPdfOcrToggle");
+      const multiVisionToggleRow = document.getElementById("multiVisionToggleRow");
+      const multiVisionToggle = document.getElementById("multiVisionToggle");
       const workspace = document.querySelector(".workspace");
       const inputPanel = document.getElementById("inputPanel");
       const inputPanelBody = document.getElementById("inputPanelBody");
@@ -3163,6 +3178,39 @@
           }
           if (testingPdfOcrToggle) {
             testingPdfOcrToggle.checked = false;
+          }
+        }
+      }
+
+      function setVisionToggleVisibility(visible) {
+        const showInMulti = Boolean(visible && state.mode === "multi");
+        const showInTesting = Boolean(visible && state.mode === "testing");
+        if (multiVisionToggleRow) {
+          multiVisionToggleRow.hidden = !showInMulti;
+          multiVisionToggleRow.setAttribute("aria-hidden", String(!showInMulti));
+          multiVisionToggleRow.style.display = showInMulti ? "flex" : "none";
+        }
+        if (testingVisionToggleRow) {
+          testingVisionToggleRow.hidden = !showInTesting;
+          testingVisionToggleRow.setAttribute(
+            "aria-hidden",
+            String(!showInTesting)
+          );
+          testingVisionToggleRow.style.display = showInTesting ? "flex" : "none";
+        }
+        if (visible) {
+          if (multiVisionToggle) {
+            multiVisionToggle.checked = state.multiUseVision;
+          }
+          if (testingVisionToggle) {
+            testingVisionToggle.checked = state.multiUseVision;
+          }
+        } else {
+          if (multiVisionToggle) {
+            multiVisionToggle.checked = false;
+          }
+          if (testingVisionToggle) {
+            testingVisionToggle.checked = false;
           }
         }
       }
@@ -4119,12 +4167,14 @@
         state.multiFiles = [];
         state.multiCategory = null;
         state.multiUseOcr = false;
+        state.multiUseVision = true;
         multiFileInput.value = "";
         multiDetails.hidden = true;
         multiEmptyState.hidden = true;
         multiFileList.innerHTML = "";
         multiTypeLabel.textContent = "—";
         setMultiPdfToggleVisibility(false);
+        setVisionToggleVisibility(false);
         resetMultiProgress();
         if (multiPdfOcrToggle) {
           multiPdfOcrToggle.checked = false;
@@ -4175,6 +4225,10 @@
         const hasPdfBatch =
           state.multiCategory === "pdf" && state.multiFiles.length > 0;
         setMultiPdfToggleVisibility(hasPdfBatch);
+        const hasVisionBatch =
+          (state.multiCategory === "pdf" || state.multiCategory === "image") &&
+          state.multiFiles.length > 0;
+        setVisionToggleVisibility(hasVisionBatch);
         updateTestingSampleButtonsState();
         if (hasPdfBatch) {
           if (multiPdfOcrToggle) {
@@ -4233,6 +4287,22 @@
         return null;
       }
 
+      function formatTypeLabel(category, options = {}) {
+        const info = SUPPORTED_TYPES[category];
+        const baseLabel = info ? info.label : category || "—";
+        const flags = [];
+        if (options.useOcr) {
+          flags.push("OCR");
+        }
+        if (options.useVision) {
+          flags.push("Visión");
+        }
+        if (!flags.length) {
+          return baseLabel;
+        }
+        return `${baseLabel} (${flags.join(", ")})`;
+      }
+
       // Redibuja la lista de archivos seleccionados con su estado.
       function renderMultiList() {
         updateTestingSampleButtonsState();
@@ -4242,9 +4312,12 @@
         }
         multiDetails.hidden = false;
         multiEmptyState.hidden = true;
-        const label = SUPPORTED_TYPES[state.multiCategory].label;
         const isPdfBatch = state.multiCategory === "pdf" && state.multiFiles.length > 0;
+        const isVisionBatch =
+          (state.multiCategory === "pdf" || state.multiCategory === "image") &&
+          state.multiFiles.length > 0;
         setMultiPdfToggleVisibility(isPdfBatch);
+        setVisionToggleVisibility(isVisionBatch);
         if (isPdfBatch) {
           if (multiPdfOcrToggle) {
             multiPdfOcrToggle.checked = state.multiUseOcr;
@@ -4252,13 +4325,14 @@
           if (testingPdfOcrToggle) {
             testingPdfOcrToggle.checked = state.multiUseOcr;
           }
-          multiTypeLabel.textContent = `${label}${state.multiUseOcr ? " (OCR)" : ""}`;
-        } else {
-          if (testingPdfOcrToggle) {
-            testingPdfOcrToggle.checked = false;
-          }
-          multiTypeLabel.textContent = label;
+        } else if (testingPdfOcrToggle) {
+          testingPdfOcrToggle.checked = false;
         }
+        const multiLabel = formatTypeLabel(state.multiCategory, {
+          useOcr: state.multiCategory === "pdf" && state.multiUseOcr,
+          useVision: isVisionBatch && state.multiUseVision,
+        });
+        multiTypeLabel.textContent = multiLabel;
         multiFileList.innerHTML = "";
         state.multiFiles.forEach((entry, index) => {
           const item = document.createElement("li");
@@ -4267,10 +4341,12 @@
           const name = document.createElement("strong");
           name.textContent = entry.file.name;
           const type = document.createElement("small");
-          type.textContent =
-            entry.category === "pdf" && state.multiUseOcr
-              ? `${SUPPORTED_TYPES[entry.category].label} (OCR)`
-              : SUPPORTED_TYPES[entry.category].label;
+          type.textContent = formatTypeLabel(entry.category, {
+            useOcr: entry.category === "pdf" && state.multiUseOcr,
+            useVision:
+              (entry.category === "pdf" || entry.category === "image") &&
+              state.multiUseVision,
+          });
           info.appendChild(name);
           info.appendChild(type);
           const actions = document.createElement("div");
@@ -4344,15 +4420,13 @@
           info.className = "testing-selection__info";
           const name = document.createElement("strong");
           name.textContent = entry.file.name;
-          const typeLabel = SUPPORTED_TYPES[entry.category]
-            ? SUPPORTED_TYPES[entry.category].label
-            : entry.category;
           const typeText = document.createElement("span");
-          if (entry.category === "pdf" && state.multiUseOcr) {
-            typeText.textContent = `${typeLabel} (OCR)`;
-          } else {
-            typeText.textContent = typeLabel;
-          }
+          typeText.textContent = formatTypeLabel(entry.category, {
+            useOcr: entry.category === "pdf" && state.multiUseOcr,
+            useVision:
+              (entry.category === "pdf" || entry.category === "image") &&
+              state.multiUseVision,
+          });
           info.appendChild(name);
           info.appendChild(typeText);
 
@@ -4382,6 +4456,7 @@
         if (!state.multiFiles.length) {
           state.multiCategory = null;
           state.multiUseOcr = false;
+          state.multiUseVision = true;
           if (multiPdfOcrToggle) {
             multiPdfOcrToggle.checked = false;
           }
@@ -4413,6 +4488,9 @@
         const wasEmpty = state.multiFiles.length === 0;
         const uploadedAt = Date.now();
         state.multiFiles.push({ file, category, uploadedAt });
+        if (wasEmpty && (category === "pdf" || category === "image")) {
+          state.multiUseVision = true;
+        }
         if (category === "pdf" && typeof options.useOcr === "boolean") {
           if (options.useOcr) {
             state.multiUseOcr = true;
@@ -4536,6 +4614,26 @@
           state.multiUseOcr = testingPdfOcrToggle.checked;
           if (multiPdfOcrToggle) {
             multiPdfOcrToggle.checked = state.multiUseOcr;
+          }
+          renderMultiList();
+        });
+      }
+
+      if (multiVisionToggle) {
+        multiVisionToggle.addEventListener("change", () => {
+          state.multiUseVision = multiVisionToggle.checked;
+          if (testingVisionToggle) {
+            testingVisionToggle.checked = state.multiUseVision;
+          }
+          renderMultiList();
+        });
+      }
+
+      if (testingVisionToggle) {
+        testingVisionToggle.addEventListener("change", () => {
+          state.multiUseVision = testingVisionToggle.checked;
+          if (multiVisionToggle) {
+            multiVisionToggle.checked = state.multiUseVision;
           }
           renderMultiList();
         });
@@ -6655,7 +6753,11 @@
             payload: {
               category: state.multiCategory,
               entries: state.multiFiles.map((entry) => ({ ...entry })),
-              useOcr: state.multiUseOcr,
+              useOcr: state.multiCategory === "pdf" ? state.multiUseOcr : false,
+              useVision:
+                state.multiCategory === "pdf" || state.multiCategory === "image"
+                  ? state.multiUseVision
+                  : false,
             },
           };
         }
@@ -6723,7 +6825,7 @@
       }
 
       async function sendFile(file, type, options = {}) {
-        const { useOcr = false } = options;
+        const { useOcr = false, useVision = false } = options;
         const formData = new FormData();
         const fieldName = type === "image" ? "image" : "file";
         formData.append(fieldName, file);
@@ -6736,6 +6838,7 @@
           url.searchParams.set("force_ocr", "true");
         }
         url.searchParams.set("llm_provider", state.llmProvider);
+        url.searchParams.set("use_vision", String(Boolean(useVision)));
         const activeSettings = getActiveLlmSettings();
         if (activeSettings.model) {
           url.searchParams.set("llm_model", activeSettings.model);
@@ -6832,24 +6935,27 @@
             if (state.settings.autoClear) {
               plainText.value = "";
             }
-          } else if (type === "multi") {
-            const { category, entries, useOcr } = payload;
-            showMultiProgress(entries.length);
-            updateMultiProgress(0, entries.length);
-            for (let index = 0; index < entries.length; index += 1) {
-              const currentEntry = entries[index];
-              setStatus(
-                `Procesando factura ${index + 1} de ${entries.length}...`,
-                false
-              );
-              const currentResult = await sendFile(currentEntry.file, category, {
-                useOcr: category === "pdf" ? useOcr : false,
-              });
-              const label =
-                category === "pdf"
-                  ? `${SUPPORTED_TYPES[category].label}${useOcr ? " (OCR)" : ""}`
-                  : SUPPORTED_TYPES[category].label;
-              const description = `${label} · ${currentEntry.file.name}`;
+        } else if (type === "multi") {
+          const { category, entries, useOcr, useVision } = payload;
+          showMultiProgress(entries.length);
+          updateMultiProgress(0, entries.length);
+          for (let index = 0; index < entries.length; index += 1) {
+            const currentEntry = entries[index];
+            setStatus(
+              `Procesando factura ${index + 1} de ${entries.length}...`,
+              false
+            );
+            const currentResult = await sendFile(currentEntry.file, category, {
+              useOcr: category === "pdf" ? useOcr : false,
+              useVision:
+                category === "pdf" || category === "image" ? useVision : false,
+            });
+            const label = formatTypeLabel(category, {
+              useOcr: category === "pdf" && useOcr,
+              useVision:
+                (category === "pdf" || category === "image") && useVision,
+            });
+            const description = `${label} · ${currentEntry.file.name}`;
               const normalized = normalizeExtractionResponse(currentResult);
               addResultEntry(normalized.fields, description, {
                 uploadedAt: currentEntry.uploadedAt || Date.now(),
