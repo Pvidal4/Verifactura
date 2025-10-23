@@ -5,3 +5,4 @@ gpt-oss-20b
 test.py
 train_script.py
 verifactura_dataset_500.csv
+requirements.txt
