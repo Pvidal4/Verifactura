@@ -47,6 +47,7 @@ class _StubExtractionService:
     def __init__(self) -> None:
         self.text_calls: list[dict[str, object]] = []
         self.file_calls: list[dict[str, object]] = []
+        self.image_calls: list[dict[str, object]] = []
 
     def extract_from_text(self, text: str, **kwargs) -> ExtractionResult:
         self.text_calls.append({"text": text, **kwargs})
@@ -69,6 +70,21 @@ class _StubExtractionService:
             fields={"nit": "987654321"},
             raw_text="contenido procesado",
             text_origin="file",
+        )
+
+    def extract_from_image(self, filename: str, data: bytes, content_type: str | None, **kwargs) -> ExtractionResult:
+        self.image_calls.append(
+            {
+                "filename": filename,
+                "content_type": content_type,
+                "size": len(data),
+                **kwargs,
+            }
+        )
+        return ExtractionResult(
+            fields={"nit": "987654321"},
+            raw_text="contenido procesado",
+            text_origin="ocr",
         )
 
 
@@ -243,6 +259,27 @@ def test_extract_from_file_endpoint_forwards_use_vision():
     assert service.file_calls[0]["size"] == len(b"pdf-bytes")
 
 
+def test_extract_from_image_endpoint_respects_use_ocr_flag():
+    """La API de imágenes debe permitir desactivar el OCR cuando se indique."""
+
+    service = _StubExtractionService()
+    upload = _DummyUploadFile("foto.png", "image/png", b"pixel")
+
+    asyncio.run(
+        extract_from_image_endpoint(
+            upload,
+            use_vision=True,
+            use_ocr=False,
+            service=service,
+        )
+    )
+
+    assert service.image_calls[0]["use_vision"] is True
+    assert service.image_calls[0]["use_ocr"] is False
+    assert service.image_calls[0]["filename"] == "foto.png"
+    assert service.image_calls[0]["size"] == len(b"pixel")
+
+
 def test_extraction_service_uses_direct_text_without_vision():
     """Cuando Visión está apagado, solo debe enviarse el texto disponible."""
 
@@ -410,3 +447,43 @@ def test_extraction_service_adds_pixels_when_vision_enabled_for_images():
     assert service.vision_invocations[-1] == [(b"\x89PNGdatos", "image/png")]
     assert invocation["text_origin"] == "ocr"
     assert result.text_origin == "ocr"
+
+
+def test_extraction_service_skips_ocr_when_disabled_for_images():
+    """Al desactivar OCR, solo se envía la captura visual al modelo."""
+
+    service = _InstrumentedExtractionService()
+
+    result = service.extract_from_image(
+        "foto.png",
+        b"\x89PNGdatos",
+        "image/png",
+        use_vision=True,
+        use_ocr=False,
+    )
+
+    invocation = service.text_invocations[-1]
+    assert invocation["text"] == ""
+    assert invocation["vision_images"] == [
+        {"media_type": "image/png", "data": "encoded-0"},
+    ]
+    assert service._ocr_stub.calls == []
+    assert invocation["text_origin"] == "file"
+    assert result.text_origin == "file"
+
+
+def test_extraction_service_requires_modality_for_images():
+    """Debe exigir al menos OCR o Visión para procesar una imagen."""
+
+    service = _InstrumentedExtractionService()
+
+    with pytest.raises(RuntimeError) as excinfo:
+        service.extract_from_image(
+            "foto.png",
+            b"\x89PNGdatos",
+            "image/png",
+            use_vision=False,
+            use_ocr=False,
+        )
+
+    assert "Activa OCR o Visión" in str(excinfo.value)

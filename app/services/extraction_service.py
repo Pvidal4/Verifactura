@@ -289,6 +289,7 @@ class ExtractionService:
         *,
         provider: Optional[str] = None,
         use_vision: bool = False,
+        use_ocr: bool = True,
         model: Optional[str] = None,
         temperature: Optional[float] = None,
         top_p: Optional[float] = None,
@@ -300,36 +301,70 @@ class ExtractionService:
         ocr_endpoint: Optional[str] = None,
         ocr_key: Optional[str] = None,
     ) -> ExtractionResult:
-        """Extrae texto vía OCR y luego invoca el flujo genérico de extracción."""
+        """Extrae texto vía OCR cuando se solicita y adjunta píxeles opcionales."""
 
-        ocr_service = self._resolve_ocr_service(
-            ocr_provider,
-            endpoint=ocr_endpoint,
-            key=ocr_key,
-            error_message="Azure OCR no está configurado pero es requirido para la extracción de imagen",
-        )
         suffix = Path(filename).suffix.lower()
-        if content_type:
-            content_type = content_type.lower()
-        else:
+        normalized_content_type = (content_type or "").lower()
+        if not normalized_content_type:
             guessed = mimetypes.guess_type(filename)[0]
-            content_type = guessed.lower() if guessed else None
-        if suffix in PDF_EXTENSIONS or content_type == "application/pdf":
-            return self._extract_text_from_pdf_with_ocr(data, ocr_service)
+            normalized_content_type = guessed.lower() if guessed else None
+
+        if suffix in PDF_EXTENSIONS or normalized_content_type == "application/pdf":
+            return self.extract_from_file(
+                filename,
+                data,
+                normalized_content_type,
+                force_ocr=use_ocr,
+                use_vision=use_vision,
+                provider=provider,
+                model=model,
+                temperature=temperature,
+                top_p=top_p,
+                reasoning_effort=reasoning_effort,
+                frequency_penalty=frequency_penalty,
+                presence_penalty=presence_penalty,
+                openai_api_key=openai_api_key,
+                ocr_provider=ocr_provider,
+                ocr_endpoint=ocr_endpoint,
+                ocr_key=ocr_key,
+                image_use_ocr=use_ocr,
+            )
+
         if suffix and suffix not in IMAGE_EXTENSIONS and not (
-            (content_type or "").startswith("image/")
+            (normalized_content_type or "").startswith("image/")
         ):
             raise RuntimeError("Formato de imagen no admitido")
-        # Las imágenes siguen obligando al uso de OCR para obtener el texto base,
-        # mientras que adjuntar la captura visual queda sujeto a la bandera recibida.
-        text = ocr_service.extract_text(data, content_type=content_type)
-        if not text:
-            raise RuntimeError("No se pudo extraer texto de la imagen ingresada")
+
+        use_vision = bool(use_vision)
+        use_ocr = bool(use_ocr)
+        if not use_ocr and not use_vision:
+            raise RuntimeError("Activa OCR o Visión para procesar la imagen.")
+
+        text = ""
+        text_origin: Literal["file", "ocr"] = "file"
+        if use_ocr:
+            ocr_service = self._resolve_ocr_service(
+                ocr_provider,
+                endpoint=ocr_endpoint,
+                key=ocr_key,
+                error_message="Azure OCR no está configurado pero es requirido para la extracción de imagen",
+            )
+            text = ocr_service.extract_text(
+                data,
+                content_type=normalized_content_type,
+            )
+            if not text:
+                raise RuntimeError("No se pudo extraer texto de la imagen ingresada")
+            text_origin = "ocr"
+
         vision_images: Optional[List[Dict[str, str]]] = None
         if use_vision:
-            vision_images = self._encode_vision_images([(data, content_type)], limit=1)
+            vision_images = self._encode_vision_images(
+                [(data, normalized_content_type)], limit=1
+            )
+
         return self.extract_from_text(
-            text,
+            text if use_ocr else "",
             provider=provider,
             model=model,
             temperature=temperature,
@@ -339,7 +374,7 @@ class ExtractionService:
             presence_penalty=presence_penalty,
             openai_api_key=openai_api_key,
             vision_images=vision_images,
-            text_origin="ocr",
+            text_origin=text_origin,
         )
 
     def extract_from_file(
@@ -350,6 +385,7 @@ class ExtractionService:
         *,
         force_ocr: bool = False,
         use_vision: bool = False,
+        image_use_ocr: Optional[bool] = None,
         provider: Optional[str] = None,
         model: Optional[str] = None,
         temperature: Optional[float] = None,
@@ -367,6 +403,7 @@ class ExtractionService:
         suffix = Path(filename).suffix.lower()
         normalized_content_type = (content_type or "").lower()
         force_ocr = bool(force_ocr)
+        effective_image_use_ocr = True if image_use_ocr is None else bool(image_use_ocr)
         allow_vision = bool(
             suffix in PDF_EXTENSIONS
             or suffix in IMAGE_EXTENSIONS
@@ -375,14 +412,19 @@ class ExtractionService:
         )
         if use_vision and not allow_vision:
             use_vision = False
-        if suffix in IMAGE_EXTENSIONS:
-            # Derivar a la ruta especializada para garantizar OCR explícito
+        is_image_type = bool(
+            suffix in IMAGE_EXTENSIONS
+            or normalized_content_type.startswith("image/")
+        )
+        if is_image_type:
+            # Derivar a la ruta especializada que controla OCR y Visión de imágenes
             return self.extract_from_image(
                 filename,
                 data,
                 content_type,
                 provider=provider,
                 use_vision=use_vision,
+                use_ocr=effective_image_use_ocr,
                 model=model,
                 temperature=temperature,
                 top_p=top_p,

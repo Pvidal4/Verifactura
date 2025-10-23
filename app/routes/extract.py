@@ -331,6 +331,12 @@ async def extract_from_image_endpoint(
             "Enviar la imagen original codificada al modelo además del texto OCR."
         ),
     ),
+    use_ocr: bool = Query(
+        True,
+        description=(
+            "Aplicar OCR al contenido para obtener texto antes de llamar al modelo."
+        ),
+    ),
     llm_model: Optional[str] = Query(
         None,
         description=(
@@ -406,6 +412,7 @@ async def extract_from_image_endpoint(
     if not data:
         raise HTTPException(status_code=400, detail="La imagen subida está vacía.")
     use_vision_flag = _normalize_flag(use_vision)
+    use_ocr_flag = _normalize_flag(use_ocr)
     try:
         result = service.extract_from_image(
             image.filename or "imagen",
@@ -413,6 +420,7 @@ async def extract_from_image_endpoint(
             image.content_type,
             provider=llm_provider,
             use_vision=use_vision_flag,
+            use_ocr=use_ocr_flag,
             model=llm_model,
             temperature=temperature,
             top_p=top_p,
