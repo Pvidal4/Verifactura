@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+"""Servicios concretos para interactuar con modelos de lenguaje (API y local)."""
+
 import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -64,6 +66,8 @@ SYSTEM_PROMPT = (
 
 
 def _parse_model_response(raw: str) -> Dict[str, Any]:
+    """Convierte la respuesta textual del modelo en un diccionario Python."""
+
     try:
         data = json.loads(raw)
     except json.JSONDecodeError as exc:  # pragma: no cover - defensive programming
@@ -73,7 +77,10 @@ def _parse_model_response(raw: str) -> Dict[str, Any]:
     return data
 
 class OpenAILLMService:
+    """Cliente especializado para llamar a la API de OpenAI con esquema JSON."""
+
     def __init__(self, config: Config) -> None:
+        """Inicializa el cliente recordando valores por defecto y credenciales."""
 
         self._configured_api_key = (config.OPENAI_API_KEY or "").strip()
         self._client = (
@@ -102,6 +109,8 @@ class OpenAILLMService:
         presence_penalty: Optional[float] = None,
         api_key: Optional[str] = None,
     ) -> Dict[str, Any]:
+        """Invoca el endpoint de chat completions utilizando modo JSON Schema."""
+
         chosen_model = (model or self._model).strip()
         selected_reasoning_effort = (
             self._default_reasoning_effort
@@ -160,7 +169,10 @@ class OpenAILLMService:
 
 
 class LocalLLMService:
+    """Implementación basada en HuggingFace para ejecutar un modelo local."""
+
     def __init__(self, config: Config) -> None:
+        """Localiza el modelo local y prepara el dispositivo de inferencia."""
         configured_path = config.LOCAL_LLM_MODEL_PATH
         configured_id = config.LOCAL_LLM_MODEL_ID
         candidate = configured_path or configured_id or "models/gpt-oss-20b"
@@ -181,6 +193,7 @@ class LocalLLMService:
         self._default_top_p = 1.0
 
     def _get_pipeline(self, model: Optional[str] = None):
+        """Carga o reutiliza el pipeline de inferencia configurado."""
         source = (model or self._default_model).strip()
         if source not in self._pipelines:
             resolved = Path(source)
@@ -195,6 +208,7 @@ class LocalLLMService:
                 "trust_remote_code": True,
             }
             if torch.cuda.is_available():
+                # Si hay GPU disponible, se usa bfloat16 para optimizar memoria
                 model_kwargs["torch_dtype"] = torch.bfloat16
 
             model = AutoModelForCausalLM.from_pretrained(
@@ -223,6 +237,8 @@ class LocalLLMService:
         presence_penalty: Optional[float] = None,
         api_key: Optional[str] = None,
     ) -> Dict[str, Any]:
+        """Genera texto con el modelo local y lo interpreta como JSON."""
+
         _ = api_key  # Compatibilidad con la interfaz API
         messages: List[Dict[str, str]] = [
             {

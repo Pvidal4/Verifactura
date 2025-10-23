@@ -1,4 +1,4 @@
-"""FastAPI entrypoint for the Verifactura extraction API."""
+"""Punto de entrada de FastAPI para la API de extracción de Verifactura."""
 from __future__ import annotations
 
 import logging
@@ -14,8 +14,10 @@ logging.basicConfig(level=logging.INFO)
 
 
 def _initialise_app() -> FastAPI:
+    """Crea y configura la aplicación principal con los servicios necesarios."""
     config = Config()
     app = create_app(config)
+    # Se registran logs informativos sobre el modelo y los servicios disponibles
     logging.info("FastAPI application initialised with model %s", config.OPENAI_MODEL)
     if config.azure_configured:
         logging.info("Azure OCR endpoint configured: %s", config.AZURE_ENDPOINT)

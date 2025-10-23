@@ -1,10 +1,12 @@
 <!DOCTYPE html>
+<!-- Plantilla principal de la interfaz web de Verifactura -->
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Verifactura · Extracción y validación de facturas vehiculares</title>
     <style>
+      /* Variables y estilos base aplicados a toda la página */
       :root {
         color-scheme: light;
         font-family: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
@@ -49,6 +51,7 @@
         cursor: pointer;
       }
 
+      /* Contenedor principal que estructura la vista */
       .app-shell {
         min-height: 100vh;
         padding: clamp(2.5rem, 4vw, 4rem) clamp(1.5rem, 6vw, 5rem) 3rem;
@@ -186,6 +189,7 @@
         outline: none;
       }
 
+      /* Distribución en cuadrícula de los paneles interactivos */
       .workspace {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
@@ -193,6 +197,7 @@
         align-items: flex-start;
       }
 
+      /* Estética y espaciado de cada módulo visual */
       .panel {
         background: var(--surface);
         border: 1px solid var(--border);
@@ -2331,10 +2336,13 @@
       </div>
     </aside>
 
+    <!-- Datos por defecto que el frontend utiliza para precargar modelos -->
     <script id="llmDefaultsData" type="application/json">
       {{ llm_defaults | tojson }}
     </script>
+    <!-- Lógica de interacción del panel web -->
     <script>
+      // Tipos de archivo permitidos en la interfaz y su endpoint asociado
       const SUPPORTED_TYPES = {
         pdf: {
           label: "PDF",
@@ -2360,6 +2368,7 @@
 
       const PREDICTION_ENDPOINT = "/api/v1/predictions";
       const RETRAIN_ENDPOINT = "/api/v1/predictions/retrain";
+      // Campos que deben estar presentes para enviar una predicción válida
       const PREDICTION_REQUIRED_FIELDS = [
         "marca",
         "tipo",
@@ -2369,6 +2378,7 @@
         "ruedas",
         "total",
       ];
+      // Posibles rutas en el JSON que pueden mapearse a cada campo requerido
       const PREDICTION_FIELD_CANDIDATES = {
         marca: [
           "marca",
@@ -2425,6 +2435,7 @@
         ],
       };
 
+      // Valores aceptados para el ajuste de razonamiento del modelo
       const REASONING_EFFORT_VALUES = new Set([
         "minimal",
         "low",
@@ -2462,10 +2473,12 @@
         }
       }
 
+      // Cadena utilizada para configurar el atributo accept del input de archivos
       const ACCEPT_STRING = Object.values(SUPPORTED_TYPES)
         .map((type) => type.extensions.map((ext) => `.${ext}`).join(","))
         .join(",");
 
+      // Estado global centralizado para sincronizar la interfaz
       const state = {
         mode: "multi",
         modalPreviewUrl: null,
@@ -2525,6 +2538,7 @@
         },
       };
 
+      // Referencias a nodos importantes del DOM utilizadas repetidamente
       const previewModal = document.getElementById("previewModal");
       const previewModalContent = document.getElementById("previewModalContent");
       const previewModalClose = document.getElementById("previewModalClose");
@@ -2664,6 +2678,7 @@
       let isPreviewDocked = false;
       let dockedFileReadToken = 0;
 
+      // Muestra u oculta el control para forzar OCR en documentos PDF
       function setMultiPdfToggleVisibility(visible) {
         multiPdfToggleRow.hidden = !visible;
         multiPdfToggleRow.setAttribute("aria-hidden", String(!visible));
@@ -2674,10 +2689,12 @@
         }
       }
 
+      // Activa la clase de tema oscuro o claro según la selección del usuario
       function applyTheme(theme) {
         document.body.classList.toggle("theme-dark", theme === "dark");
       }
 
+      // Devuelve la configuración del LLM respetando el modo desarrollador
       function getActiveLlmSettings() {
         const params = ensureLlmParameters(state.llmProvider);
         if (state.settings.developerMode) {
@@ -2697,6 +2714,7 @@
         return sanitized;
       }
 
+      // Obtiene los parámetros efectivos de OCR aplicando saneamiento
       function getActiveOcrSettings() {
         if (!state.ocrProvider) {
           return { provider: "", endpoint: "", key: "" };
@@ -2712,6 +2730,7 @@
         };
       }
 
+      // Intenta convertir cualquier entrada a número de punto flotante
       function parseNumeric(value) {
         if (value === null || value === undefined) {
           return null;
@@ -2720,6 +2739,7 @@
         return Number.isNaN(parsed) ? null : parsed;
       }
 
+      // Garantiza que existan parámetros para el proveedor LLM indicado
       function ensureLlmParameters(provider) {
         if (!provider) {
           return state.llmParameters[state.llmProvider] || {};
@@ -2792,6 +2812,7 @@
         return params;
       }
 
+      // Garantiza que existan parámetros almacenados para el proveedor OCR dado.
       function ensureOcrParameters(provider) {
         if (!provider) {
           return { endpoint: "", key: "" };
@@ -2809,6 +2830,7 @@
         return params;
       }
 
+      // Sincroniza el estado habilitado y el valor de un control numérico.
       function setNumericFieldState(input, toggle, enabled) {
         if (toggle) {
           toggle.checked = !!enabled;
@@ -2827,6 +2849,7 @@
         }
       }
 
+      // Actualiza los controles del formulario según el proveedor LLM activo.
       function refreshLlmSettings(provider) {
         if (!llmSettingsContainer) {
           return;
@@ -2911,6 +2934,7 @@
         }
       }
 
+      // Refresca los campos relacionados al proveedor OCR seleccionado.
       function refreshOcrSettings(provider) {
         if (!ocrSettingsContainer) {
           return;
@@ -2947,6 +2971,7 @@
         });
       }
 
+      // Asocia los eventos de los controles de modelo de lenguaje al estado global.
       function bindLlmInputs() {
         Object.keys(state.llmParameters).forEach((provider) =>
           ensureLlmParameters(provider)
@@ -3146,6 +3171,7 @@
         }
       }
 
+      // Conecta los campos de OCR con el estado y los toggles disponibles.
       function bindOcrInputs() {
         if (ocrProviderSelect) {
           ocrProviderSelect.addEventListener("change", (event) => {
@@ -3173,6 +3199,7 @@
         });
       }
 
+      // Activa elementos exclusivos para desarrolladores y ajusta la vista.
       function applyDeveloperMode(enabled) {
         document.body.classList.toggle("developer-mode", enabled);
         developerBadge.hidden = !enabled;
@@ -3216,12 +3243,14 @@
         }
       }
 
+      // Propaga la configuración almacenada a los controles del panel de ajustes.
       function syncSettingsControls() {
         autoClearToggle.checked = state.settings.autoClear;
         themeSelect.value = state.settings.theme;
         developerToggle.checked = state.settings.developerMode;
       }
 
+      // Muestra el panel lateral de configuración y registra el foco previo.
       function openSettingsPanel() {
         if (settingsPanel.getAttribute("aria-hidden") === "false") {
           return;
@@ -3234,6 +3263,7 @@
         settingsPanel.focus({ preventScroll: true });
       }
 
+      // Oculta el panel de configuración restaurando el foco original.
       function closeSettingsPanel() {
         if (settingsPanel.getAttribute("aria-hidden") === "true") {
           return;
@@ -3247,11 +3277,13 @@
         lastSettingsTrigger = null;
       }
 
+      // Gestiona la visibilidad del botón que reabre el panel de entrada.
       function setShowPanelButtonVisibility(visible) {
         showInputPanelButton.toggleAttribute("hidden", !visible);
         showInputPanelButton.setAttribute("aria-hidden", String(!visible));
       }
 
+      // Elimina cualquier vista previa acoplada que utilice un recurso remoto.
       function clearDockedPreviewUrl() {
         if (state.dockedPreviewUrl) {
           URL.revokeObjectURL(state.dockedPreviewUrl);
@@ -3259,6 +3291,7 @@
         }
       }
 
+      // Presenta un mensaje contextual en el panel de vista previa acoplado.
       function setDockedPreviewMessage(message) {
         if (!dockedPreviewContent) {
           return;
@@ -3275,6 +3308,7 @@
         }
       }
 
+      // Borra la notificación que indica campos sin resaltado disponible.
       function clearMissingHighlightNotice(container) {
         if (!container) {
           return;
@@ -3286,6 +3320,7 @@
         }
       }
 
+      // Actualiza el mensaje cuando faltan resaltados para ciertos campos.
       function updateMissingHighlightNotice(container, visibleHighlights, options = {}) {
         if (!container) {
           return;
@@ -3322,10 +3357,12 @@
         container.classList.add("preview-content--missing");
       }
 
+      // Reinicia el panel acoplado eliminando datos y mensajes temporales.
       function resetDockedPreview() {
         setDockedPreviewMessage("Selecciona “Ver contenido” para mostrarlo aquí.");
       }
 
+      // Determina si un resultado posee una vista previa de archivo utilizable.
       function isFilePreviewAvailable(entry) {
         if (!entry) {
           return false;
@@ -3335,6 +3372,7 @@
         return Boolean(hasFile && hasCategory);
       }
 
+      // Activa o desactiva la visualización acoplada manteniendo el estado.
       function setPreviewDocked(enabled) {
         isPreviewDocked = enabled;
         workspace.classList.toggle("workspace--with-preview", enabled);
@@ -3367,6 +3405,7 @@
         }
       }
 
+      // Oculta el panel de entrada para maximizar el área de resultados.
       function collapseInputPanel() {
         if (workspace.classList.contains("workspace--input-hidden")) {
           return;
@@ -3380,6 +3419,7 @@
         showInputPanelButton.focus({ preventScroll: true });
       }
 
+      // Restaura el panel de entrada cuando el usuario solicita editar.
       function expandInputPanel() {
         if (!workspace.classList.contains("workspace--input-hidden")) {
           return;
@@ -3393,6 +3433,7 @@
         hideInputPanelButton.focus({ preventScroll: true });
       }
 
+      // Limpia los indicadores de progreso del procesamiento masivo.
       function resetMultiProgress() {
         multiProgress.hidden = true;
         multiProgressTrack.setAttribute("aria-valuenow", "0");
@@ -3402,6 +3443,7 @@
         multiProgressPercent.textContent = "0%";
       }
 
+      // Inicializa el estado visual del progreso para múltiples archivos.
       function showMultiProgress(total) {
         multiProgress.hidden = false;
         multiProgressTrack.setAttribute("aria-valuemin", "0");
@@ -3412,6 +3454,7 @@
         multiProgressPercent.textContent = "0%";
       }
 
+      // Actualiza las barras e indicadores del progreso multiarchivo.
       function updateMultiProgress(current, total) {
         multiProgressTrack.setAttribute("aria-valuenow", String(current));
         const percentage = total === 0 ? 0 : Math.round((current / total) * 100);
@@ -3420,6 +3463,7 @@
         multiProgressPercent.textContent = `${percentage}%`;
       }
 
+      // Cierra el modal de vista previa y restaura el foco apropiado.
       function closePreviewModal() {
         if (previewModal.hidden) {
           return;
@@ -3440,6 +3484,7 @@
         lastFocusedElement = null;
       }
 
+      // Genera el contenido HTML para la vista previa modal de un archivo.
       function renderModalPreview(file, category) {
         previewModalContent.innerHTML = "";
         clearMissingHighlightNotice(previewModalContent);
@@ -3491,6 +3536,7 @@
         }
       }
 
+      // Muestra el modal con la vista previa ya renderizada.
       function showModalPreview(file, category) {
         if (!file || !category) {
           return;
@@ -3499,6 +3545,7 @@
         openPreviewModal();
       }
 
+      // Abre el modal asegurando que el enfoque sea coherente.
       function openPreviewModal() {
         lastFocusedElement = document.activeElement;
         previewModal.hidden = false;
@@ -3588,6 +3635,7 @@
 
       multiFileInput.setAttribute("accept", ACCEPT_STRING);
 
+      // Vacía la cola de archivos seleccionados y estados asociados.
       function resetMultiFiles() {
         state.multiFiles = [];
         state.multiCategory = null;
@@ -3601,16 +3649,19 @@
         resetMultiProgress();
       }
 
+      // Actualiza el mensaje de estado principal indicando errores o progreso.
       function setStatus(message, isError = false) {
         statusMessage.textContent = message;
         statusMessage.classList.toggle("error", Boolean(isError));
       }
 
+      // Marca el botón activo entre los modos de procesamiento.
       function setActiveModeButton(button, isActive) {
         button.classList.toggle("active", isActive);
         button.setAttribute("aria-selected", String(isActive));
       }
 
+      // Cambia entre modo texto y modo múltiple actualizando la interfaz.
       function switchMode(mode) {
         if (mode === state.mode) return;
         state.mode = mode;
@@ -3636,6 +3687,7 @@
       textModeButton.addEventListener("click", () => switchMode("text"));
       multiModeButton.addEventListener("click", () => switchMode("multi"));
 
+      // Infere la categoría de un archivo según su extensión y tipo MIME.
       function detectCategory(file) {
         const extension = (file.name.split(".").pop() || "").toLowerCase();
         const mime = (file.type || "").toLowerCase();
@@ -3653,6 +3705,7 @@
         return null;
       }
 
+      // Redibuja la lista de archivos seleccionados con su estado.
       function renderMultiList() {
         if (!state.multiFiles.length) {
           resetMultiFiles();
@@ -3725,6 +3778,7 @@
         });
       }
 
+      // Procesa un archivo individual añadido al modo múltiple.
       function handleMultiSelection(file) {
         const category = detectCategory(file);
         if (!category) {
@@ -3748,6 +3802,7 @@
         setStatus("");
       }
 
+      // Integra una colección de archivos al flujo multiarchivo.
       function handleMultiFileList(fileList) {
         if (!fileList || !fileList.length) {
           return;
@@ -3798,6 +3853,7 @@
         renderMultiList();
       });
 
+      // Aplana un objeto anidado para facilitar búsquedas por clave.
       function flattenData(data, prefix = "") {
         if (data === null || data === undefined) {
           return { [prefix.slice(0, -1)]: null };
@@ -3832,6 +3888,7 @@
         return result;
       }
 
+      // Sanitiza cadenas para mostrarlas con seguridad como HTML.
       function escapeHtml(value) {
         return String(value)
           .replace(/&/g, "&amp;")
@@ -3839,6 +3896,7 @@
           .replace(/>/g, "&gt;");
       }
 
+      // Escapa valores que serán insertados en atributos HTML.
       function escapeAttribute(value) {
         return String(value)
           .replace(/&/g, "&amp;")
@@ -3848,10 +3906,12 @@
           .replace(/'/g, "&#39;");
       }
 
+      // Prepara una cadena para ser usada en expresiones regulares.
       function escapeRegExp(value) {
         return String(value).replace(/[\\^$*+?.()|{}\[\]-]/g, "\\$&");
       }
 
+      // Calcula los resaltados que deben mostrarse en la vista previa.
       function computePreviewHighlights(flatData) {
         if (!flatData || typeof flatData !== "object") {
           return [];
@@ -3888,6 +3948,7 @@
         }, []);
       }
 
+      // Genera coincidencias exactas para aplicar resaltados en texto plano.
       function buildHighlightMatches(text, highlights) {
         if (!text || !Array.isArray(highlights) || highlights.length === 0) {
           return [];
@@ -3930,6 +3991,7 @@
         return filtered;
       }
 
+      // Unifica el formato de las claves utilizadas en resaltados.
       function normalizeHighlightKey(field) {
         if (field === null || field === undefined) {
           return "";
@@ -3937,6 +3999,7 @@
         return String(field).toLowerCase();
       }
 
+      // Registra que un campo carece de resaltado disponible.
       function setMissingHighlight(field, label) {
         const normalized = field ? normalizeHighlightKey(field) : "";
         const key = normalized || null;
@@ -3959,6 +4022,7 @@
         return true;
       }
 
+      // Elimina la marca de campo sin resaltado cuando se resuelve.
       function clearMissingHighlight(field) {
         if (!state.missingHighlight) {
           return false;
@@ -3975,6 +4039,7 @@
         return false;
       }
 
+      // Obtiene la lista de resaltados actualmente visibles.
       function getVisibleHighlights() {
         if (!Array.isArray(state.currentHighlights) || !state.currentHighlights.length) {
           return [];
@@ -4002,6 +4067,7 @@
         });
       }
 
+      // Controla la visibilidad de un grupo de resaltados relacionados.
       function setGroupHighlightVisibility(fields, visible) {
         if (!Array.isArray(fields) || !fields.length) {
           return;
@@ -4023,6 +4089,7 @@
         });
       }
 
+      // Establece qué campo debe recibir enfoque entre los resaltados.
       function setHighlightFocusKey(field, options = {}) {
         const normalized = field ? normalizeHighlightKey(field) : "";
         const key = normalized || null;
@@ -4048,6 +4115,7 @@
         return true;
       }
 
+      // Actualiza la UI que muestra el estado de cada resaltado.
       function updateHighlightIndicators() {
         if (!resultsContainer) {
           return;
@@ -4092,6 +4160,7 @@
         });
       }
 
+      // Asigna un valor en una estructura plana respetando las claves originales.
       function setValueForFlatKey(entry, key, value) {
         if (!entry || typeof entry !== "object") {
           return;
@@ -4159,6 +4228,7 @@
         }
       }
 
+      // Gestiona la edición manual de un campo extraído.
       function handleEditField(entry, key, label, currentValue) {
         if (!entry || !key) {
           return;
@@ -4202,6 +4272,7 @@
         renderResult(state.currentIndex, { preserveHighlightVisibility: true });
       }
 
+      // Sincroniza el estado visual de los botones que alternan grupos.
       function updateGroupToggleButton(button, active, title) {
         if (!button) {
           return;
@@ -4215,6 +4286,7 @@
         button.dataset.state = active ? "visible" : "oculto";
       }
 
+      // Recalcula y aplica los resaltados de la vista previa actual.
       function refreshPreviewHighlights() {
         if (!state.results.length) {
           updateHighlightIndicators();
@@ -4253,6 +4325,7 @@
         updateHighlightIndicators();
       }
 
+      // Inserta HTML con resaltados dentro de un contenedor destino.
       function applyPreviewHighlights(target, text, highlights) {
         if (!target) {
           return;
@@ -4283,6 +4356,7 @@
         target.innerHTML = fragments.join("");
       }
 
+      // Obtiene los resaltados precomputados para una entrada concreta.
       function getEntryHighlights(entry, precomputedFlat) {
         if (!entry) {
           return [];
@@ -4306,6 +4380,7 @@
         return highlights;
       }
 
+      // Normaliza la estructura del payload devuelto por la API.
       function normalizeExtractionResponse(payload, fallbackText = "") {
         const response =
           payload && typeof payload === "object" && !Array.isArray(payload) ? payload : {};
@@ -4333,6 +4408,7 @@
         };
       }
 
+      // Produce identificadores consistentes para claves de campos.
       function normalizeFieldIdentifier(key) {
         if (key === null || key === undefined) {
           return "";
@@ -4344,6 +4420,7 @@
           .toLowerCase();
       }
 
+      // Selecciona el valor más adecuado para alimentar la predicción.
       function pickPredictionValue(flatData, candidates, fallbackKey) {
         if (!flatData || typeof flatData !== "object") {
           return null;
@@ -4387,6 +4464,7 @@
         return null;
       }
 
+      // Limpia y estandariza la categoría predicha.
       function normalizePredictionCategory(value) {
         if (value === null || value === undefined) {
           return null;
@@ -4398,6 +4476,7 @@
         return text.toUpperCase();
       }
 
+      // Convierte valores numéricos de la predicción en floats.
       function parseNumericValue(value) {
         if (value === null || value === undefined) {
           return null;
@@ -4432,6 +4511,7 @@
         return null;
       }
 
+      // Redondea y valida valores numéricos como enteros.
       function parseIntegerValue(value) {
         const numeric = parseNumericValue(value);
         if (!Number.isFinite(numeric)) {
@@ -4440,6 +4520,7 @@
         return Math.round(numeric);
       }
 
+      // Construye el diccionario de características para el modelo clásico.
       function collectPredictionFeatures(entry, precomputedFlat) {
         if (!entry || typeof entry !== "object") {
           return {
@@ -4523,6 +4604,7 @@
         };
       }
 
+      // Formatea una probabilidad en porcentaje legible.
       function formatPredictionPercentage(value) {
         if (!Number.isFinite(value)) {
           return "0%";
@@ -4537,6 +4619,7 @@
         return `${percentage.toFixed(1)}%`;
       }
 
+      // Marca que las probabilidades ya no son válidas y deben recalcularse.
       function markPredictionDirty(entry) {
         if (!entry || typeof entry !== "object") {
           return;
@@ -4546,6 +4629,7 @@
         }
       }
 
+      // Devuelve una etiqueta descriptiva del origen del texto procesado.
       function getTextOriginDescription(origin) {
         switch (origin) {
           case "ocr":
@@ -4559,6 +4643,7 @@
         }
       }
 
+      // Determina qué modo de vista previa debe mostrarse.
       function resolveActivePreviewMode(entry) {
         if (!entry) {
           return null;
@@ -4587,6 +4672,7 @@
         return null;
       }
 
+      // Actualiza los botones que alternan el modo de vista previa.
       function updatePreviewModeControls(entry) {
         if (!previewModeToggle) {
           return;
@@ -4621,6 +4707,7 @@
         previewModeToggle.setAttribute("aria-disabled", hasEntry ? "false" : "true");
       }
 
+      // Carga la vista previa acoplada correspondiente a un archivo.
       function renderDockedFilePreview(file, category, entry) {
         if (!dockedPreviewContent || !file) {
           setDockedPreviewMessage("No hay vista previa disponible.");
@@ -4683,6 +4770,7 @@
         reader.readAsText(file, "utf-8");
       }
 
+      // Presenta un archivo en el panel de vista previa seleccionado.
       function showFilePreview(file, category, options = {}) {
         if (!file || !category) {
           if (isPreviewDocked) {
@@ -4709,6 +4797,7 @@
         }
       }
 
+      // Renderiza el contenido de vista previa para la entrada activa.
       function renderCurrentPreview(entry) {
         if (!isPreviewDocked) {
           return;
@@ -4730,6 +4819,7 @@
         setDockedPreviewMessage("No hay contenido disponible.");
       }
 
+      // Ajusta el estado del botón que abre la vista previa detallada.
       function updateViewContentButton(entry) {
         if (!viewContentButton) {
           return;
@@ -4773,6 +4863,7 @@
         }
       }
 
+      // Abre la vista previa adecuada según el modo seleccionado.
       function openActivePreview() {
         const entry = state.results[state.currentIndex];
         const mode = resolveActivePreviewMode(entry);
@@ -4787,6 +4878,7 @@
         }
       }
 
+      // Muestra el texto bruto asociado a la extracción.
       function showPlainTextPreview(text, origin) {
         if (state.modalPreviewUrl) {
           URL.revokeObjectURL(state.modalPreviewUrl);
@@ -4846,6 +4938,7 @@
         }
       }
 
+      // Define mensajes informativos o de error en la sección de predicción.
       function setPredictionMessage(message, options = {}) {
         if (!predictionContent) {
           return;
@@ -4856,6 +4949,7 @@
         predictionContent.replaceChildren(paragraph);
       }
 
+      // Actualiza el mensaje que indica el estado del reentrenamiento.
       function updateRetrainStatus(message, tone) {
         if (!retrainRandomForestStatus) {
           return;
@@ -4876,6 +4970,7 @@
         }
       }
 
+      // Indica que las predicciones previas deben regenerarse.
       function markPredictionsAsStale() {
         let marked = false;
         state.results.forEach((entry) => {
@@ -4899,6 +4994,7 @@
         }
       }
 
+      // Genera el bloque visual que muestra probabilidades y clase.
       function renderPredictionResult(predictionState) {
         if (!predictionContent) {
           return;
@@ -4962,6 +5058,7 @@
         predictionContent.replaceChildren(wrapper);
       }
 
+      // Rellena la tarjeta lateral con los datos de predicción.
       function renderPredictionCard(entry, features) {
         if (!predictionCard) {
           return;
@@ -5063,6 +5160,7 @@
         }
       }
 
+      // Decide si se debe ejecutar la predicción automáticamente.
       function shouldAutoRunPrediction(entry, features) {
         if (!entry || !features || !features.ready) {
           return false;
@@ -5179,6 +5277,7 @@
       }
 
 
+      // Construye los datos descargables para resultados de predicción.
       function getPredictionDownload(entry) {
         if (!entry || typeof entry !== "object") {
           return null;
@@ -5224,6 +5323,7 @@
 
 
 
+      // Dibuja la información del resultado seleccionado.
       function renderResult(index, options = {}) {
         if (isPreviewDocked) {
           resetDockedPreview();
@@ -5580,6 +5680,7 @@
         updateHighlightIndicators();
       }
 
+      // Inserta una nueva entrada de resultados en la lista principal.
       function addResultEntry(data, source, options = {}) {
         const timestamp = Date.now();
         const entry = {
@@ -5710,6 +5811,7 @@
         });
       }
 
+      // Descarga contenido generado utilizando un enlace temporal.
       function downloadFile(content, filename, type) {
         const blob = new Blob([content], { type });
         const link = document.createElement("a");
@@ -5719,6 +5821,7 @@
         URL.revokeObjectURL(link.href);
       }
 
+      // Genera los blobs necesarios para las descargas disponibles.
       function buildDownloadPayloads() {
         const enriched = state.results.map((entry) => ({
           id: entry.id,
@@ -5831,6 +5934,7 @@
         });
       }
 
+      // Verifica que existan datos válidos antes de enviar al servidor.
       function validateBeforeSend() {
         if (state.mode === "text") {
           const value = plainText.value.trim();

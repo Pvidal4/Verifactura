@@ -1,4 +1,4 @@
-"""Tests covering the prediction request parsing helpers."""
+"""Pruebas unitarias para validar la normalización de predicciones."""
 from __future__ import annotations
 
 import math
@@ -48,7 +48,7 @@ from app.routes.predictions import PredictionRequest, RetrainResponse
     ],
 )
 def test_prediction_request_normalization(raw, expected):
-    """PredictionRequest should normalise casing and numeric values."""
+    """Debe normalizar mayúsculas y valores numéricos ingresados por el usuario."""
     request = PredictionRequest(**raw)
     features = request.to_features()
     assert features == expected
@@ -105,11 +105,13 @@ def test_prediction_request_normalization(raw, expected):
     ],
 )
 def test_prediction_request_rejects_invalid_payload(payload):
+    """Asegura que se rechacen cargas con valores fuera de rango o vacíos."""
     with pytest.raises(ValueError):
         PredictionRequest(**payload)
 
 
 def test_prediction_request_rejects_non_numeric_values():
+    """Verifica que los campos numéricos inválidos produzcan un error explícito."""
     payload = {
         "marca": "FORD",
         "tipo": "SEDAN",
@@ -124,6 +126,7 @@ def test_prediction_request_rejects_non_numeric_values():
 
 
 def test_prediction_request_handles_thousand_separators():
+    """Permite formatos con separadores de miles al convertir cadenas a números."""
     request = PredictionRequest(
         marca="FORD",
         tipo="SEDAN",
@@ -137,6 +140,7 @@ def test_prediction_request_handles_thousand_separators():
 
 
 def test_retrain_response_serialization():
+    """Confirma que el modelo de respuesta para reentrenamiento conserve los datos."""
     payload = RetrainResponse(
         mensaje="Modelo actualizado.",
         modelo="verifactura_rf_model.pkl",
