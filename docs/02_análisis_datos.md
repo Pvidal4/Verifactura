@@ -134,6 +134,7 @@ La división del dataset en subconjuntos de entrenamiento, validación y prueba 
 Este hallazgo fue crucial: puso en evidencia la insuficiencia de datos para entrenamiento supervisado tradicional. A pesar de implementar soluciones parciales, como aumentar el tamaño de entrenamiento o aplicar validación cruzada estratificada, los resultados no fueron lo suficientemente robustos. La matriz de confusión mostró una confusión recurrente entre “CAMIONETA” y “CAMIÓN”, lo que reflejaba que el modelo no captaba adecuadamente las diferencias entre ambas categorías.
 
 **Pipeline de Preprocessing Automatizado**
+
 La culminación del proyecto consistió en diseñar un pipeline automatizado, inspirado en la estructura propuesta por scikit-learn, que integrara limpieza, generación de características, normalización y balanceo. El objetivo era lograr un sistema modular y reutilizable. El código se estructuró en componentes como:
 
 "from sklearn.pipeline import Pipeline
@@ -146,5 +147,6 @@ preprocessing_pipeline = Pipeline([
 ])"
 
 Este diseño teórico se implementó parcialmente en preprocessing_pipeline.py, pero los resultados empíricos confirmaron nuestras sospechas: con datasets pequeños y facturas heterogéneas, el enfoque puramente supervisado no alcanza. Esto justificó un cambio hacia el pipeline documental verifactura_pipeline, basado en extracción por reglas, normalización y validación, mucho más adecuado para el contexto de OCR y documentos legales.
+
 
 
