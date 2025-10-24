@@ -154,4 +154,5 @@ El riesgo de mal uso se presenta cuando la herramienta se implementa, manipula o
 ## Limitaciones sociales y éticas
 - **Reconversión laboral incompleta:** El éxito de las medidas de mitigación dependerá de la ejecución real de los programas de capacitación, los cuales no garantizan por sí mismos la recolocación laboral.
 - **Brecha de acceso digital:** No todos los grupos afectados (especialmente mujeres y personal administrativo tradicional) cuentan con igual acceso a recursos tecnológicos o programas de actualización.
+
 - **Dependencia institucional:** La operación del sistema depende de la infraestructura tecnológica y del soporte continuo del proveedor, lo que podría generar vulnerabilidad ante fallas o desactualizaciones.
