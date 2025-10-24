@@ -34,6 +34,24 @@ Cada registro fue clasificado en una de las cinco categorías de usuario: Famili
 ## 5.🔑Instalación y uso
 ## 6. 💻 Interfaz de usuario
 ## 7. 🔩 Estructura del proyecto
+El repositorio de Verifactura está constituido por las siguientes carpetas:
+
+**app:** 
+
+**docs:** dentro de esta carpeta se encuentra documentado el paso a paso del proyecto
+* **planificacion:** planteamiento del problema, objetivos, cronograma, recursos y riesgos identificados en la etapa inicial.
+* **análisis_datos:** detalle de la composición del Dataset_inicial, análisis exloratorio, estadística descriptiva, análisis bivariado, outliers, matriz de correlaciones.  
+* **arquitectura:** 
+* **optimización:** detalle de data de entrenamiento, definición de hiperparámetros, análisis de sensibilidad, partial dependece plots, ranking de hiperparámetros, análisis de interacciones. 
+* **consideraciones éticas:** análisis de sesgo, riesgos identificados y medidas de mitigación, impacto social positivo y negativo, uso y mal uso de Verifactura, limitaciones.
+
+**imagenes:** carpeta con todos los gráficos y tablas obtenidas en los diferentes procesos de construcción de Verifactuta.
+
+**models:**
+
+**tests:**
+
+**train:**
 ## 8. ⚖ Consideraciones éticas
 ## 9. 🧑‍💻 Autores y contribuciones
 
