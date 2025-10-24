@@ -104,6 +104,7 @@ Se crearon nuevas variables a partir de combinaciones de campos existentes. Por 
 Las variables categóricas representaron un reto significativo. Inicialmente se probó con One-Hot Encoding, que funcionó bien para variables con cardinalidad baja (“CLASE”: CAMIONETA, AUTOMÓVIL, CAMIÓN). Sin embargo, para variables con cardinalidad alta como “MODELO”, esta estrategia generó una explosión dimensional. Se exploraron métodos alternativos como Target Encoding (sustituir la categoría por el promedio del valor objetivo dentro de esa clase) y Frequency Encoding, que asignó a cada categoría la frecuencia relativa en el dataset. Esto último resultó más eficiente en términos computacionales.
 
 *Transformaciones de Variables Numéricas*
+
 Las variables numéricas fueron normalizadas utilizando StandardScaler (Z-score), lo que permitió que atributos como “SUBTOTAL”, “IVA” y “TOTAL” tuvieran media 0 y desviación estándar 1. Esta normalización facilitó el trabajo de algoritmos sensibles a la escala. También se probó con Robust Scaling, lo cual fue útil frente a la presencia residual de outliers.
 
 *Selección de Características*
@@ -148,6 +149,7 @@ preprocessing_pipeline = Pipeline([
 ])"
 
 Este diseño teórico se implementó parcialmente en preprocessing_pipeline.py, pero los resultados empíricos confirmaron nuestras sospechas: con datasets pequeños y facturas heterogéneas, el enfoque puramente supervisado no alcanza. Esto justificó un cambio hacia el pipeline documental verifactura_pipeline, basado en extracción por reglas, normalización y validación, mucho más adecuado para el contexto de OCR y documentos legales.
+
 
 
 
