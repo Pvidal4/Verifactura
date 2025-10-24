@@ -36,7 +36,7 @@ Cada registro fue clasificado en una de las cinco categorías de usuario: Famili
 ## 7. 🔩 Estructura del proyecto
 El repositorio de Verifactura está constituido por las siguientes carpetas:
 
-**app:** 
+**app:** desarrollo de las aplicaciones utilizadas en Verifactura.
 
 **docs:** dentro de esta carpeta se encuentra documentado el paso a paso del proyecto
 * **planificacion:** planteamiento del problema, objetivos, cronograma, recursos y riesgos identificados en la etapa inicial.
@@ -52,8 +52,18 @@ El repositorio de Verifactura está constituido por las siguientes carpetas:
 
 **tests:**
 
-**train:**
+**train:** arquitectura, requerimientos, modelo, README.
+
 ## 8. ⚖ Consideraciones éticas
+
+**Aspectos éticos considerados**
+
+**Limitaciones consideradas del modelo**
+
+**Uso y mal uso de Verifactura**
+
+
+
 ## 9. 🧑‍💻 Autores y contribuciones
 
 **Andrea Morán Vargas:** Científico de datos
