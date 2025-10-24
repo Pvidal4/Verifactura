@@ -57,12 +57,51 @@ El repositorio de Verifactura está constituido por las siguientes carpetas:
 
 ## 8. ⚖ Consideraciones éticas
 
-**Aspectos éticos considerados**
+### Aspectos éticos considerados
 
-**Limitaciones consideradas del modelo**
+**Análisis de riesgo y medidas de mitigación**
 
-**Uso y mal uso de Verifactura**
+* **Riesgo de equidad y fairness**
 
+Se ha detectado un sesgo de género ocupacional, pues la implementación del sistema puede reproducir o amplificar desigualdades existentes al automatizar tareas predominantemente ocupadas por mujeres (digitación y verificación). 
+**Estrategia:** Implementar monitoreo de sesgo de género en la automatización y establecer un programa de reconversión laboral y capacitación digital para los grupos más afectados (particularmente mujeres en roles de digitación).
+
+* **Riesgo de Uso y resguardo de datos sensibles de facturas**
+
+VeriFactura procesa facturas digitales que contienen datos personales y financieros de personas naturales (compradores de vehículos), pero los excluye del análisis, no así a la información comercial de las concesionarias. Si no se establecen controles estrictos, podría existir riesgo de re-identificación o acceso no autorizado a datos sensibles.
+**Estrategia:** Adoptar un marco de gobernanza de datos personales que incluya encriptación, anonimización y controles de acceso basados en roles, conforme a la Ley Orgánica de Protección de Datos Personales (LOPDP).
+
+* **Riesgo de Falta de explicabilidad y transparencia del modelo**
+
+El proceso de extracción y validación automatizada se basa en modelos de IA que podrían no ser fácilmente interpretables por usuarios no técnicos. Esto puede limitar la comprensión de por qué una factura es aceptada o rechazada, reduciendo la confianza de los operadores humanos y de las concesionarias.
+
+**Estrategia:** Incorporar herramientas de explicabilidad y trazabilidad de decisiones (por ejemplo, LIME o SHAP) y desarrollar una interfaz de usuario con reportes interpretables para las concesionarias y personal operativo.
+
+
+### Limitaciones consideradas del modelo
+
+Existe un alcance excluido, acerca de los escenarios que no cubre Verifactura:
+
+* Procesamiento de Otros Documentos Bancarios
+* Soporte para Idiomas Adicionales
+* Aprobación Automática de Crédito
+* Integración Directa con Sistemas Contables
+  
+### Uso y mal uso de Verifactura
+
+**Uso dual:** Aunque fue diseñado para optimizar la gestión documental (extracción y validación) de facturas vehiculares, su arquitectura podría adaptarse para otros contextos en los que la extracción masiva de datos financieros o comerciales derive en vulneraciones éticas o legales. 
+
+* Escenarios y medidas de prevención:
+
+* Reutilización del modelo de extracción para procesar documentos personales o contractuales (nóminas, comprobantes de pago, escrituras, etc.) sin consentimiento explícito de los titulares.
+* Integración con sistemas de vigilancia o scoring crediticio sin supervisión ética, lo cual podría derivar en prácticas discriminatorias o violaciones a la privacidad.
+* Transferencia o entrenamiento secundario del modelo con datos no anonimizados, generando un riesgo de reidentificación o de sesgo no controlado.
+
+**Mal uso:** se presenta cuando la herramienta se implementa, manipula o configura fuera de los controles previstos.
+
+* Uso por personal no autorizado que acceda a datos sensibles o modifique parámetros del modelo sin registro en los logs.
+* Elusión de protocolos de revisión humana, confiando plenamente en los resultados automáticos sin control de precisión o trazabilidad.
+* Manipulación intencionada de facturas digitalizadas para obtener beneficios indebidos (por ejemplo, validaciones falsas o fraude documental).
 
 
 ## 9. 🧑‍💻 Autores y contribuciones
