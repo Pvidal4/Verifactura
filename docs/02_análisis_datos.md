@@ -92,8 +92,6 @@ En conjunto, este pipeline de limpieza permitió reducir en más de un 40% las i
 **Feature Engineering Avanzado**
 
 Superada la limpieza, el paso siguiente fue generar un conjunto de características derivadas y transformadas que pudieran incrementar la capacidad predictiva de nuestros modelos. El feature engineering es especialmente relevante en proyectos como Verifactura, donde la información extraída de documentos no siempre se encuentra en un formato óptimo para algoritmos de clasificación o regresión.
- 
-![alt text](https://github.com/Pvidal4/Verifactura/blob/main/imagenes/image-10.png?raw=true)
 
 *Creación de Variables Derivadas*
 
@@ -147,6 +145,7 @@ preprocessing_pipeline = Pipeline([
 ])"
 
 Este diseño teórico se implementó parcialmente en preprocessing_pipeline.py, pero los resultados empíricos confirmaron nuestras sospechas: con datasets pequeños y facturas heterogéneas, el enfoque puramente supervisado no alcanza. Esto justificó un cambio hacia el pipeline documental verifactura_pipeline, basado en extracción por reglas, normalización y validación, mucho más adecuado para el contexto de OCR y documentos legales.
+
 
 
 
