@@ -57,6 +57,7 @@ Se observa que el único con tendencia al alza es max_samples, que en el ranking
 
 
 # 5. Ranking de importancia de hiperparámetros
+
 Una vez ejecutado el modelo, se definió un ranking de importancia de correlación por score ordenando de mayor a menor cada Hiperparámetro
 ![alt text](https://github.com/Pvidal4/Verifactura/blob/main/imagenes/image-4.png?raw=true)
 
@@ -88,6 +89,7 @@ Finalmente, el trabajo demuestra que la comprensión del comportamiento interno 
 Una vez ejecutadas la exploración sistémica en su totalidad, se obtuvo que el modelo óptimo era el Espacio de búsqueda: C, cuya característica principal era la configuración ligera o rápida (liviana), llegando a un Score de 0.99, con menor profundidad, robustez y regularización, pero conservando el log2.
 
 ![alt text](https://github.com/Pvidal4/Verifactura/blob/main/imagenes/image-9.png?raw=true)
+
 
 
 
