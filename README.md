@@ -44,7 +44,7 @@ El repositorio de Verifactura está constituido por las siguientes carpetas:
 * **arquitectura:** 
 * **optimización:** detalle de data de entrenamiento, definición de hiperparámetros, análisis de sensibilidad, partial dependece plots, ranking de hiperparámetros, análisis de interacciones. 
 * **consideraciones éticas:** análisis de sesgo, riesgos identificados y medidas de mitigación, impacto social positivo y negativo, uso y mal uso de Verifactura, limitaciones.
-* **manual de usuario:**
+* **manual de usuario:** guía paso a paso para usar la interfaz, capturas de pantallas anotadas, explicación de cada funcionalidad, troubleshooting (problemas comunes y soluciones), preguntas frecuentes (FAQ), información de contacto para soporte.
 
 **imagenes:** carpeta con todos los gráficos y tablas obtenidas en los diferentes procesos de construcción de Verifactuta.
 
