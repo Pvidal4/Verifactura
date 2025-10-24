@@ -220,11 +220,13 @@ El repositorio de Verifactura está constituido por las siguientes carpetas:
 * **Riesgo de equidad y fairness**
 
 Se ha detectado un sesgo de género ocupacional, pues la implementación del sistema puede reproducir o amplificar desigualdades existentes al automatizar tareas predominantemente ocupadas por mujeres (digitación y verificación). 
+
 **Estrategia:** Implementar monitoreo de sesgo de género en la automatización y establecer un programa de reconversión laboral y capacitación digital para los grupos más afectados (particularmente mujeres en roles de digitación).
 
 * **Riesgo de Uso y resguardo de datos sensibles de facturas**
 
 VeriFactura procesa facturas digitales que contienen datos personales y financieros de personas naturales (compradores de vehículos), pero los excluye del análisis, no así a la información comercial de las concesionarias. Si no se establecen controles estrictos, podría existir riesgo de re-identificación o acceso no autorizado a datos sensibles.
+
 **Estrategia:** Adoptar un marco de gobernanza de datos personales que incluya encriptación, anonimización y controles de acceso basados en roles, conforme a la Ley Orgánica de Protección de Datos Personales (LOPDP).
 
 * **Riesgo de Falta de explicabilidad y transparencia del modelo**
