@@ -85,19 +85,22 @@
       }
 
       .header-extra {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        justify-content: flex-start;
-        gap: 1rem;
+        display: grid;
+        grid-auto-flow: row;
+        align-content: start;
+        justify-items: end;
+        gap: 0.85rem;
         flex-shrink: 0;
         text-align: right;
+        min-width: min(240px, 20vw);
       }
 
       .header-actions {
-        display: flex;
+        display: inline-flex;
         align-items: center;
+        justify-content: flex-end;
         gap: 0.75rem;
+        width: 100%;
       }
 
       .hero-title {
@@ -128,6 +131,7 @@
         width: clamp(150px, 18vw, 230px);
         height: auto;
         display: block;
+        justify-self: end;
       }
 
       .developer-badge {
@@ -1915,20 +1919,23 @@
         }
 
         .header-extra {
-          flex-direction: row;
-          align-items: center;
-          justify-content: space-between;
           width: 100%;
-          gap: 1.25rem;
-          text-align: left;
+          min-width: 0;
+          justify-items: center;
+          align-content: center;
+          gap: 1rem;
+          text-align: center;
         }
 
         .header-actions {
           order: 2;
+          justify-content: center;
+          width: auto;
         }
 
         .hero-logo {
           width: clamp(140px, 26vw, 210px);
+          justify-self: center;
         }
       }
 
@@ -1938,9 +1945,8 @@
         }
 
         .header-extra {
-          flex-direction: column;
-          align-items: stretch;
-          justify-content: flex-start;
+          justify-items: stretch;
+          align-content: start;
           gap: 0.75rem;
           text-align: center;
         }
