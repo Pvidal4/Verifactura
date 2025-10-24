@@ -82,8 +82,8 @@ def _normalize_reasoning_effort(
 ) -> Optional[str]:
     """Convierte el valor recibido en un modo válido para OpenAI."""
 
-    if value == "none":
-        return None
+    if isinstance(value, Param):
+        value = value.default
     return value
 
 
