@@ -146,3 +146,4 @@ preprocessing_pipeline = Pipeline([
 ])"
 
 Este diseño teórico se implementó parcialmente en preprocessing_pipeline.py, pero los resultados empíricos confirmaron nuestras sospechas: con datasets pequeños y facturas heterogéneas, el enfoque puramente supervisado no alcanza. Esto justificó un cambio hacia el pipeline documental verifactura_pipeline, basado en extracción por reglas, normalización y validación, mucho más adecuado para el contexto de OCR y documentos legales.
+
