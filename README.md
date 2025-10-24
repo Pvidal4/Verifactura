@@ -2,17 +2,18 @@
 
 ## 📑Tabla de contenido
 
-1. [📂 Descripción del problema](#1---descripción-del-problema)
-2. [⚙️ Dataset](#2---dataset)
-3.  [🤖 Metodología](#3---metodología)
-4. [📊 Resultados](#4---resultados)
-5. [🔑Instalación y uso](#5---instalación-y-uso)
-6. [💻 Interfaz de usuario](#6---interfaz-de-usuario)
-7. [🔩 Estructura del proyecto](#7---estructura-del-proyecto)
-8. [⚖ Consideraciones éticas](#8---consideraciones-éticas)
-9. [🧑‍💻Autores y contribuciones](#9---autores-y-contribuciones)
-10. [📜 Licencia](#10---licencia)
-11. [🤝 Agradecimientos y referencias](#11---agradecimientos-y-referencias)
+1.[📂 Descripción del problema](https://github.com/Pvidal4/Verifactura/blob/main/README.md#:~:text=1.%20%F0%9F%93%82-,Descripci%C3%B3n%20del%20problema)
+
+2. [⚙️ Dataset](https://github.com/Pvidal4/Verifactura/blob/main/README.md#:~:text=2.%20%E2%9A%99%EF%B8%8F-,Dataset)
+3.  [🤖 Metodología](https://github.com/Pvidal4/Verifactura/blob/main/README.md#:~:text=3.%20%F0%9F%A4%96-,Metodolog%C3%ADa)
+4. [📊 Resultados](https://github.com/Pvidal4/Verifactura/blob/main/README.md#:~:text=4.%20%F0%9F%93%8A-,Resultados)
+5. [🔑Instalación y uso](https://github.com/Pvidal4/Verifactura/blob/main/README.md#:~:text=5.%F0%9F%94%91-,Instalaci%C3%B3n%20y%20uso)
+6. [💻 Interfaz de usuario](https://github.com/Pvidal4/Verifactura/blob/main/README.md#:~:text=6.%20%F0%9F%92%BB-,Interfaz%20de%20usuario)
+7. [🔩 Estructura del proyecto](https://github.com/Pvidal4/Verifactura/blob/main/README.md#:~:text=7.%20%F0%9F%94%A9-,Estructura%20del%20proyecto)
+8. [⚖ Consideraciones éticas](https://github.com/Pvidal4/Verifactura/blob/main/README.md#:~:text=8.%20%E2%9A%96-,Consideraciones%20%C3%A9ticas)
+9. [🧑‍💻Autores y contribuciones](https://github.com/Pvidal4/Verifactura/blob/main/README.md#:~:text=9.%20%F0%9F%A7%91%E2%80%8D%F0%9F%92%BB-,Autores%20y%20contribuciones)
+10. [📜 Licencia](https://github.com/Pvidal4/Verifactura/blob/main/README.md#:~:text=10.%20%F0%9F%93%9C-,Licencia)
+11. [🤝 Agradecimientos y referencias](https://github.com/Pvidal4/Verifactura/blob/main/README.md#:~:text=11.%20%F0%9F%A4%9D-,Agradecimientos%20y%20referencias)
 
 ## 1. 📂 Descripción del problema
 
