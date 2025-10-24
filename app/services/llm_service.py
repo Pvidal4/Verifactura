@@ -134,9 +134,6 @@ class OpenAILLMService:
             if reasoning_effort is None
             else reasoning_effort
         )
-        openai_reasoning_effort = (
-            None if selected_reasoning_effort == "none" else selected_reasoning_effort
-        )
         resolved_api_key = (api_key or self._configured_api_key or "").strip()
         if not resolved_api_key:
             raise RuntimeError(
@@ -179,13 +176,13 @@ class OpenAILLMService:
             user_content = segments if segments else text
         else:
             user_content = text
-        response = client.chat.completions.create(
-            model=chosen_model,
-            messages=[
+        request_kwargs: Dict[str, Any] = {
+            "model": chosen_model,
+            "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_content},
             ],
-            response_format={
+            "response_format": {
                 "type": "json_schema",
                 "json_schema": {
                     "name": self._schema_name,
@@ -193,12 +190,14 @@ class OpenAILLMService:
                     "strict": True,
                 },
             },
-            temperature=self._default_temperature if temperature is None else temperature,
-            top_p=self._default_top_p if top_p is None else top_p,
-            reasoning_effort=openai_reasoning_effort,
-            frequency_penalty=selected_frequency_penalty,
-            presence_penalty=selected_presence_penalty,
-        )
+            "temperature": self._default_temperature if temperature is None else temperature,
+            "top_p": self._default_top_p if top_p is None else top_p,
+            "frequency_penalty": selected_frequency_penalty,
+            "presence_penalty": selected_presence_penalty,
+        }
+        if selected_reasoning_effort not in (None, "none"):
+            request_kwargs["reasoning_effort"] = selected_reasoning_effort
+        response = client.chat.completions.create(**request_kwargs)
         content = response.choices[0].message.content
         return _parse_model_response(content)
 
