@@ -109,7 +109,7 @@ class OpenAILLMService:
         self._schema_name = config.JSON_MODE_SCHEMA_NAME
         self._default_temperature = 1.0
         self._default_top_p = 1.0
-        self._default_reasoning_effort = "minimal"
+        self._default_reasoning_effort = None
         self._default_frequency_penalty = 0.0
         self._default_presence_penalty = 0.0
 
@@ -179,6 +179,26 @@ class OpenAILLMService:
             user_content = segments if segments else text
         else:
             user_content = text
+        additional_params = {}
+        if temperature is not None:
+            additional_params["temperature"] = temperature
+        elif self._default_temperature is not None:
+            additional_params["temperature"] = self._default_temperature
+
+        if top_p is not None:
+            additional_params["top_p"] = top_p
+        elif self._default_top_p is not None:
+            additional_params["top_p"] = self._default_top_p
+
+        if openai_reasoning_effort is not None:
+            additional_params["reasoning_effort"] = openai_reasoning_effort
+
+        if selected_frequency_penalty is not None:
+            additional_params["frequency_penalty"] = selected_frequency_penalty
+
+        if selected_presence_penalty is not None:
+            additional_params["presence_penalty"] = selected_presence_penalty
+    
         response = client.chat.completions.create(
             model=chosen_model,
             messages=[
@@ -193,11 +213,7 @@ class OpenAILLMService:
                     "strict": True,
                 },
             },
-            temperature=self._default_temperature if temperature is None else temperature,
-            top_p=self._default_top_p if top_p is None else top_p,
-            reasoning_effort=openai_reasoning_effort,
-            frequency_penalty=selected_frequency_penalty,
-            presence_penalty=selected_presence_penalty,
+            **additional_params,
         )
         content = response.choices[0].message.content
         return _parse_model_response(content)
