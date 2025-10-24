@@ -3890,6 +3890,7 @@
         settingsPanel.setAttribute("aria-hidden", "false");
         settingsBackdrop.hidden = false;
         settingsButton.setAttribute("aria-expanded", "true");
+        settingsButton.hidden = true;
         settingsPanel.focus({ preventScroll: true });
       }
 
@@ -3901,6 +3902,7 @@
         settingsPanel.setAttribute("aria-hidden", "true");
         settingsBackdrop.hidden = true;
         settingsButton.setAttribute("aria-expanded", "false");
+        settingsButton.hidden = false;
         if (lastSettingsTrigger && typeof lastSettingsTrigger.focus === "function") {
           lastSettingsTrigger.focus({ preventScroll: true });
         }
