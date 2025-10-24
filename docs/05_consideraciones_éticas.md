@@ -144,6 +144,7 @@ El riesgo de mal uso se presenta cuando la herramienta se implementa, manipula o
 - Uso por personal no autorizado que acceda a datos sensibles o modifique parámetros del modelo sin registro en los logs.
 - Elusión de protocolos de revisión humana, confiando plenamente en los resultados automáticos sin control de precisión o trazabilidad.
 - Manipulación intencionada de facturas digitalizadas para obtener beneficios indebidos (por ejemplo, validaciones falsas o fraude documental).
+  
 **Medidas preventivas:**
 - Control de acceso basado en roles (RBAC) y autenticación multifactor.
 - Auditorías trimestrales de trazabilidad de decisiones y revisiones de sesgo.
@@ -156,3 +157,4 @@ El riesgo de mal uso se presenta cuando la herramienta se implementa, manipula o
 - **Brecha de acceso digital:** No todos los grupos afectados (especialmente mujeres y personal administrativo tradicional) cuentan con igual acceso a recursos tecnológicos o programas de actualización.
 
 - **Dependencia institucional:** La operación del sistema depende de la infraestructura tecnológica y del soporte continuo del proveedor, lo que podría generar vulnerabilidad ante fallas o desactualizaciones.
+
