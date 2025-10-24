@@ -133,3 +133,4 @@ Con la intención de mantener el alcance del proyecto enfocado y realista dentro
 * Riesgo 6: Deuda técnica afecta estabilidad.
     * Mitigación: Bug bash + priorización de hallazgos críticos antes de release.
 
+
