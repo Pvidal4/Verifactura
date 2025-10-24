@@ -30,9 +30,11 @@ El modelo de clasificación a utilizar es Random Forest y utiliza:
 - max_samples — proporción del dataset usada por cada árbol (submuestreo)
 
 **Métricas iniciales**
+
 ![alt text](https://github.com/Pvidal4/Verifactura/blob/main/imagenes/image-1.png?raw=true)
 
 **Hiperparámetros**
+
 ![alt text](https://github.com/Pvidal4/Verifactura/blob/main/imagenes/image-2.png?raw=true)
 
     
@@ -86,6 +88,7 @@ Finalmente, el trabajo demuestra que la comprensión del comportamiento interno 
 Una vez ejecutadas la exploración sistémica en su totalidad, se obtuvo que el modelo óptimo era el Espacio de búsqueda: C, cuya característica principal era la configuración ligera o rápida (liviana), llegando a un Score de 0.99, con menor profundidad, robustez y regularización, pero conservando el log2.
 
 ![alt text](https://github.com/Pvidal4/Verifactura/blob/main/imagenes/image-9.png?raw=true)
+
 
 
 
