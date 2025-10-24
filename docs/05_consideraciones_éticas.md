@@ -29,7 +29,9 @@ El acceso al sistema no es equitativo:
 * **Clientes finales** acceden solo a los resultados del sistema, no a su funcionamiento o datos subyacentes.
 ## Estrategia de mitigación
 **Estrategia:** Implementar monitoreo de sesgo de género en la automatización y establecer un programa de reconversión laboral y capacitación digital para los grupos más afectados (particularmente mujeres en roles de digitación).
-Tipo: Política, Educación
+
+**Tipo:** Política, Educación.
+
 **Implementación:** 
 * Aplicar auditorías de equidad laboral y de impacto de automatización con enfoque de género.
 * Diseñar e impartir programas de capacitación en herramientas digitales, IA y control de calidad documental.
@@ -157,4 +159,5 @@ El riesgo de mal uso se presenta cuando la herramienta se implementa, manipula o
 - **Brecha de acceso digital:** No todos los grupos afectados (especialmente mujeres y personal administrativo tradicional) cuentan con igual acceso a recursos tecnológicos o programas de actualización.
 
 - **Dependencia institucional:** La operación del sistema depende de la infraestructura tecnológica y del soporte continuo del proveedor, lo que podría generar vulnerabilidad ante fallas o desactualizaciones.
+
 
