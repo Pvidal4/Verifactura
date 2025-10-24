@@ -15,7 +15,20 @@
 
 ## 1. 📂 Descripción del problema
 
+Las instituciones financieras enfrentan un cuello de botella en la validación de facturas vehiculares por la variedad de formatos y la dependencia de procesos manuales.
+La digitación humana genera más del 15% de errores, causando reprocesos y demoras en los desembolsos. Esto incrementa el riesgo operativo y de fraude documental.
+El desafío de Verifactura es automatizar la extracción y validación de datos clave de las facturas con alta precisión. Se busca alcanzar un 90% de exactitud y reducir en más del 80% el tiempo de procesamiento manual.
+
+Es un plataforma creada para ser utilizada principalmente por la áreas operativas de las instituciones financieras previo al análisis crediticio de los clientes prospectantes.
+
 ## 2. ⚙️ Dataset
+
+**Dataset inicial:** 26 facturas reales emitidas por diversas concesionarias ecuatorianas y almacenadas en la plataforma SCRIBD.
+
+**Dataset de entrenamiento:** 500 registros sintéticos representativos de distintas combinaciones de marca, tipo, clase, capacidad, combustible, número de ruedas y valor total de la factura.
+
+Cada registro fue clasificado en una de las cinco categorías de usuario: Familiar, Estudiante, Ejecutivo, Rural o Transporte público/comercial.
+
 ## 3. 🤖 Metodología
 ## 4. 📊 Resultados
 ## 5.🔑Instalación y uso
