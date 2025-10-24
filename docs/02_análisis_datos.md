@@ -109,6 +109,7 @@ Las variables numéricas fueron normalizadas utilizando StandardScaler (Z-score)
 *Selección de Características*
 
 Para evitar el sobreajuste, se realizó una etapa de feature selection mediante análisis de importancia de características en RandomForest y regularización LASSO. Descubrimos que atributos como “CLASE”, “MARCA” y “CILINDRAJE” aportaban más información que “COLOR” o “DIRECCIÓN”. Esto nos permitió reducir dimensionalidad sin perder capacidad explicativa.
+
 *Extracción de Características de Dominio*
 
 Dado que trabajamos con documentos de facturación vehicular, se exploraron técnicas específicas del dominio. Por ejemplo, en los textos libres de descripción de ítems se aplicó un bag-of-words con TF-IDF para capturar términos relevantes como “DOBLE CABINA” o “4X4”, que muchas veces definían la clase del vehículo mejor que los campos estructurados.
@@ -147,6 +148,7 @@ preprocessing_pipeline = Pipeline([
 ])"
 
 Este diseño teórico se implementó parcialmente en preprocessing_pipeline.py, pero los resultados empíricos confirmaron nuestras sospechas: con datasets pequeños y facturas heterogéneas, el enfoque puramente supervisado no alcanza. Esto justificó un cambio hacia el pipeline documental verifactura_pipeline, basado en extracción por reglas, normalización y validación, mucho más adecuado para el contexto de OCR y documentos legales.
+
 
 
 
