@@ -32,9 +32,43 @@ Es un plataforma creada para ser utilizada principalmente por la áreas operativ
 Cada registro fue clasificado en una de las cinco categorías de usuario: Familiar, Estudiante, Ejecutivo, Rural o Transporte público/comercial.
 
 ## 3. 🤖 Metodología
+
+Verifactura articula tres familias de modelos para convertir documentos vehiculares en información accionable: 
+* Servicio de extracción que administra modelos de lenguaje (LLM).
+* Módulo OCR sobre Azure.
+* Clasificador Random Forest.
+  
+**Servicio de extracción que administra modelos de lenguaje (LLM)**
+
+El LLM se invoca con una estrategia de “JSON schema” que obliga a responder únicamente con los campos esperados de una factura vehicular. Para lograrlo, se define un esquema exhaustivo de campos (marca, modelo, VIN, totales, etc.).
+
+Se elaboró un system prompt que orienta al modelo sobre cómo reparar rupturas típicas del OCR y cómo normalizar valores sin espacios. 
+
+La implementación de **OpenAILLMService** encapsula el uso de **Chat Completions de OpenAI**: 
+* Asegura credenciales
+* Permite ajustar parámetros (temperatura, top-p, razonamiento)
+* Cuando hay imágenes, empaqueta texto y píxeles en segmentos compatibles con el modo vision para mejorar la comprensión contextual.
+
+**Módulo OCR sobre Azure**
+
+El **AzureOCRService** es un contenedor ligero sobre **Azure Form Recognizer**:
+* Autentica con DocumentAnalysisClient
+* Ejecuta el modelo prebuilt-read y concatena todas las líneas detectadas
+* Reintentos inteligentes cuando el servidor rechaza el content_type proporcionado. 
+
+El **ExtractionService** reutiliza y cachea instancias OCR, fuerza su uso cuando el archivo es una imagen o cuando el texto crudo está vacío, e incluso aplica estrategias adicionales para PDFs (renderizado de páginas a imágenes) si la lectura directa falla. 
+
+**Clasificador Random Forest**
+
+Verifactura complementa el análisis con un modelo de clasificación Random Forest entrenado a partir de atributos vehiculares (marca, tipo, clase, capacidad, combustible, ruedas y total). 
+
+El pipeline de entrenamiento arma un ColumnTransformer que combina one-hot encoding para categorías y estandarización para numéricos, ajusta un RandomForestClassifier con 400 árboles y guarda el modelo empaquetado junto a métricas para auditoría posterior. 
+
 ## 4. 📊 Resultados
 ## 5.🔑Instalación y uso
+
 ## 6. 💻 Interfaz de usuario
+
 ## 7. 🔩 Estructura del proyecto
 El repositorio de Verifactura está constituido por las siguientes carpetas:
 
@@ -43,14 +77,14 @@ El repositorio de Verifactura está constituido por las siguientes carpetas:
 **docs:** dentro de esta carpeta se encuentra documentado el paso a paso del proyecto
 * **planificacion:** planteamiento del problema, objetivos, cronograma, recursos y riesgos identificados en la etapa inicial.
 * **análisis_datos:** detalle de la composición del Dataset_inicial, análisis exloratorio, estadística descriptiva, análisis bivariado, outliers, matriz de correlaciones.  
-* **arquitectura:** 
+* **arquitectura:** routers, extraction service, OpenIA LLM Service, Prediction Service 
 * **optimización:** detalle de data de entrenamiento, definición de hiperparámetros, análisis de sensibilidad, partial dependece plots, ranking de hiperparámetros, análisis de interacciones. 
 * **consideraciones éticas:** análisis de sesgo, riesgos identificados y medidas de mitigación, impacto social positivo y negativo, uso y mal uso de Verifactura, limitaciones.
 * **manual de usuario:** guía paso a paso para usar la interfaz, capturas de pantallas anotadas, explicación de cada funcionalidad, troubleshooting (problemas comunes y soluciones), preguntas frecuentes (FAQ), información de contacto para soporte.
 
 **imagenes:** carpeta con todos los gráficos y tablas obtenidas en los diferentes procesos de construcción de Verifactuta.
 
-**models:**
+**models:** carpeta con los tres modelos utilizados LLM, OCR, Random Forest. 
 
 **tests:**
 
@@ -88,7 +122,7 @@ Existe un alcance excluido, acerca de los escenarios que no cubre Verifactura:
 * Aprobación Automática de Crédito
 * Integración Directa con Sistemas Contables
   
-### Uso y mal uso de Verifactura
+### Uso dual y mal uso de Verifactura
 
 **Uso dual:** Aunque fue diseñado para optimizar la gestión documental (extracción y validación) de facturas vehiculares, su arquitectura podría adaptarse para otros contextos en los que la extracción masiva de datos financieros o comerciales derive en vulneraciones éticas o legales. 
 
