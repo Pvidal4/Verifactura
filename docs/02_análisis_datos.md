@@ -31,21 +31,21 @@ Al tener 8 variables numéricas, se espera que estas sean las que aporten con ma
 
 **TOTAL**
 
-![alt text](image-10.png)
+![alt text](https://github.com/Pvidal4/Verifactura/blob/main/imagenes/image-10.png?raw=true)
 
-![alt text](image-11.png)
+![alt text](https://github.com/Pvidal4/Verifactura/blob/main/imagenes/image-11.png?raw=true)
 
 **SUBTOTAL**
 
-![alt text](image-12.png)
+![alt text](https://github.com/Pvidal4/Verifactura/blob/main/imagenes/image-12.png?raw=true)
 
-![alt text](image-13.png)
+![alt text](https://github.com/Pvidal4/Verifactura/blob/main/imagenes/image-13.png?raw=true)
 
 **IVA**
 
-![alt text](image-14.png)
+![alt text](https://github.com/Pvidal4/Verifactura/blob/main/imagenes/image-14.png?raw=true)
 
-![alt text](image-15.png)
+![alt text](https://github.com/Pvidal4/Verifactura/blob/main/imagenes/image-15.png?raw=true)
 
 
 # 4. Identificación de patrones, correlaciones, outliers
@@ -53,28 +53,28 @@ Al tener 8 variables numéricas, se espera que estas sean las que aporten con ma
 **Correlaciones**
 Como se observa en el heatmap de correlaciones, las variables TOTAL e IVA, al ser variables dependientes del SUBTOTAL, tienen una correlación cercana a 1.
 
-![alt text](image-16.png)
+![alt text](https://github.com/Pvidal4/Verifactura/blob/main/imagenes/image-16.png?raw=true)
 
 **Gráficos de Análisis bivariado**
 *Top 3 Monto por marca*
 
-![alt text](image-17.png)
+![alt text](https://github.com/Pvidal4/Verifactura/blob/main/imagenes/image-17.png?raw=true)
 
 *Top 3 Vehículos más comunes*
 
-![alt text](image-18.png)
+![alt text](https://github.com/Pvidal4/Verifactura/blob/main/imagenes/image-18.png?raw=true)
 
 *IVA más alto por Tipo de Vehículo*
 
-![alt text](image-20.png)
+![alt text](https://github.com/Pvidal4/Verifactura/blob/main/imagenes/image-20.png?raw=true)
 
-![alt text](image-19.png)
+![alt text](https://github.com/Pvidal4/Verifactura/blob/main/imagenes/image-19.png?raw=true)
 
 **Visualización de anomalías**
 
-![alt text](image-21.png)
+![alt text](https://github.com/Pvidal4/Verifactura/blob/main/imagenes/image-21.png?raw=true)
 
-![alt text](image-22.png)
+![alt text](https://github.com/Pvidal4/Verifactura/blob/main/imagenes/image-22.png?raw=true)
 
 Como se observa el vehículo más nuevo contiene el Subtotal más alto, sin embargo, el vehículo más antiguo no es el subtotal más ALto, esto puede deberse a otras variables con mayor influencia como el Tipo, cilindraje y marca.
 
@@ -93,7 +93,7 @@ En conjunto, este pipeline de limpieza permitió reducir en más de un 40% las i
 
 Superada la limpieza, el paso siguiente fue generar un conjunto de características derivadas y transformadas que pudieran incrementar la capacidad predictiva de nuestros modelos. El feature engineering es especialmente relevante en proyectos como Verifactura, donde la información extraída de documentos no siempre se encuentra en un formato óptimo para algoritmos de clasificación o regresión.
  
-![alt text](image-23.png)
+![alt text](https://github.com/Pvidal4/Verifactura/blob/main/imagenes/image-10.png?raw=true)
 
 *Creación de Variables Derivadas*
 
@@ -146,4 +146,5 @@ preprocessing_pipeline = Pipeline([
 ])"
 
 Este diseño teórico se implementó parcialmente en preprocessing_pipeline.py, pero los resultados empíricos confirmaron nuestras sospechas: con datasets pequeños y facturas heterogéneas, el enfoque puramente supervisado no alcanza. Esto justificó un cambio hacia el pipeline documental verifactura_pipeline, basado en extracción por reglas, normalización y validación, mucho más adecuado para el contexto de OCR y documentos legales.
+
 
