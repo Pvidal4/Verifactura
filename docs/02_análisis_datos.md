@@ -1,5 +1,7 @@
 # 1. Descripción detallada del Dataset
-Para el proyecto *Verifactura* inicialmente utilizamos facturas vehiculares publicadas en la plataforma "scridb", esto es, trabajamos con facturas reales pertenecientes a dos grupos con información definido: "COMPLETA" e "INCOMPLETA", el primero corresponde a facturas reales de Venta de Vehiculos y el segundo a facturas de repuestos con datos en su mayoría incompletos.  
+Para el proyecto *Verifactura* inicialmente utilizamos facturas vehiculares publicadas en la plataforma "Scribd", que es la biblioteca de ideas del mundo, con más de 200 millones de documentos. Permite encontrar y subir contenido sobre cualquier tema y nicho, desde artículos académicos y documentos legales hasta pasatiempos DIY, manuales y más.
+
+Esta data inicial nos permitió trabajar con facturas reales de consecionarias ecuatorianas, y fueron etiquetadas en dos grupos según la información contenida: "COMPLETA" e "INCOMPLETA", el primera etiqueta corresponde a facturas reales de Venta de Vehiculos y la segunda a facturas de repuestos con datos en su mayoría incompletos.  
 
 # 2. Estadísticas descriptivas
 Realizando el resumen estadístico básico, sin ningún tratamiento de los datos, vemos que se está tomanto el RUC como una cantidad y no como una identificación que es lo correcto. Así mismo, se observa que las variables: SUBSIDIO, RUEDAS Y EJES, mantienen valores nulos en más del 60% de sus registros, por lo que no deben considerarse en el análisis, pues no existen sificientes datos para realizar una imputación de los mismos.
@@ -76,7 +78,7 @@ Como se observa en el heatmap de correlaciones, las variables TOTAL e IVA, al se
 
 ![alt text](https://github.com/Pvidal4/Verifactura/blob/main/imagenes/image-22.png?raw=true)
 
-Como se observa el vehículo más nuevo contiene el Subtotal más alto, sin embargo, el vehículo más antiguo no es el subtotal más ALto, esto puede deberse a otras variables con mayor influencia como el Tipo, cilindraje y marca.
+Como se observa el vehículo más nuevo contiene el Subtotal más Alto, sin embargo, el vehículo más antiguo no es el subtotal más Bajo, como podría esperarse en la interacción de las variables numéricas.
 
 # 5. Decisiones de preprocesamiento justificadas
 
@@ -145,6 +147,7 @@ preprocessing_pipeline = Pipeline([
 ])"
 
 Este diseño teórico se implementó parcialmente en preprocessing_pipeline.py, pero los resultados empíricos confirmaron nuestras sospechas: con datasets pequeños y facturas heterogéneas, el enfoque puramente supervisado no alcanza. Esto justificó un cambio hacia el pipeline documental verifactura_pipeline, basado en extracción por reglas, normalización y validación, mucho más adecuado para el contexto de OCR y documentos legales.
+
 
 
 
