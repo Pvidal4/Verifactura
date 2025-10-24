@@ -69,6 +69,10 @@ El pipeline de entrenamiento arma un ColumnTransformer que combina one-hot encod
 
 ## 6. 💻 Interfaz de usuario
 
+* **Descripción de la interfaz:** encabezado, selección de extracción, zona de arrastre y carga, editor de texto, panel de resulatdos, módulo de predicción.
+
+* **Instrucciones para usar la interfaz:** accesos a la aplicación, seleccionar el tipo de entrada, configuración de parámetros opcionales, extracción.
+
 ## 7. 🔩 Estructura del proyecto
 El repositorio de Verifactura está constituido por las siguientes carpetas:
 
