@@ -87,3 +87,4 @@ Una vez ejecutadas la exploración sistémica en su totalidad, se obtuvo que el 
 
 ![alt text](image-9.png)
 
+
