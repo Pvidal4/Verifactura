@@ -84,25 +84,6 @@
         max-width: 100%;
       }
 
-      .header-extra {
-        display: grid;
-        grid-auto-flow: row;
-        align-content: start;
-        justify-items: end;
-        gap: 0.85rem;
-        flex-shrink: 0;
-        text-align: right;
-        min-width: min(240px, 20vw);
-      }
-
-      .header-actions {
-        display: inline-flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 0.75rem;
-        width: 100%;
-      }
-
       .hero-title {
         display: flex;
         flex-wrap: wrap;
@@ -125,13 +106,6 @@
         font-size: 1rem;
         line-height: 1.6;
         max-width: 100%;
-      }
-
-      .hero-logo {
-        width: clamp(150px, 18vw, 230px);
-        height: auto;
-        display: block;
-        justify-self: end;
       }
 
       .developer-badge {
@@ -177,22 +151,40 @@
         outline: none;
       }
 
-      .settings-button {
-        border: 1px solid var(--border);
-        background: var(--surface);
+      .settings-fab {
+        position: fixed;
+        bottom: clamp(1.5rem, 4vw, 2.75rem);
+        right: clamp(1.5rem, 4vw, 2.75rem);
+        width: clamp(3.25rem, 6vw, 3.75rem);
+        height: clamp(3.25rem, 6vw, 3.75rem);
         border-radius: 999px;
-        padding: 0.5rem 1.1rem;
-        font-weight: 500;
-        color: var(--muted);
-        transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+        border: none;
+        background: var(--accent);
+        color: var(--surface);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.15);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        z-index: 999;
       }
 
-      .settings-button:hover,
-      .settings-button:focus-visible {
-        border-color: var(--accent);
-        color: var(--accent);
-        box-shadow: 0 0 0 3px var(--accent-soft);
+      .settings-fab:hover,
+      .settings-fab:focus-visible {
+        background: var(--accent-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 16px 28px rgba(15, 23, 42, 0.22);
         outline: none;
+      }
+
+      .settings-fab:active {
+        transform: translateY(0);
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
+      }
+
+      .settings-fab svg {
+        width: clamp(1.35rem, 2.8vw, 1.65rem);
+        height: clamp(1.35rem, 2.8vw, 1.65rem);
       }
 
       /* Distribución en cuadrícula de los paneles interactivos */
@@ -1917,26 +1909,6 @@
           flex-basis: 100%;
           min-width: 100%;
         }
-
-        .header-extra {
-          width: 100%;
-          min-width: 0;
-          justify-items: center;
-          align-content: center;
-          gap: 1rem;
-          text-align: center;
-        }
-
-        .header-actions {
-          order: 2;
-          justify-content: center;
-          width: auto;
-        }
-
-        .hero-logo {
-          width: clamp(140px, 26vw, 210px);
-          justify-self: center;
-        }
       }
 
       @media (max-width: 760px) {
@@ -1944,26 +1916,22 @@
           padding: 2rem 1.25rem 3rem;
         }
 
-        .header-extra {
-          justify-items: stretch;
-          align-content: start;
-          gap: 0.75rem;
-          text-align: center;
-        }
-
-        .header-actions {
-          order: initial;
-          justify-content: center;
-          width: 100%;
-        }
-
-        .hero-logo {
-          align-self: center;
-          width: clamp(110px, 45vw, 160px);
-        }
-
         .results-navigation {
           justify-content: center;
+        }
+      }
+
+      @media (max-width: 600px) {
+        .settings-fab {
+          bottom: 1.25rem;
+          right: 1.25rem;
+          width: 3rem;
+          height: 3rem;
+        }
+
+        .settings-fab svg {
+          width: 1.35rem;
+          height: 1.35rem;
         }
       }
     </style>
@@ -1994,24 +1962,6 @@
             >
               Cargar más facturas
             </button>
-          </div>
-          <div class="header-extra">
-            <div class="header-actions">
-              <button
-                type="button"
-                id="settingsButton"
-                class="settings-button"
-                aria-haspopup="dialog"
-                aria-expanded="false"
-              >
-                Ajustes
-              </button>
-            </div>
-            <img
-              src="{{ request.url_for('static', path='verifactura-logo.svg') }}"
-              alt="VeriFactura"
-              class="hero-logo"
-            />
           </div>
         </div>
       </header>
@@ -2843,6 +2793,24 @@
         </div>
       </div>
     </aside>
+
+    <button
+      type="button"
+      id="settingsButton"
+      class="settings-fab"
+      aria-haspopup="dialog"
+      aria-expanded="false"
+      aria-label="Abrir ajustes"
+      title="Ajustes"
+    >
+      <span class="sr-only">Abrir ajustes</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path
+          fill="currentColor"
+          d="M21 13.35v-2.7l-2.1-.48a6.72 6.72 0 0 0-.42-1.02l1.23-1.79-1.91-1.9-1.79 1.22c-.33-.18-.67-.32-1.02-.43L13.35 3h-2.7l-.48 2.1c-.36.11-.69.25-1.02.43L7.36 4.31 5.45 6.22l1.22 1.79c-.18.33-.32.67-.43 1.02L4 10.65v2.7l2.1.48c.11.36.25.69.43 1.02l-1.23 1.79 1.91 1.9 1.79-1.22c.33.18.67.32 1.02.43l.48 2.1h2.7l.48-2.1c.36-.11.69-.25 1.02-.43l1.79 1.22 1.91-1.9-1.22-1.79c.18-.33.32-.67.43-1.02ZM12 15.25A3.25 3.25 0 1 1 15.25 12 3.25 3.25 0 0 1 12 15.25Z"
+        />
+      </svg>
+    </button>
 
     <!-- Datos por defecto que el frontend utiliza para precargar modelos -->
     <script id="llmDefaultsData" type="application/json">
