@@ -23,5 +23,10 @@
 ## 7. 🔩 Estructura del proyecto
 ## 8. ⚖ Consideraciones éticas
 ## 9. 🧑‍💻 Autores y contribuciones
+
+**Andrea Morán Vargas:** Científico de datos
+
+**Pedro Vidal Orús:** AI Leader
+
 ## 10. 📜 Licencia
 ## 11. 🤝 Agradecimientos y referencias
