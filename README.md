@@ -311,4 +311,9 @@ Existe un alcance excluido, acerca de los escenarios que no cubre Verifactura:
 **Pedro Vidal Orús:** AI Leader
 
 ## 10. 📜 Licencia
+
+Copyright 2025 - UEES.
+
 ## 11. 🤝 Agradecimientos y referencias
+
+Toda nuestra gratitud a los compañeros y maestros que nos acompañaron en el proceso, especialmente al Grupo 1.
