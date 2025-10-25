@@ -113,7 +113,7 @@ Según el modelo LLM seleccionado, estos son los tiempos de respuesta promedio:
 
 ## Requisitos del sistema
 - **Sistema operativo:** Windows 10/11, macOS 13+ o cualquier distribución Linux actual.
-- **Python:** 3.10 o 3.11 con `pip` actualizado.
+- **Python:** 3.12 con `pip` actualizado.
 - **CPU:** Procesador de 4 núcleos (se recomienda soporte para instrucciones AVX).
 - **Memoria RAM:** 8 GB mínimo (16 GB recomendados para OCR y modelos locales).
 - **GPU (opcional):** NVIDIA con soporte CUDA 12.1 para acelerar modelos locales con PyTorch.
@@ -143,7 +143,13 @@ Según el modelo LLM seleccionado, estos son los tiempos de respuesta promedio:
    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
    ```
    Este comando instala las variantes de PyTorch compatibles con CUDA 12.1. Si no cuentas con GPU NVIDIA, conserva la instalación CPU incluida en `requirements.txt`.
-5. **Configurar variables de entorno**
+
+
+5. **Instalación de Microsoft Visual C++ Redistributable.**
+
+Puedes descargarlo en https://aka.ms/vs/17/release/vc_redist.x64.exe  
+   
+6. **Configurar variables de entorno**
    - Copia `.env.example` a `.env` (si existe) o crea un archivo `.env` con las claves siguientes:
      ```env
      OPENAI_API_KEY=tu_clave
