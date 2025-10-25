@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from train.random_forest import RandomForestTrainingResult, train_random_forest
+from train.train import RandomForestTrainingResult, train_random_forest
 
 
 @dataclass
