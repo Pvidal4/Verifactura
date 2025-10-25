@@ -65,6 +65,47 @@ Verifactura complementa el análisis con un modelo de clasificación Random Fore
 El pipeline de entrenamiento arma un ColumnTransformer que combina one-hot encoding para categorías y estandarización para numéricos, ajusta un RandomForestClassifier con 400 árboles y guarda el modelo empaquetado junto a métricas para auditoría posterior. 
 
 ## 4. 📊 Resultados
+
+**Comparativo de métricas**
+En todos los casos el modelo de clasificación utilizado en **Random Forest**
+
+* **Modelo original**
+
+Al estar compuesto por 26 registros, al estratificar los datos, presenta valores ínfimos que no pueden ser reevaluados, detallamos las métricas y la matriz de confusión del mismo:
+
+<img width="639" height="238" alt="image" src="https://github.com/user-attachments/assets/39d5b2c2-7ab3-415b-9573-43d5e4337deb" />
+
+<img width="866" height="611" alt="image" src="https://github.com/user-attachments/assets/9d226942-f2f4-4398-8760-4e9cdd5355c3" />
+
+* **Entrenamiento con data sintética - primera corrida**
+
+Al cambiar a pipeline documental, en esta clasificación la variable a predecir es la "Categoría del cliente"
+
+<img width="713" height="248" alt="image" src="https://github.com/user-attachments/assets/4afba7ff-15c0-4f9a-a40c-6ec15d8910da" />
+
+<img width="886" height="647" alt="image" src="https://github.com/user-attachments/assets/9725013b-edbd-4cbe-81ea-38b7293fbe9b" />
+
+* **Modelo final**
+
+Una vez entrenado y conservando la estructura de pipeline documental, se detallan las métricas finales:
+
+<img width="886" height="543" alt="image" src="https://github.com/user-attachments/assets/6df35584-2292-4918-a3c1-2245c6f83cf2" />
+
+
+
+
+
+  
+
+**Detalle de rendimiento de los tiempos**
+
+Según el modelo LLM seleccionado, estos son los tiempos de respuesta promedio:
+- gpt-5 (reasoning HIGH) → 54s
+- gpt-5 (reasoning MEDIUM) → 26s
+- gpt-5 (reasoning LOW) → 14s
+- gpt-5-mini (reasoning LOW) → 8s
+- gpt-4.1-mini → 5s
+
 ## 5.🔑Instalación y uso
 
 # Guía de instalación de Verifactura
