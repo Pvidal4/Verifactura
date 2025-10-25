@@ -67,6 +67,7 @@ El pipeline de entrenamiento arma un ColumnTransformer que combina one-hot encod
 ## 4. 📊 Resultados
 
 **Comparativo de métricas**
+
 En todos los casos el modelo de clasificación utilizado en **Random Forest**
 
 * **Modelo original**
